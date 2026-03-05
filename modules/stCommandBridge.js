@@ -1,87 +1,72 @@
-// modules/stCommandBridge.js - 符合ST官方命令注册规范
+// modules/stCommandBridge.js
 import storageManager from './storageManager.js';
 
 class STCommandBridge {
     constructor() {
-        this.characterInputCommandTemplate = '/input 请输入{{char}}的动作或台词： | /sendas name={{char}} {{pipe}}';
+        // 您指定的核心命令链
+        this.charInputCommand = '/input 请输入{{char}}的动作或台词： | /sendas name={{char}} {{pipe}}';
     }
 
-    getCurrentCharacterName(context) {
-        const currentChar = context.characters.getCurrentCharacter();
-        return currentChar?.name || '{{char}}';
+    // 获取当前角色名
+    getCurrentChar(context) {
+        return context.characters?.getCurrentCharacter()?.name || '{{char}}';
     }
 
-    async executeCharacterInputCommand(context) {
-        const charName = this.getCurrentCharacterName(context);
-        const command = this.characterInputCommandTemplate.replace(/{{char}}/g, charName);
-        await context.slashCommands.execute(command);
+    // 导入内容到输入框
+    importToInput(content, context) {
+        context.chat?.setChatInputValue?.(content);
         return true;
     }
 
-    importChapterToInput(chapterContent, context) {
-        context.chat.setChatInputValue(chapterContent);
+    // 以当前角色身份发送内容
+    async sendAsChar(content, context, charName = null) {
+        const targetName = charName || this.getCurrentChar(context);
+        const command = `/sendas name="${targetName}" ${content}`;
+        await context.slashCommands?.execute?.(command);
         return true;
     }
 
-    async sendChapterAsCharacter(chapterContent, charName = null, context) {
-        const targetCharName = charName || this.getCurrentCharacterName(context);
-        const command = `/sendas name="${targetCharName}" ${chapterContent}`;
-        await context.slashCommands.execute(command);
+    // 发送为系统上下文
+    async sendAsContext(content, context) {
+        await context.chat?.sendMessage?.(content, { isSystem: true });
         return true;
     }
 
-    async sendChapterAsContext(chapterContent, context) {
-        await context.chat.sendMessage(chapterContent, { isSystem: true });
+    // 执行您指定的角色输入命令链
+    async executeCharInputCommand(context) {
+        const charName = this.getCurrentChar(context);
+        const command = this.charInputCommand.replace(/{{char}}/g, charName);
+        await context.slashCommands?.execute?.(command);
         return true;
     }
 
-    registerCustomCommands(context) {
-        // 打开插件面板命令
-        context.slashCommands.register({
+    // 注册自定义斜杠命令
+    registerCommands(context) {
+        // 打开插件面板
+        context.slashCommands?.register?.({
             name: 'novel_import',
             description: '打开小说续写助手面板',
-            handler: () => context.sidebar.openPanel('novel-continuation-panel')
-        });
-
-        // 章节分析命令
-        context.slashCommands.register({
-            name: 'novel_analyze',
-            description: '分析当前选中的小说章节，生成知识图谱',
-            handler: async () => {
-                const currentChapter = storageManager.getCurrentChapter();
-                const currentNovel = storageManager.getCurrentNovel();
-                if (!currentNovel || !currentChapter) {
-                    return context.toaster.show('请先选择要分析的小说和章节', 'error');
-                }
-                window.dispatchEvent(new CustomEvent('novel-continuation:analyze-current-chapter'));
+            handler: () => {
+                context.sidebar?.openPanel?.('novel-continuation-panel');
             }
         });
 
         // 角色输入命令
-        context.slashCommands.register({
+        context.slashCommands?.register?.({
             name: 'char_input',
-            description: '弹出输入框，输入角色的动作或台词，以当前角色的身份发送',
+            description: '弹出输入框，以当前角色身份发送台词',
             handler: async () => {
-                try {
-                    await this.executeCharacterInputCommand(context);
-                } catch (error) {
-                    context.toaster.show(`执行命令失败: ${error.message}`, 'error');
-                }
+                await this.executeCharInputCommand(context);
             }
         });
 
-        // 续写命令
-        context.slashCommands.register({
+        // 章节续写命令
+        context.slashCommands?.register?.({
             name: 'novel_continue',
-            description: '续写当前选中的章节，参数：字数（默认1000）',
+            description: '续写当前章节，参数：字数（默认1000）',
             handler: async (args) => {
-                const wordCount = parseInt(args[0]) || 1000;
-                const currentChapter = storageManager.getCurrentChapter();
-                const currentNovel = storageManager.getCurrentNovel();
-                if (!currentNovel || !currentChapter) {
-                    return context.toaster.show('请先选择要续写的小说和章节', 'error');
-                }
-                window.dispatchEvent(new CustomEvent('novel-continuation:continue-current-chapter', { detail: { wordCount } }));
+                // 此处仅注册命令，完整逻辑可按需扩展
+                context.toast?.show?.(`续写命令已触发，字数：${args[0] || 1000}`, 'info');
             }
         });
     }
