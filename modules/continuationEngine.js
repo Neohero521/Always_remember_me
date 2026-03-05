@@ -1,9 +1,8 @@
-// modules/continuationEngine.js
+// modules/continuationEngine.js - 100%遵循您的续写规则
 import storageManager from './storageManager.js';
 
 class ContinuationEngine {
     constructor() {
-        // 单章节续写Prompt，100%遵循您的续写规则
         this.singleChapterPromptTemplate = `
 请严格按照以下规则，续写当前的小说章节内容，仅输出续写的正文内容，不要任何标题、解释、备注、说明、分割线。
 
@@ -23,7 +22,6 @@ class ContinuationEngine {
 请开始续写：
 `;
 
-        // 下一章续写Prompt，100%遵循您的续写规则
         this.nextChapterPromptTemplate = `
 请严格按照以下规则，续写下一章的小说内容，仅输出续写的正文内容，不要任何标题、解释、备注、说明、分割线。
 
@@ -44,24 +42,18 @@ class ContinuationEngine {
 `;
     }
 
-    async generateContent(prompt) {
-        if (!window.SillyTavern) throw new Error('SillyTavern API 不可用');
-        try {
-            const result = await window.SillyTavern.generateText(prompt, {
-                temperature: 0.7,
-                top_p: 0.9,
-                max_tokens: 8000,
-                frequency_penalty: 0.2,
-                presence_penalty: 0.1
-            });
-            return result.trim();
-        } catch (error) {
-            throw new Error(`AI续写生成失败: ${error.message}`);
-        }
+    async generateContent(prompt, context) {
+        const result = await context.llm.generate(prompt, {
+            temperature: 0.7,
+            top_p: 0.9,
+            max_tokens: 8000,
+            frequency_penalty: 0.2,
+            presence_penalty: 0.1
+        });
+        return result.trim();
     }
 
-    // 单章节续写
-    async continueSingleChapter(novelId, chapterId, wordCount = 1000) {
+    async continueSingleChapter(novelId, chapterId, wordCount = 1000, context) {
         const novel = storageManager.getNovel(novelId);
         const chapter = novel?.chapters.find(c => c.id === chapterId);
         if (!chapter) throw new Error('章节不存在');
@@ -74,11 +66,10 @@ class ContinuationEngine {
             .replace('{{knowledgeGraph}}', graphJson)
             .replace('{{chapterContent}}', chapter.content);
 
-        return await this.generateContent(prompt);
+        return await this.generateContent(prompt, context);
     }
 
-    // 续写下一章
-    async continueNextChapter(novelId, wordCount = 2000) {
+    async continueNextChapter(novelId, wordCount = 2000, context) {
         const novel = storageManager.getNovel(novelId);
         if (!novel || novel.chapters.length === 0) throw new Error('小说不存在或没有章节');
 
@@ -95,7 +86,7 @@ class ContinuationEngine {
             .replace('{{knowledgeGraph}}', graphJson)
             .replace('{{recentChaptersContent}}', recentChaptersContent);
 
-        const nextChapterContent = await this.generateContent(prompt);
+        const nextChapterContent = await this.generateContent(prompt, context);
         const newChapterNumber = novel.chapters.length + 1;
         const newChapterId = `chapter_${newChapterNumber}`;
         const newChapter = {
