@@ -1,4 +1,5 @@
-import { getContext, executeSlashCommand } from "../../../../script.js";
+// ===================== 【修复】ST API正确导入路径 =====================
+import { getContext, executeSlashCommand } from "../../../script.js";
 
 // ===================== 单章节发送到聊天（严格遵循/sendas格式） =====================
 export async function sendChapterToChat(chapter, isBatch = false) {
@@ -13,7 +14,7 @@ export async function sendChapterToChat(chapter, isBatch = false) {
     }
 
     try {
-        // 严格遵循用户提供的格式：/sendas name={{char}} 内容
+        // 严格遵循格式：/sendas name="{{char}}" 内容
         const charName = currentChar.name.replace(/"/g, '\\"');
         // 超长章节自动拆分（单条消息不超过4000字，避免上下文超限）
         const maxLength = 4000;
