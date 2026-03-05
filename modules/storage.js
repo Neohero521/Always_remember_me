@@ -1,4 +1,5 @@
-import { getContext } from "../../../../script.js";
+// ===================== 【修复】ST API正确导入路径 =====================
+import { getContext } from "../../../script.js";
 
 const EXTENSION_ID = 'novel-magic-editor';
 
@@ -6,7 +7,15 @@ const EXTENSION_ID = 'novel-magic-editor';
 export async function savePluginData(data) {
     const context = getContext();
     try {
-        await context.setExtensionSetting(EXTENSION_ID, 'savedState', JSON.stringify(data));
+        // 过滤非序列化数据
+        const serializableData = {
+            chapters: data.chapters,
+            groups: data.groups,
+            knowledgeGraph: data.knowledgeGraph,
+            currentChapterId: data.currentChapterId,
+            generatedChapters: data.generatedChapters
+        };
+        await context.setExtensionSetting(EXTENSION_ID, 'savedState', JSON.stringify(serializableData));
         return true;
     } catch (err) {
         console.error('保存插件数据失败:', err);
