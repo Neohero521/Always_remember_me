@@ -1,1 +1,1 @@
-{"name": "sillytavern-plugin","version": "1.0.0","description": "A plugin for SillyTavern.","main": "index.js","scripts": {"test": "echo 'Error: no test specified' && exit 1"},"author": "Neohero521","license": "ISC"}
+{"name": "Always Remember Me","description": "This is a silly tavern plugin for remembering things.","main": "index.js"}
