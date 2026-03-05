@@ -1,10 +1,11 @@
-/* ===================== 小说魔改神器 全局样式 ===================== */
+/* ===================== 小说魔改神器 全局样式（兼容ST原生主题） ===================== */
 #novel-magic-editor {
     padding: 16px;
     height: 100%;
     overflow-y: auto;
     color: var(--text-color);
     font-family: var(--main-font);
+    box-sizing: border-box;
 }
 
 /* 头部 */
@@ -16,7 +17,7 @@
     margin: 0 0 8px 0;
     font-size: 22px;
     font-weight: 700;
-    background: linear-gradient(to right, #3b82f6, #6366f1);
+    background: linear-gradient(to right, var(--main-color), #6366f1);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -33,9 +34,11 @@
     border-bottom: 1px solid var(--border-color);
     margin-bottom: 16px;
     gap: 4px;
+    flex-wrap: wrap;
 }
 #novel-magic-editor .nme-tab-btn {
     flex: 1;
+    min-width: 100px;
     padding: 12px 8px;
     background: transparent;
     border: none;
@@ -101,6 +104,7 @@
 #novel-magic-editor .nme-radio-group {
     display: flex;
     gap: 16px;
+    flex-wrap: wrap;
 }
 #novel-magic-editor .nme-radio {
     display: flex;
@@ -139,6 +143,14 @@
     background: var(--main-color);
     cursor: pointer;
 }
+#novel-magic-editor .nme-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--main-color);
+    cursor: pointer;
+    border: none;
+}
 #novel-magic-editor .nme-slider-desc {
     display: flex;
     justify-content: space-between;
@@ -157,6 +169,7 @@
     color: var(--text-color);
     font-size: 13px;
     cursor: pointer;
+    box-sizing: border-box;
 }
 #novel-magic-editor .nme-file-input::file-selector-button {
     margin-right: 12px;
@@ -178,6 +191,7 @@
     background: var(--input-bg);
     color: var(--text-color);
     font-size: 13px;
+    box-sizing: border-box;
 }
 
 /* 文本域 */
@@ -192,6 +206,7 @@
     font-size: 13px;
     line-height: 1.6;
     resize: vertical;
+    box-sizing: border-box;
 }
 #novel-magic-editor .nme-textarea.tall {
     min-height: 180px;
@@ -199,7 +214,7 @@
 #novel-magic-editor .nme-textarea:focus {
     outline: none;
     border-color: var(--main-color);
-    box-shadow: 0 0 0 2px rgba(var(--main-color-rgb), 0.1);
+    box-shadow: 0 0 0 2px rgba(var(--main-color-rgb, 59, 130, 246), 0.1);
 }
 
 /* 按钮 */
@@ -212,6 +227,7 @@
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
+    box-sizing: border-box;
 }
 #novel-magic-editor .nme-btn:active {
     transform: scale(0.98);
@@ -275,6 +291,8 @@
     background: var(--bg-secondary-color);
     border-radius: 6px;
     border: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 8px;
 }
 #novel-magic-editor .nme-group-item-right {
     display: flex;
@@ -316,12 +334,13 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     background: var(--input-bg);
-    font-family: var(--mono-font);
+    font-family: var(--mono-font, monospace);
     font-size: 11px;
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-all;
     color: var(--text-color);
+    margin: 0;
 }
 
 /* 状态文本 */
