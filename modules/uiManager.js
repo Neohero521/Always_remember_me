@@ -1,31 +1,37 @@
-// modules/uiManager.js
-import storageManager from './storageManager.js';
-import chapterSplitter from './chapterSplitter.js';
-import knowledgeGraph from './knowledgeGraph.js';
-import continuationEngine from './continuationEngine.js';
-import stCommandBridge from './stCommandBridge.js';
-
+// modules/uiManager.js - 对齐Cola插件的UI写法，用ST全局API零报错
 class UIManager {
     constructor() {
         this.container = null;
-        this.context = null;
     }
 
-    // 渲染面板（和Cola插件同款渲染逻辑）
-    render(container, context) {
+    // 获取ST全局API（和Cola插件一致）
+    get ST() {
+        return window.SillyTavern;
+    }
+
+    // 获取插件全局模块
+    get plugin() {
+        return window.STNovelPlugin;
+    }
+
+    // 渲染面板
+    render(container) {
+        if (!container) return;
         this.container = container;
-        this.context = context;
-        const { toaster } = context;
-        const novels = storageManager.getAllNovels();
-        const currentNovel = storageManager.getCurrentNovel();
-        const currentChapter = storageManager.getCurrentChapter();
+        const { storageManager, chapterSplitter, knowledgeGraph, continuationEngine, stCommandBridge } = this.plugin;
+        const { toaster } = this.ST;
 
         // 清空容器
         container.innerHTML = '';
 
-        // 构建面板内容
+        // 基础数据
+        const novels = storageManager.getAllNovels();
+        const currentNovel = storageManager.getCurrentNovel();
+        const currentChapter = storageManager.getCurrentChapter();
+
+        // 面板容器
         const wrapper = document.createElement('div');
-        wrapper.className = 'novel-continuation-wrapper';
+        wrapper.className = 'novel-continuation-panel';
         wrapper.style.cssText = 'padding: 12px; height: 100%; overflow-y: auto; box-sizing: border-box;';
 
         // 标题
@@ -43,6 +49,7 @@ class UIManager {
         const importBtn = this.createButton('导入并拆分章节', 'primary');
         importBtn.style.width = '100%';
 
+        // 导入事件
         importBtn.addEventListener('click', async () => {
             const file = fileInput.files[0];
             if (!file) return toaster.show('请先选择小说文件', 'error');
@@ -51,7 +58,7 @@ class UIManager {
                 const result = await chapterSplitter.handleFileUpload(file);
                 toaster.show(`导入成功！共拆分${result.chapterCount}个章节`, 'success');
                 storageManager.setCurrentNovel(result.novelId);
-                this.render(container, context);
+                this.render(container);
             } catch (error) {
                 toaster.show(`导入失败：${error.message}`, 'error');
             }
@@ -76,7 +83,7 @@ class UIManager {
                 `;
                 novelItem.addEventListener('click', () => {
                     storageManager.setCurrentNovel(novel.id);
-                    this.render(container, context);
+                    this.render(container);
                 });
                 novelList.appendChild(novelItem);
             });
@@ -91,7 +98,7 @@ class UIManager {
                     if (confirm(`确定要删除《${currentNovel.title}》吗？此操作不可恢复！`)) {
                         storageManager.deleteNovel(currentNovel.id);
                         toaster.show('删除成功', 'success');
-                        this.render(container, context);
+                        this.render(container);
                     }
                 });
                 novelSection.appendChild(deleteBtn);
@@ -112,7 +119,7 @@ class UIManager {
                 chapterItem.innerHTML = `<span style="font-weight: 500; font-size: 14px;">${chapter.title}</span>`;
                 chapterItem.addEventListener('click', () => {
                     storageManager.setCurrentChapter(chapter.id);
-                    this.render(container, context);
+                    this.render(container);
                 });
                 chapterList.appendChild(chapterItem);
             });
@@ -130,7 +137,7 @@ class UIManager {
             // 导入到输入框
             const importInputBtn = this.createButton('导入到输入框');
             importInputBtn.addEventListener('click', () => {
-                stCommandBridge.importToInput(currentChapter.content, context);
+                stCommandBridge.importToInput(currentChapter.content);
                 toaster.show('已导入到输入框', 'success');
             });
 
@@ -138,7 +145,7 @@ class UIManager {
             const sendAsCharBtn = this.createButton('以角色发送');
             sendAsCharBtn.addEventListener('click', async () => {
                 try {
-                    await stCommandBridge.sendAsChar(currentChapter.content, context);
+                    await stCommandBridge.sendAsChar(currentChapter.content);
                     toaster.show('已以角色身份发送', 'success');
                 } catch (e) {
                     toaster.show(`发送失败：${e.message}`, 'error');
@@ -149,18 +156,18 @@ class UIManager {
             const sendAsContextBtn = this.createButton('发送为上下文');
             sendAsContextBtn.addEventListener('click', async () => {
                 try {
-                    await stCommandBridge.sendAsContext(currentChapter.content, context);
+                    await stCommandBridge.sendAsContext(currentChapter.content);
                     toaster.show('已发送为上下文', 'success');
                 } catch (e) {
                     toaster.show(`发送失败：${e.message}`, 'error');
                 }
             });
 
-            // 角色输入命令
+            // 您指定的角色输入命令
             const charInputBtn = this.createButton('角色输入命令');
             charInputBtn.addEventListener('click', async () => {
                 try {
-                    await stCommandBridge.executeCharInputCommand(context);
+                    await stCommandBridge.executeCharInputCommand();
                 } catch (e) {
                     toaster.show(`执行失败：${e.message}`, 'error');
                 }
@@ -190,9 +197,9 @@ class UIManager {
             analyzeBtn.addEventListener('click', async () => {
                 try {
                     toaster.show('正在分析章节，生成知识图谱...', 'info');
-                    await knowledgeGraph.analyzeChapter(currentNovel.id, currentChapter.id, currentChapter.content, context);
+                    await knowledgeGraph.analyzeChapter(currentNovel.id, currentChapter.id, currentChapter.content);
                     toaster.show('章节分析完成', 'success');
-                    this.render(container, context);
+                    this.render(container);
                 } catch (e) {
                     toaster.show(`分析失败：${e.message}`, 'error');
                 }
@@ -202,9 +209,9 @@ class UIManager {
             mergeBtn.addEventListener('click', async () => {
                 try {
                     toaster.show('正在合并全本知识图谱...', 'info');
-                    await knowledgeGraph.mergeNovelGraphs(currentNovel.id, context);
+                    await knowledgeGraph.mergeNovelGraphs(currentNovel.id);
                     toaster.show('全本图谱合并完成', 'success');
-                    this.render(container, context);
+                    this.render(container);
                 } catch (e) {
                     toaster.show(`合并失败：${e.message}`, 'error');
                 }
@@ -213,6 +220,7 @@ class UIManager {
             graphBtnGrid.append(analyzeBtn, mergeBtn);
             graphSection.appendChild(graphBtnGrid);
 
+            // 图谱预览
             const graphPreview = document.createElement('div');
             graphPreview.style.cssText = 'max-height: 150px; overflow-y: auto; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--input-bg-color); font-size: 13px;';
             const hasChapterGraph = storageManager.getChapterGraph(currentNovel.id, currentChapter.id);
@@ -250,10 +258,10 @@ class UIManager {
                 const wordCount = parseInt(wordCountInput.value) || 1000;
                 try {
                     toaster.show(`正在续写章节，约${wordCount}字...`, 'info');
-                    const result = await continuationEngine.continueSingleChapter(currentNovel.id, currentChapter.id, wordCount, context);
+                    const result = await continuationEngine.continueSingleChapter(currentNovel.id, currentChapter.id, wordCount);
                     toaster.show('续写完成', 'success');
                     resultPreview.innerHTML = `<pre style="white-space: pre-wrap; margin: 0; font-size: 13px;">${result}</pre>`;
-                    stCommandBridge.importToInput(result, context);
+                    stCommandBridge.importToInput(result);
                 } catch (e) {
                     toaster.show(`续写失败：${e.message}`, 'error');
                 }
@@ -264,10 +272,10 @@ class UIManager {
                 const wordCount = parseInt(wordCountInput.value) || 2000;
                 try {
                     toaster.show(`正在续写下一章，约${wordCount}字...`, 'info');
-                    const result = await continuationEngine.continueNextChapter(currentNovel.id, wordCount, context);
+                    const result = await continuationEngine.continueNextChapter(currentNovel.id, wordCount);
                     toaster.show(`下一章续写完成，已自动添加到章节列表`, 'success');
                     resultPreview.innerHTML = `<pre style="white-space: pre-wrap; margin: 0; font-size: 13px;">${result.content}</pre>`;
-                    this.render(container, context);
+                    this.render(container);
                 } catch (e) {
                     toaster.show(`续写失败：${e.message}`, 'error');
                 }
