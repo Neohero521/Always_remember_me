@@ -1,0 +1,160 @@
+/* 面板基础样式 */
+.novel-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  max-height: 80vh;
+  background: var(--SmartTheme-bodyColor);
+  border: 1px solid var(--SmartTheme-borderColor);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.novel-panel.hidden {
+  display: none !important;
+}
+
+/* 面板头部 */
+.novel-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--SmartTheme-borderColor);
+}
+
+.novel-panel-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+#novel-panel-close {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+/* 面板内容 */
+.novel-panel-content {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+}
+
+/* 上传区域 */
+.novel-upload-area {
+  padding: 20px;
+  border: 2px dashed var(--SmartTheme-borderColor);
+  border-radius: 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+}
+
+.novel-upload-area p {
+  margin: 0;
+  color: var(--SmartTheme-mutedTextColor);
+}
+
+#novel-file-upload {
+  display: none;
+}
+
+/* 章节区域 */
+.novel-chapter-area {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chapter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chapter-header h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.chapter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chapter-actions .menu_button.primary {
+  background: var(--SmartTheme-emphasisColor);
+  color: white;
+  border: none;
+}
+
+/* 章节列表 */
+.chapter-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--SmartTheme-borderColor);
+  border-radius: 6px;
+}
+
+.chapter-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--SmartTheme-borderColor);
+}
+
+.chapter-item:last-child {
+  border-bottom: none;
+}
+
+.chapter-title {
+  flex: 1;
+  margin: 0;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chapter-length {
+  font-size: 12px;
+  color: var(--SmartTheme-mutedTextColor);
+  min-width: 50px;
+  text-align: right;
+}
+
+.empty-tip {
+  padding: 20px;
+  text-align: center;
+  color: var(--SmartTheme-mutedTextColor);
+  margin: 0;
+}
+
+/* 侧边栏按钮 */
+#novel-continuation-button {
+  margin: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+#novel-continuation-button:hover {
+  background: var(--SmartTheme-hoverColor);
+}
