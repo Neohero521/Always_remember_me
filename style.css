@@ -1,32 +1,110 @@
-/* style.css */
-.novel-continuation-panel .menu_button {
-    padding: 6px 12px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.2s ease;
+.novel-continuation-panel {
+  padding: 10px;
+  height: 100%;
+  overflow-y: auto;
 }
 
-.novel-continuation-panel .menu_button:hover {
-    opacity: 0.9;
-    transform: translateY(-1px);
+.panel-section {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: var(--block-bg);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
 }
 
-.novel-continuation-panel .menu_button.danger {
-    background-color: var(--danger-color);
-    color: white;
+.panel-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--text-normal);
+  font-size: 16px;
+  font-weight: 600;
 }
 
-.novel-continuation-panel .novel-item:hover,
-.novel-continuation-panel .chapter-item:hover {
-    background-color: var(--hover-bg-color) !important;
+.file-upload-area {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.novel-continuation-panel .panel-section {
-    transition: all 0.2s ease;
+.chapter-list-container {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--input-bg);
 }
 
-.novel-continuation-panel .panel-section:hover {
-    border-color: var(--primary-color) !important;
+.chapter-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.chapter-item {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chapter-item:last-child {
+  border-bottom: none;
+}
+
+.chapter-item.selected {
+  background: var(--highlight-bg);
+  border-left: 3px solid var(--accent);
+}
+
+.chapter-title {
+  font-size: 14px;
+  color: var(--text-normal);
+  font-weight: 500;
+  flex: 1;
+  min-width: 200px;
+}
+
+.chapter-actions {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.setting-row label {
+  color: var(--text-normal);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.graph-control-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .chapter-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .chapter-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .setting-row {
+    width: 100%;
+  }
+  .setting-row input, .setting-row select {
+    flex: 1;
+  }
 }
