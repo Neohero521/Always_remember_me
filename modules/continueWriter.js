@@ -1,4 +1,3 @@
-// ===================== 续写Prompt生成（完全复用原HTML人设锁定规则） =====================
 export function getContinuePrompt(options) {
     const {
         knowledgeGraph,
@@ -22,7 +21,6 @@ ${latestThreeChapters.join('\n\n')}
 请直接输出续写的正文内容：`;
 }
 
-// ===================== 魔改首次续写Prompt（完全复用原HTML规则） =====================
 export function getFirstContinuePrompt(options) {
     const {
         knowledgeGraph,
@@ -49,28 +47,22 @@ ${editContent}
 请直接输出续写的正文内容：`;
 }
 
-// ===================== 上下文获取规则（完全复用原HTML仅取最近3章逻辑） =====================
 export function getContinueContext(chapters, currentChapterId, generatedChapters, editContent) {
-    // 原章节列表（到当前选中章节为止）
     const originalChapterList = chapters
         .slice(0, currentChapterId + 1)
         .map(ch => ch.editContent.trim());
     
-    // 已生成的续写章节列表
     const continueChapterList = [editContent.trim(), ...generatedChapters];
     
-    // 合并后仅取最后3章，完全复用原规则
     const fullChapterList = [...originalChapterList, ...continueChapterList];
     return fullChapterList.slice(-3);
 }
 
-// ===================== 首次续写前置上下文规则（完全复用原HTML仅取前2章逻辑） =====================
 export function getFirstPreContext(chapters, currentChapterId, maxLength = 6000) {
     const preContextStart = Math.max(0, currentChapterId - 2);
     let preContext = '';
     for (let i = preContextStart; i < currentChapterId; i++) {
         preContext += `${chapters[i].title}\n${chapters[i].originalContent}\n\n`;
     }
-    // 超长截断，完全复用原规则
     return preContext.length > maxLength ? preContext.slice(-maxLength) : preContext;
 }
