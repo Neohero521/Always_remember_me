@@ -1,9 +1,8 @@
-// modules/knowledgeGraph.js
+// modules/knowledgeGraph.js - 100%遵循您的规则
 import storageManager from './storageManager.js';
 
 class KnowledgeGraph {
     constructor() {
-        // 单章节分析Prompt，100%遵循您的强制约束与字段要求
         this.analyzePromptTemplate = `
 请严格按照以下规则，对提供的小说章节文本进行分析，仅输出符合要求的纯JSON格式内容，绝对不能包含任何前置文本、后置说明、注释、markdown代码块、换行符以外的多余内容，必须以{开头，以}结尾。
 
@@ -24,7 +23,6 @@ class KnowledgeGraph {
 {{chapterContent}}
 `;
 
-        // 图谱合并Prompt，100%遵循您的强制约束与字段要求
         this.mergePromptTemplate = `
 请严格按照以下规则，对提供的多组小说章节知识图谱进行合并，仅输出符合要求的纯JSON格式内容，绝对不能包含任何前置文本、后置说明、注释、markdown代码块、换行符以外的多余内容，必须以{开头，以}结尾。
 
@@ -48,24 +46,17 @@ class KnowledgeGraph {
 `;
     }
 
-    // 调用ST当前连接的AI生成内容
-    async generateContent(prompt) {
-        if (!window.SillyTavern) throw new Error('SillyTavern API 不可用');
-        try {
-            const result = await window.SillyTavern.generateText(prompt, {
-                temperature: 0.3,
-                top_p: 0.8,
-                max_tokens: 4000,
-                frequency_penalty: 0.1,
-                presence_penalty: 0.1
-            });
-            return result.trim();
-        } catch (error) {
-            throw new Error(`AI生成失败: ${error.message}`);
-        }
+    async generateContent(prompt, context) {
+        const result = await context.llm.generate(prompt, {
+            temperature: 0.3,
+            top_p: 0.8,
+            max_tokens: 4000,
+            frequency_penalty: 0.1,
+            presence_penalty: 0.1
+        });
+        return result.trim();
     }
 
-    // 解析AI返回的JSON，处理可能的格式包裹
     parseJsonResponse(response) {
         let jsonStr = response.replace(/^```json\s*/, '').replace(/\s*```$/, '').trim();
         const jsonMatch = jsonStr.match(/^\{[\s\S]*\}$/);
@@ -73,24 +64,22 @@ class KnowledgeGraph {
         return JSON.parse(jsonMatch[0]);
     }
 
-    // 分析单章节生成知识图谱
-    async analyzeChapter(novelId, chapterId, chapterContent) {
+    async analyzeChapter(novelId, chapterId, chapterContent, context) {
         if (!chapterContent) throw new Error('章节内容不能为空');
         const prompt = this.analyzePromptTemplate.replace('{{chapterContent}}', chapterContent);
-        const response = await this.generateContent(prompt);
+        const response = await this.generateContent(prompt, context);
         const graph = this.parseJsonResponse(response);
         storageManager.saveChapterGraph(novelId, chapterId, graph);
         return graph;
     }
 
-    // 合并全本章节图谱
-    async mergeNovelGraphs(novelId) {
+    async mergeNovelGraphs(novelId, context) {
         const graphs = storageManager.getNovelAllGraphs(novelId);
         const graphList = Object.values(graphs).filter(g => g && !g.merged);
         if (graphList.length === 0) throw new Error('没有可合并的章节知识图谱');
 
         const prompt = this.mergePromptTemplate.replace('{{graphsJson}}', JSON.stringify(graphList, null, 2));
-        const response = await this.generateContent(prompt);
+        const response = await this.generateContent(prompt, context);
         const mergedGraph = this.parseJsonResponse(response);
         storageManager.saveMergedGraph(novelId, mergedGraph);
         return mergedGraph;
