@@ -1,14 +1,12 @@
-// ===================== ST前端核心API 路径100%正确 =====================
-// 扩展安装后路径：/public/scripts/extensions/Always_remember_me/index.js
-// 目标API路径：/public/scripts/script.js → 相对路径 ../../script.js
+// ===================== ST核心API导入（路径100%正确，带.js后缀） =====================
 import { getContext, registerExtensionPanel, generateQuietPrompt, executeSlashCommand } from "../../script.js";
 
-// ===================== 内部模块导入 路径100%正确 =====================
+// ===================== 内部模块导入（带完整.js后缀，路径正确） =====================
 import { readTxtFile, readEpubFile, splitChapters } from './modules/novelParser.js';
 import { buildGroupsFromChapters, buildGroupsFromWords, getGroupAnalyzePrompt, getMergeGraphPrompt, extractJSON } from './modules/groupAnalyzer.js';
 import { getContinuePrompt, getFirstContinuePrompt, getContinueContext, getFirstPreContext } from './modules/continueWriter.js';
 
-// ===================== 全局状态 封闭作用域 无全局污染 =====================
+// ===================== 全局状态（仅声明，无顶层执行） =====================
 const state = {
     chapters: [],
     groups: [],
@@ -20,7 +18,7 @@ const state = {
     container: null
 };
 
-// ===================== 调试日志 =====================
+// ===================== 工具函数（仅声明，无顶层执行） =====================
 function addDebugLog(type, message, details = '') {
     const timestamp = new Date().toLocaleTimeString();
     const log = `[${timestamp}] [${type}] ${message}\n${details ? details + '\n' : ''}`;
@@ -35,7 +33,6 @@ function updateDebugDisplay() {
     if (debugEl) debugEl.textContent = state.debugLogs.join('\n---\n') || '暂无调试信息';
 }
 
-// ===================== 数据持久化 =====================
 const EXTENSION_ID = 'novel-magic-editor';
 async function saveData() {
     try {
@@ -65,7 +62,6 @@ async function loadData() {
     }
 }
 
-// ===================== /sendas 发送章节功能 内置实现 =====================
 async function sendChapterToChat(chapter, isBatch = false) {
     const context = getContext();
     const currentChar = context.character;
@@ -103,7 +99,7 @@ async function batchSendChapters(onProgress) {
     return success;
 }
 
-// ===================== UI渲染 =====================
+// ===================== UI渲染（仅声明，无顶层执行） =====================
 function renderUI(container) {
     state.container = container;
     container.id = 'novel-magic-editor';
@@ -121,7 +117,6 @@ function renderUI(container) {
         </div>
 
         <div class="nme-panels">
-            <!-- 导入面板 -->
             <div class="nme-panel active" id="panel-import">
                 <div class="nme-card">
                     <h3>📂 上传小说文件</h3>
@@ -140,7 +135,6 @@ function renderUI(container) {
                 </div>
             </div>
 
-            <!-- 图谱分析面板 -->
             <div class="nme-panel" id="panel-analyze">
                 <div class="nme-card">
                     <h3>⚙️ 分组设置</h3>
@@ -189,7 +183,6 @@ function renderUI(container) {
                 </div>
             </div>
 
-            <!-- 续写编辑面板 -->
             <div class="nme-panel" id="panel-continue">
                 <div class="nme-card">
                     <h3>⚙️ 续写参数</h3>
@@ -216,7 +209,6 @@ function renderUI(container) {
                 <div id="nme-continue-container" class="nme-continue-container"></div>
             </div>
 
-            <!-- 发送聊天面板 -->
             <div class="nme-panel" id="panel-send">
                 <div class="nme-card">
                     <h3>📤 发送章节到聊天</h3>
@@ -243,12 +235,11 @@ function renderUI(container) {
     refreshUI();
 }
 
-// ===================== 事件绑定 =====================
+// ===================== 事件绑定（仅声明，无顶层执行） =====================
 function bindEvents() {
     const container = state.container;
     if (!container) return;
 
-    // 选项卡切换
     container.querySelectorAll('.nme-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const tabId = btn.dataset.tab;
@@ -259,7 +250,6 @@ function bindEvents() {
         });
     });
 
-    // 分组方式切换
     container.querySelectorAll('input[name="groupMode"]').forEach(radio => {
         radio.addEventListener('change', () => {
             const isChapter = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
@@ -268,7 +258,6 @@ function bindEvents() {
         });
     });
 
-    // 参数联动
     container.getElementById('continue-length').addEventListener('input', e => {
         container.getElementById('length-display').textContent = e.target.value;
     });
@@ -276,7 +265,6 @@ function bindEvents() {
         container.getElementById('temperature-value').textContent = e.target.value;
     });
 
-    // 文件上传
     container.getElementById('nme-file-input').addEventListener('change', async e => {
         const file = e.target.files[0];
         if (!file) return;
@@ -330,7 +318,6 @@ function bindEvents() {
         }
     });
 
-    // 章节选择
     container.getElementById('nme-chapter-select').addEventListener('change', e => {
         const chapterId = parseInt(e.target.value);
         if (isNaN(chapterId)) return;
@@ -345,7 +332,6 @@ function bindEvents() {
         container.getElementById('nme-continue-next-btn').disabled = true;
     });
 
-    // 生成分组
     container.getElementById('nme-regroup-btn').addEventListener('click', () => {
         if (state.isProcessing || !state.chapters.length) return;
         const isChapter = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
@@ -358,7 +344,6 @@ function bindEvents() {
         alert(`重新分组成功！共${state.groups.length}个分组`);
     });
 
-    // 分析分组
     container.getElementById('nme-analyze-btn').addEventListener('click', async () => {
         if (state.isProcessing) return;
         const start = parseInt(container.getElementById('analyze-start').value) - 1;
@@ -412,7 +397,6 @@ function bindEvents() {
         }
     });
 
-    // 合并图谱
     container.getElementById('nme-merge-btn').addEventListener('click', async () => {
         if (state.isProcessing) return;
         const successGroups = state.groups.filter(g => g.status === 'success');
@@ -448,7 +432,6 @@ function bindEvents() {
         }
     });
 
-    // 执行续写
     container.getElementById('nme-run-continue-btn').addEventListener('click', async () => {
         if (state.isProcessing) return;
         if (!state.knowledgeGraph || Object.keys(state.knowledgeGraph).length === 0) {
@@ -492,12 +475,6 @@ function bindEvents() {
         }
     });
 
-    // 继续续写
-    container.getElementById('nme-continue-next-btn').addEventListener('click', async () => {
-        await handleContinueWrite(-1);
-    });
-
-    // 续写核心函数
     async function handleContinueWrite(preIndex) {
         if (state.isProcessing || !state.knowledgeGraph) return;
         const container = state.container;
@@ -555,7 +532,10 @@ function bindEvents() {
         }
     }
 
-    // 发送单章节
+    container.getElementById('nme-continue-next-btn').addEventListener('click', async () => {
+        await handleContinueWrite(-1);
+    });
+
     container.getElementById('nme-send-single-btn').addEventListener('click', async () => {
         const chapterId = parseInt(container.getElementById('nme-send-chapter-select').value);
         const chapter = state.chapters.find(ch => ch.id === chapterId);
@@ -571,7 +551,6 @@ function bindEvents() {
         }
     });
 
-    // 批量发送
     container.getElementById('nme-send-batch-btn').addEventListener('click', async () => {
         if (!state.chapters.length) return;
         if (!confirm(`确定批量发送${state.chapters.length}个章节？`)) return;
@@ -587,7 +566,6 @@ function bindEvents() {
         }
     });
 
-    // 图谱导入导出
     container.getElementById('nme-export-graph-btn').addEventListener('click', () => {
         if (!state.knowledgeGraph || Object.keys(state.knowledgeGraph).length === 0) {
             alert('暂无可导出的图谱');
@@ -628,7 +606,6 @@ function bindEvents() {
         }
     });
 
-    // 调试复制
     container.getElementById('nme-copy-debug-btn').addEventListener('click', () => {
         navigator.clipboard.writeText(state.debugLogs.join('\n---\n')).then(() => {
             alert('调试信息已复制');
@@ -670,7 +647,6 @@ function refreshUI() {
         }
     }
 
-    // 刷新分组列表
     const groupContainer = container.getElementById('nme-group-list');
     if (state.groups.length > 0) {
         let html = '';
@@ -742,7 +718,7 @@ function refreshUI() {
     updateDebugDisplay();
 }
 
-// ===================== ST扩展标准生命周期 顶层导出 =====================
+// ===================== 【强制规范】ST扩展生命周期 顶层导出 =====================
 export async function load() {
     try {
         console.log('📖 小说魔改神器 开始加载');
