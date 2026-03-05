@@ -1,4 +1,3 @@
-// ===================== 编码识别与评分（完全复用原HTML逻辑） =====================
 export function scoreDecodedString(str) {
     if (!str || str.length === 0) return -Infinity;
     let chinese = 0, asciiLetter = 0, digit = 0, punctuation = 0, replacement = 0;
@@ -6,17 +5,11 @@ export function scoreDecodedString(str) {
     for (let i = 0; i < total; i++) {
         const c = str[i];
         const code = str.charCodeAt(i);
-        if (c === '�') {
-            replacement++;
-        } else if (code >= 0x4e00 && code <= 0x9fff) {
-            chinese++;
-        } else if ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) {
-            asciiLetter++;
-        } else if (code >= 0x30 && code <= 0x39) {
-            digit++;
-        } else if ('.。,，!！?？:：;；"“”‘\''.includes(c)) {
-            punctuation++;
-        }
+        if (c === '�') replacement++;
+        else if (code >= 0x4e00 && code <= 0x9fff) chinese++;
+        else if ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) asciiLetter++;
+        else if (code >= 0x30 && code <= 0x39) digit++;
+        else if ('.。,，!！?？:：;；"“”‘\''.includes(c)) punctuation++;
     }
     return chinese * 3 + asciiLetter + digit + punctuation - replacement * 20;
 }
@@ -38,11 +31,9 @@ export function detectBestEncoding(buffer) {
             }
         } catch (e) {}
     }
-    if (bestScore < 0) return 'utf-8';
-    return bestEncoding;
+    return bestScore < 0 ? 'utf-8' : bestEncoding;
 }
 
-// ===================== 小说内容预处理（完全复用原规则） =====================
 export function preprocessNovelContent(content) {
     if (!content) return '';
     content = content.replace(/^\uFEFF/, '');
@@ -57,7 +48,6 @@ export function preprocessNovelContent(content) {
     return content.trim();
 }
 
-// ===================== TXT文件读取（完全复用原逻辑） =====================
 export async function readTxtFile(file) {
     return new Promise((resolve, reject) => {
         if (file.size > 50 * 1024 * 1024) {
@@ -97,15 +87,10 @@ export async function readTxtFile(file) {
     });
 }
 
-// ===================== EPUB文件读取（完全复用原逻辑） =====================
 export async function readEpubFile(file) {
     return new Promise((resolve, reject) => {
         if (file.size > 100 * 1024 * 1024) {
             reject(new Error('文件过大，请上传小于100MB的EPUB文件'));
-            return;
-        }
-        if (typeof ePub === 'undefined') {
-            reject(new Error('EPUB解析库加载失败，请刷新页面重试'));
             return;
         }
         const url = URL.createObjectURL(file);
@@ -136,7 +121,6 @@ export async function readEpubFile(file) {
     });
 }
 
-// ===================== 章节拆分（100%复用原HTML正则与逻辑） =====================
 export function splitChapters(novelContent) {
     if (!novelContent.trim()) throw new Error('小说内容为空');
     const patterns = [
