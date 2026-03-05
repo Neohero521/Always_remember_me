@@ -1,9 +1,10 @@
-// ===================== 【修复】ST API正确导入路径 =====================
+// ===================== 【已修复】ST API导入路径（深一层目录，多一个../） =====================
+// 路径：/scripts/extensions/Always_remember_me/modules/chatSender.js
+// 目标：/scripts/script.js → 相对路径 ../../../script.js
 import { getContext, executeSlashCommand } from "../../../script.js";
 
-// ===================== 单章节发送到聊天（严格遵循/sendas格式） =====================
+// ===================== 单章节发送（严格遵循/sendas格式） =====================
 export async function sendChapterToChat(chapter, isBatch = false) {
-    // 获取当前聊天角色
     const context = getContext();
     const currentChar = context.character;
     if (!currentChar || !currentChar.name) {
@@ -12,25 +13,19 @@ export async function sendChapterToChat(chapter, isBatch = false) {
     if (!chapter || !chapter.fullContent.trim()) {
         throw new Error('章节内容为空');
     }
-
     try {
-        // 严格遵循格式：/sendas name="{{char}}" 内容
         const charName = currentChar.name.replace(/"/g, '\\"');
-        // 超长章节自动拆分（单条消息不超过4000字，避免上下文超限）
         const maxLength = 4000;
         const content = chapter.fullContent;
         const chunks = [];
         for (let i = 0; i < content.length; i += maxLength) {
             chunks.push(content.slice(i, i + maxLength));
         }
-
-        // 逐块执行/sendas命令
         for (let idx = 0; idx < chunks.length; idx++) {
             const chunk = chunks[idx];
             const chunkTitle = chunks.length > 1 ? `${chapter.title} (${idx+1}/${chunks.length})` : chapter.title;
             const command = `/sendas name="${charName}" ${chunkTitle}\n\n${chunk}`;
             await executeSlashCommand(command);
-            // 批量发送加延迟，避免触发限流
             if (isBatch || chunks.length > 1) {
                 await new Promise(r => setTimeout(r, 800));
             }
