@@ -1,16 +1,18 @@
-// ===================== ST原生API导入 =====================
-import { getContext, registerExtensionPanel, generateQuietPrompt } from "../../../script.js";
-import { executeSlashCommand } from "../../../slash-commands.js";
+// ===================== 【修复】ST核心API正确导入路径 =====================
+// 插件安装后路径：/scripts/extensions/Always_remember_me/index.js
+// 目标文件路径：/scripts/script.js  相对路径为 ../../script.js
+import { getContext, registerExtensionPanel, generateQuietPrompt } from "../../script.js";
+import { executeSlashCommand } from "../../slash-commands.js";
 
 // ===================== 模块导入 =====================
 import { readTxtFile, readEpubFile, splitChapters } from './modules/novelParser.js';
 import { buildGroupsFromChapters, buildGroupsFromWords, getGroupAnalyzePrompt, getMergeGraphPrompt, extractJSON } from './modules/groupAnalyzer.js';
 import { getContinuePrompt, getFirstContinuePrompt, getContinueContext, getFirstPreContext } from './modules/continueWriter.js';
 import { sendChapterToChat, batchSendAllChapters } from './modules/chatSender.js';
-import { savePluginData, loadPluginData } from './modules/storage.js';
+import { savePluginData, loadPluginData, clearPluginData } from './modules/storage.js';
 
-// ===================== 全局状态管理 =====================
-window.novelMagicEditor = {
+// ===================== 全局状态管理（封闭作用域，避免全局污染） =====================
+const state = {
     chapters: [],
     groups: [],
     knowledgeGraph: {},
@@ -18,6 +20,8 @@ window.novelMagicEditor = {
     isProcessing: false,
     generatedChapters: [],
     debugLogs: [],
+    isEpubLibLoaded: false,
+    container: null,
     // 调试日志
     addDebugLog(type, message, details = '') {
         const timestamp = new Date().toLocaleTimeString();
@@ -27,35 +31,41 @@ window.novelMagicEditor = {
         this.updateDebugDisplay();
     },
     updateDebugDisplay() {
-        const debugEl = document.querySelector('#novel-magic-editor #debugContent');
-        if (debugEl) {
-            debugEl.textContent = this.debugLogs.join('\n---\n') || '暂无调试信息';
-        }
+        if (!this.container) return;
+        const debugEl = this.container.querySelector('#debugContent');
+        if (debugEl) debugEl.textContent = this.debugLogs.join('\n---\n') || '暂无调试信息';
     }
 };
 
-// ===================== 插件生命周期：初始化 =====================
-async function initPlugin() {
-    console.log('📖 小说魔改神器插件初始化');
-    // 动态加载EPUB解析库
-    if (typeof ePub === 'undefined') {
+// ===================== 【修复】EPUB库加载（增加完整错误捕获） =====================
+async function loadEpubLib() {
+    if (state.isEpubLibLoaded || typeof ePub !== 'undefined') {
+        state.isEpubLibLoaded = true;
+        return true;
+    }
+    return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js';
         script.async = false;
+        script.crossOrigin = 'anonymous';
+        // 加载成功
+        script.onload = () => {
+            state.isEpubLibLoaded = true;
+            state.addDebugLog('初始化', 'EPUB解析库加载成功');
+            resolve(true);
+        };
+        // 【修复】加载失败捕获，避免未捕获错误导致插件崩溃
+        script.onerror = (err) => {
+            state.addDebugLog('初始化', 'EPUB解析库加载失败', '仅支持TXT文件上传');
+            resolve(false);
+        };
         document.head.appendChild(script);
-        await new Promise((resolve) => {
-            script.onload = resolve;
-        });
-    }
-    // 加载持久化数据
-    const savedData = await loadPluginData();
-    if (savedData) {
-        Object.assign(window.novelMagicEditor, savedData);
-    }
+    });
 }
 
-// ===================== 插件UI渲染 =====================
+// ===================== 【修复】UI渲染（仅在ST面板onRender回调中执行，确保容器存在） =====================
 function renderPluginUI(container) {
+    state.container = container;
     container.id = 'novel-magic-editor';
     container.innerHTML = `
         <div class="nme-header">
@@ -201,51 +211,52 @@ function renderPluginUI(container) {
         </div>
     `;
 
-    // 绑定所有事件
+    // 绑定事件
     bindEvents();
     // 刷新UI数据
     refreshUIData();
 }
 
-// ===================== 事件绑定 =====================
+// ===================== 事件绑定（封闭作用域，避免全局污染） =====================
 function bindEvents() {
-    const editor = window.novelMagicEditor;
+    const container = state.container;
+    if (!container) return;
+
     // 选项卡切换
-    document.querySelectorAll('.nme-tab-btn').forEach(btn => {
+    container.querySelectorAll('.nme-tab-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const tabId = btn.dataset.tab;
-            // 切换激活状态
-            document.querySelectorAll('.nme-tab-btn').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.nme-panel').forEach(p => p.classList.remove('active'));
+            container.querySelectorAll('.nme-tab-btn').forEach(b => b.classList.remove('active'));
+            container.querySelectorAll('.nme-panel').forEach(p => p.classList.remove('active'));
             btn.classList.add('active');
-            document.getElementById(`panel-${tabId}`).classList.add('active');
+            container.getElementById(`panel-${tabId}`).classList.add('active');
         });
     });
 
     // 分组方式切换
-    document.querySelectorAll('input[name="groupMode"]').forEach(radio => {
+    container.querySelectorAll('input[name="groupMode"]').forEach(radio => {
         radio.addEventListener('change', () => {
-            const isChapterMode = document.querySelector('input[name="groupMode"][value="chapter"]').checked;
-            document.getElementById('chapter-group-setting').classList.toggle('hidden', !isChapterMode);
-            document.getElementById('word-group-setting').classList.toggle('hidden', isChapterMode);
+            const isChapterMode = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
+            container.getElementById('chapter-group-setting').classList.toggle('hidden', !isChapterMode);
+            container.getElementById('word-group-setting').classList.toggle('hidden', isChapterMode);
         });
     });
 
     // 参数联动
-    document.getElementById('continue-length').addEventListener('input', (e) => {
-        document.getElementById('length-display').textContent = e.target.value;
+    container.getElementById('continue-length').addEventListener('input', (e) => {
+        container.getElementById('length-display').textContent = e.target.value;
     });
-    document.getElementById('temperature').addEventListener('input', (e) => {
-        document.getElementById('temperature-value').textContent = e.target.value;
+    container.getElementById('temperature').addEventListener('input', (e) => {
+        container.getElementById('temperature-value').textContent = e.target.value;
     });
 
     // 文件上传
-    document.getElementById('nme-file-input').addEventListener('change', async (e) => {
+    container.getElementById('nme-file-input').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-        editor.isProcessing = true;
-        const fileInput = document.getElementById('nme-file-input');
-        const statusEl = document.getElementById('nme-upload-status');
+        state.isProcessing = true;
+        const fileInput = container.getElementById('nme-file-input');
+        const statusEl = container.getElementById('nme-upload-status');
         fileInput.disabled = true;
         try {
             statusEl.textContent = '正在读取小说文件...';
@@ -253,6 +264,9 @@ function bindEvents() {
             if (file.name.toLowerCase().endsWith('.txt')) {
                 novelContent = await readTxtFile(file);
             } else if (file.name.toLowerCase().endsWith('.epub')) {
+                if (!state.isEpubLibLoaded) {
+                    throw new Error('EPUB解析库未加载成功，请刷新页面重试，或使用TXT格式');
+                }
                 novelContent = await readEpubFile(file);
             } else {
                 throw new Error('仅支持TXT和EPUB格式');
@@ -261,107 +275,108 @@ function bindEvents() {
             
             statusEl.textContent = '正在拆分章节...';
             const chapters = splitChapters(novelContent);
-            editor.chapters = chapters;
-            editor.currentChapterId = 0;
-            editor.generatedChapters = [];
-            editor.knowledgeGraph = {};
+            state.chapters = chapters;
+            state.currentChapterId = 0;
+            state.generatedChapters = [];
+            state.knowledgeGraph = {};
 
             // 自动生成分组
-            const isChapterMode = document.querySelector('input[name="groupMode"][value="chapter"]').checked;
+            const isChapterMode = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
             if (isChapterMode) {
-                const groupSize = parseInt(document.getElementById('group-chapter-size').value);
-                editor.groups = buildGroupsFromChapters(chapters, groupSize);
+                const groupSize = parseInt(container.getElementById('group-chapter-size').value);
+                state.groups = buildGroupsFromChapters(chapters, groupSize);
             } else {
-                const wordSize = parseInt(document.getElementById('group-word-size').value);
-                editor.groups = buildGroupsFromWords(chapters, wordSize);
+                const wordSize = parseInt(container.getElementById('group-word-size').value);
+                state.groups = buildGroupsFromWords(chapters, wordSize);
             }
 
             // 刷新UI
             refreshUIData();
-            await savePluginData(editor);
-            statusEl.textContent = `✅ 加载完成，共 ${chapters.length} 章，${editor.groups.length} 个分组`;
+            await savePluginData(state);
+            statusEl.textContent = `✅ 加载完成，共 ${chapters.length} 章，${state.groups.length} 个分组`;
         } catch (err) {
             statusEl.textContent = `❌ ${err.message}`;
-            editor.addDebugLog('文件读取失败', err.message);
+            state.addDebugLog('文件读取失败', err.message);
             console.error(err);
         } finally {
-            editor.isProcessing = false;
+            state.isProcessing = false;
             fileInput.disabled = false;
         }
     });
 
     // 章节选择切换
-    document.getElementById('nme-chapter-select').addEventListener('change', (e) => {
+    container.getElementById('nme-chapter-select').addEventListener('change', (e) => {
         const chapterId = parseInt(e.target.value);
         if (isNaN(chapterId)) return;
-        const chapter = editor.chapters.find(ch => ch.id === chapterId);
+        const chapter = state.chapters.find(ch => ch.id === chapterId);
         if (!chapter) return;
-        editor.currentChapterId = chapterId;
-        document.getElementById('nme-original-content').value = chapter.fullContent;
-        document.getElementById('nme-edit-content').value = chapter.editContent;
+        state.currentChapterId = chapterId;
+        container.getElementById('nme-original-content').value = chapter.fullContent;
+        container.getElementById('nme-edit-content').value = chapter.editContent;
         // 重置续写区域
-        document.getElementById('nme-result-content').value = '';
-        document.getElementById('nme-continue-container').innerHTML = '';
-        editor.generatedChapters = [];
-        document.getElementById('nme-continue-next-btn').disabled = true;
+        container.getElementById('nme-result-content').value = '';
+        container.getElementById('nme-continue-container').innerHTML = '';
+        state.generatedChapters = [];
+        container.getElementById('nme-continue-next-btn').disabled = true;
     });
 
     // 生成分组按钮
-    document.getElementById('nme-regroup-btn').addEventListener('click', () => {
-        if (editor.isProcessing) {
+    container.getElementById('nme-regroup-btn').addEventListener('click', () => {
+        if (state.isProcessing) {
             alert('正在处理任务中，请稍候');
             return;
         }
-        if (!editor.chapters.length) {
+        if (!state.chapters.length) {
             alert('请先上传小说');
             return;
         }
-        const isChapterMode = document.querySelector('input[name="groupMode"][value="chapter"]').checked;
+        const isChapterMode = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
         let groups = [];
         if (isChapterMode) {
-            const groupSize = parseInt(document.getElementById('group-chapter-size').value);
-            groups = buildGroupsFromChapters(editor.chapters, groupSize);
+            const groupSize = parseInt(container.getElementById('group-chapter-size').value);
+            groups = buildGroupsFromChapters(state.chapters, groupSize);
         } else {
-            const wordSize = parseInt(document.getElementById('group-word-size').value);
-            groups = buildGroupsFromWords(editor.chapters, wordSize);
+            const wordSize = parseInt(container.getElementById('group-word-size').value);
+            groups = buildGroupsFromWords(state.chapters, wordSize);
         }
-        editor.groups = groups;
-        editor.knowledgeGraph = {};
-        document.getElementById('nme-graph-content').textContent = '请先分析分组并合并汇总图谱';
+        state.groups = groups;
+        state.knowledgeGraph = {};
+        container.getElementById('nme-graph-content').textContent = '请先分析分组并合并汇总图谱';
         renderGroupList();
         alert(`重新分组成功！共生成${groups.length}个分组`);
     });
 
     // 分析分组按钮
-    document.getElementById('nme-analyze-btn').addEventListener('click', async () => {
-        if (editor.isProcessing) {
+    container.getElementById('nme-analyze-btn').addEventListener('click', async () => {
+        if (state.isProcessing) {
             alert('已有任务进行中，请稍候');
             return;
         }
-        const start = parseInt(document.getElementById('analyze-start').value) - 1;
-        const end = parseInt(document.getElementById('analyze-end').value) - 1;
-        if (isNaN(start) || isNaN(end) || start < 0 || end >= editor.groups.length || start > end) {
+        const start = parseInt(container.getElementById('analyze-start').value) - 1;
+        const end = parseInt(container.getElementById('analyze-end').value) - 1;
+        if (isNaN(start) || isNaN(end) || start < 0 || end >= state.groups.length || start > end) {
             alert('请设置正确的分析组范围');
             return;
         }
         const toAnalyze = [];
         for (let idx = start; idx <= end; idx++) {
-            if (editor.groups[idx].status !== 'success') toAnalyze.push(idx);
+            if (state.groups[idx].status !== 'success') toAnalyze.push(idx);
         }
         if (toAnalyze.length === 0) {
             alert('所选范围内所有分组均已成功分析');
             return;
         }
-        editor.isProcessing = true;
-        document.getElementById('nme-analyze-btn').disabled = true;
+        state.isProcessing = true;
+        const analyzeBtn = container.getElementById('nme-analyze-btn');
+        analyzeBtn.disabled = true;
         try {
             for (let idx of toAnalyze) {
-                if (editor.groups[idx].status === 'success') continue;
-                const group = editor.groups[idx];
-                const prompt = getGroupAnalyzePrompt(group, editor.chapters);
-                const temperature = parseFloat(document.getElementById('temperature').value);
+                if (state.groups[idx].status === 'success') continue;
+                const group = state.groups[idx];
+                const prompt = getGroupAnalyzePrompt(group, state.chapters);
+                const temperature = parseFloat(container.getElementById('temperature').value);
                 try {
-                    editor.addDebugLog('分组分析', `开始分析第${idx+1}组`);
+                    state.addDebugLog('分组分析', `开始分析第${idx+1}组`);
                     const result = await generateQuietPrompt(prompt, false, temperature, 4000);
                     const jsonStr = extractJSON(result);
                     const parsed = JSON.parse(jsonStr);
@@ -370,45 +385,45 @@ function bindEvents() {
                     group.status = 'success';
                     group.data = parsed;
                     group.error = null;
-                    editor.addDebugLog('分组分析', `第${idx+1}组分析成功`);
+                    state.addDebugLog('分组分析', `第${idx+1}组分析成功`);
                 } catch (err) {
                     group.status = 'failed';
                     group.error = err.message;
-                    editor.addDebugLog('分组分析', `第${idx+1}组分析失败`, err.message);
+                    state.addDebugLog('分组分析', `第${idx+1}组分析失败`, err.message);
                 }
                 renderGroupList();
                 await new Promise(r => setTimeout(r, 500));
             }
-            await savePluginData(editor);
+            await savePluginData(state);
             alert('分析完成！');
         } catch (err) {
-            editor.addDebugLog('批量分析失败', err.message);
+            state.addDebugLog('批量分析失败', err.message);
             alert(`分析失败：${err.message}`);
         } finally {
-            editor.isProcessing = false;
-            document.getElementById('nme-analyze-btn').disabled = false;
+            state.isProcessing = false;
+            analyzeBtn.disabled = false;
             renderGroupList();
         }
     });
 
     // 合并图谱按钮
-    document.getElementById('nme-merge-btn').addEventListener('click', async () => {
-        if (editor.isProcessing) {
+    container.getElementById('nme-merge-btn').addEventListener('click', async () => {
+        if (state.isProcessing) {
             alert('已有任务进行中，请稍候');
             return;
         }
-        const successGroups = editor.groups.filter(g => g.status === 'success');
+        const successGroups = state.groups.filter(g => g.status === 'success');
         if (successGroups.length === 0) {
             alert('没有成功分析的分组，请先分析至少一个分组');
             return;
         }
-        editor.isProcessing = true;
-        const mergeBtn = document.getElementById('nme-merge-btn');
+        state.isProcessing = true;
+        const mergeBtn = container.getElementById('nme-merge-btn');
         mergeBtn.disabled = true;
         mergeBtn.textContent = '合并中...';
         try {
             const prompt = getMergeGraphPrompt(successGroups);
-            const temperature = parseFloat(document.getElementById('temperature').value);
+            const temperature = parseFloat(container.getElementById('temperature').value);
             const result = await generateQuietPrompt(prompt, false, temperature, 8000);
             const jsonStr = extractJSON(result);
             let merged = JSON.parse(jsonStr);
@@ -418,32 +433,32 @@ function bindEvents() {
             });
             if (!Array.isArray(merged.人物信息)) merged.人物信息 = [];
             if (!Array.isArray(merged.实体关系网络)) merged.实体关系网络 = [];
-            editor.knowledgeGraph = merged;
-            document.getElementById('nme-graph-content').textContent = JSON.stringify(merged, null, 2);
-            document.getElementById('nme-run-continue-btn').disabled = editor.chapters.length === 0;
-            await savePluginData(editor);
+            state.knowledgeGraph = merged;
+            container.getElementById('nme-graph-content').textContent = JSON.stringify(merged, null, 2);
+            container.getElementById('nme-run-continue-btn').disabled = state.chapters.length === 0;
+            await savePluginData(state);
             alert('合并成功！');
         } catch (err) {
-            editor.addDebugLog('图谱合并失败', err.message);
+            state.addDebugLog('图谱合并失败', err.message);
             alert(`合并失败：${err.message}`);
         } finally {
-            editor.isProcessing = false;
+            state.isProcessing = false;
             mergeBtn.disabled = false;
             mergeBtn.textContent = '🧩 合并汇总图谱';
         }
     });
 
     // 执行魔改续写按钮
-    document.getElementById('nme-run-continue-btn').addEventListener('click', async () => {
-        if (editor.isProcessing) return;
-        if (!editor.knowledgeGraph || Object.keys(editor.knowledgeGraph).length === 0) {
+    container.getElementById('nme-run-continue-btn').addEventListener('click', async () => {
+        if (state.isProcessing) return;
+        if (!state.knowledgeGraph || Object.keys(state.knowledgeGraph).length === 0) {
             alert('请先合并生成/导入知识图谱，以保证人设锁定');
-            editor.addDebugLog('续写失败', '知识图谱为空');
+            state.addDebugLog('续写失败', '知识图谱为空');
             return;
         }
-        const editContent = document.getElementById('nme-edit-content').value.trim();
-        const continueLength = parseInt(document.getElementById('continue-length').value);
-        const temperature = parseFloat(document.getElementById('temperature').value);
+        const editContent = container.getElementById('nme-edit-content').value.trim();
+        const continueLength = parseInt(container.getElementById('continue-length').value);
+        const temperature = parseFloat(container.getElementById('temperature').value);
         if (!editContent) {
             alert('请在魔改编辑区输入内容');
             return;
@@ -452,87 +467,86 @@ function bindEvents() {
             alert('续写字数请设置在500-10000之间');
             return;
         }
-        editor.isProcessing = true;
-        const runBtn = document.getElementById('nme-run-continue-btn');
+        state.isProcessing = true;
+        const runBtn = container.getElementById('nme-run-continue-btn');
         runBtn.disabled = true;
         runBtn.textContent = '正在生成续写内容...';
         try {
-            // 完全复用原HTML前置上下文规则
-            const preContext = getFirstPreContext(editor.chapters, editor.currentChapterId);
+            const preContext = getFirstPreContext(state.chapters, state.currentChapterId);
             const prompt = getFirstContinuePrompt({
-                knowledgeGraph: editor.knowledgeGraph,
+                knowledgeGraph: state.knowledgeGraph,
                 preContext,
                 editContent,
                 continueLength
             });
-            editor.addDebugLog('续写', '构造提示词完成', `长度: ${prompt.length}`);
+            state.addDebugLog('续写', '构造提示词完成', `长度: ${prompt.length}`);
             const result = await generateQuietPrompt(prompt, false, temperature, continueLength);
             // 更新状态
-            const currentChapter = editor.chapters[editor.currentChapterId];
+            const currentChapter = state.chapters[state.currentChapterId];
             currentChapter.editContent = editContent;
             currentChapter.continueContent = result;
-            document.getElementById('nme-result-content').value = result;
-            document.getElementById('nme-continue-container').innerHTML = '';
-            editor.generatedChapters = [result];
-            document.getElementById('nme-continue-next-btn').disabled = false;
-            await savePluginData(editor);
-            editor.addDebugLog('续写成功', '生成内容长度', result.length);
+            container.getElementById('nme-result-content').value = result;
+            container.getElementById('nme-continue-container').innerHTML = '';
+            state.generatedChapters = [result];
+            container.getElementById('nme-continue-next-btn').disabled = false;
+            await savePluginData(state);
+            state.addDebugLog('续写成功', '生成内容长度', result.length);
         } catch (err) {
-            editor.addDebugLog('续写失败', err.message);
+            state.addDebugLog('续写失败', err.message);
             alert(`续写失败：${err.message}`);
         } finally {
-            editor.isProcessing = false;
+            state.isProcessing = false;
             runBtn.disabled = false;
             runBtn.textContent = '🚀 执行魔改续写';
         }
     });
 
     // 继续续写按钮
-    document.getElementById('nme-continue-next-btn').addEventListener('click', async () => {
+    container.getElementById('nme-continue-next-btn').addEventListener('click', async () => {
         await handleContinueWrite(-1);
     });
 
     // 发送单章节按钮
-    document.getElementById('nme-send-single-btn').addEventListener('click', async () => {
-        const chapterId = parseInt(document.getElementById('nme-send-chapter-select').value);
+    container.getElementById('nme-send-single-btn').addEventListener('click', async () => {
+        const chapterId = parseInt(container.getElementById('nme-send-chapter-select').value);
         if (isNaN(chapterId)) return;
-        const chapter = editor.chapters.find(ch => ch.id === chapterId);
+        const chapter = state.chapters.find(ch => ch.id === chapterId);
         if (!chapter) return;
-        const statusEl = document.getElementById('nme-send-status');
+        const statusEl = container.getElementById('nme-send-status');
         try {
             statusEl.textContent = '正在发送章节...';
             await sendChapterToChat(chapter);
             statusEl.textContent = `✅ 章节「${chapter.title}」发送成功`;
         } catch (err) {
             statusEl.textContent = `❌ 发送失败：${err.message}`;
-            editor.addDebugLog('发送失败', err.message);
+            state.addDebugLog('发送失败', err.message);
         }
     });
 
     // 批量发送按钮
-    document.getElementById('nme-send-batch-btn').addEventListener('click', async () => {
-        if (!editor.chapters.length) {
+    container.getElementById('nme-send-batch-btn').addEventListener('click', async () => {
+        if (!state.chapters.length) {
             alert('请先上传小说');
             return;
         }
-        if (!confirm(`确定要批量发送${editor.chapters.length}个章节到聊天吗？`)) {
+        if (!confirm(`确定要批量发送${state.chapters.length}个章节到聊天吗？`)) {
             return;
         }
-        const statusEl = document.getElementById('nme-send-status');
+        const statusEl = container.getElementById('nme-send-status');
         try {
-            const successCount = await batchSendAllChapters(editor.chapters, (current, total) => {
+            const successCount = await batchSendAllChapters(state.chapters, (current, total) => {
                 statusEl.textContent = `正在发送第${current}/${total}章...`;
             });
-            statusEl.textContent = `✅ 批量发送完成，成功${successCount}/${editor.chapters.length}章`;
+            statusEl.textContent = `✅ 批量发送完成，成功${successCount}/${state.chapters.length}章`;
         } catch (err) {
             statusEl.textContent = `❌ 批量发送失败：${err.message}`;
-            editor.addDebugLog('批量发送失败', err.message);
+            state.addDebugLog('批量发送失败', err.message);
         }
     });
 
     // 图谱导入导出
-    document.getElementById('nme-export-graph-btn').addEventListener('click', () => {
-        const graph = editor.knowledgeGraph;
+    container.getElementById('nme-export-graph-btn').addEventListener('click', () => {
+        const graph = state.knowledgeGraph;
         if (!graph || Object.keys(graph).length === 0) {
             alert('暂无可导出的知识图谱');
             return;
@@ -550,11 +564,11 @@ function bindEvents() {
         alert('知识图谱导出成功！');
     });
 
-    document.getElementById('nme-import-graph-btn').addEventListener('click', () => {
-        document.getElementById('graph-import-input').click();
+    container.getElementById('nme-import-graph-btn').addEventListener('click', () => {
+        container.getElementById('graph-import-input').click();
     });
 
-    document.getElementById('graph-import-input').addEventListener('change', async (e) => {
+    container.getElementById('graph-import-input').addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file) return;
         if (!file.name.toLowerCase().endsWith('.json')) {
@@ -572,22 +586,22 @@ function bindEvents() {
             requiredFields.forEach(field => {
                 if (!graph[field]) graph[field] = field === '人物信息' ? [] : '暂无';
             });
-            editor.knowledgeGraph = graph;
-            document.getElementById('nme-graph-content').textContent = JSON.stringify(graph, null, 2);
-            document.getElementById('nme-run-continue-btn').disabled = editor.chapters.length === 0;
-            await savePluginData(editor);
+            state.knowledgeGraph = graph;
+            container.getElementById('nme-graph-content').textContent = JSON.stringify(graph, null, 2);
+            container.getElementById('nme-run-continue-btn').disabled = state.chapters.length === 0;
+            await savePluginData(state);
             alert('知识图谱导入成功！');
         } catch (err) {
             alert(`导入失败：${err.message}`);
-            editor.addDebugLog('图谱导入失败', err.message);
+            state.addDebugLog('图谱导入失败', err.message);
         } finally {
             e.target.value = '';
         }
     });
 
     // 调试复制按钮
-    document.getElementById('nme-copy-debug-btn').addEventListener('click', () => {
-        const text = editor.debugLogs.join('\n---\n');
+    container.getElementById('nme-copy-debug-btn').addEventListener('click', () => {
+        const text = state.debugLogs.join('\n---\n');
         navigator.clipboard.writeText(text).then(() => {
             alert('调试信息已复制');
         }).catch(() => {
@@ -598,21 +612,21 @@ function bindEvents() {
 
 // ===================== 续写核心处理函数 =====================
 async function handleContinueWrite(preChapterIndex) {
-    const editor = window.novelMagicEditor;
-    if (editor.isProcessing) {
+    const container = state.container;
+    if (state.isProcessing) {
         alert('已有任务进行中，请稍候');
         return;
     }
-    if (!editor.knowledgeGraph || Object.keys(editor.knowledgeGraph).length === 0) {
+    if (!state.knowledgeGraph || Object.keys(state.knowledgeGraph).length === 0) {
         alert('请先合并生成知识图谱');
         return;
     }
     // 获取前置章节内容
     let preChapterContent = '';
     if (preChapterIndex === -1) {
-        preChapterContent = document.getElementById('nme-result-content').value.trim();
+        preChapterContent = container.getElementById('nme-result-content').value.trim();
     } else {
-        const preContentEl = document.getElementById(`continue-chapter-${preChapterIndex}-content`);
+        const preContentEl = container.getElementById(`continue-chapter-${preChapterIndex}-content`);
         if (!preContentEl) return;
         preChapterContent = preContentEl.value.trim();
     }
@@ -620,29 +634,29 @@ async function handleContinueWrite(preChapterIndex) {
         alert('前置章节内容不能为空');
         return;
     }
-    // 完全复用原HTML仅取最近3章规则
-    const editContent = document.getElementById('nme-edit-content').value.trim();
+    // 仅取最近3章上下文
+    const editContent = container.getElementById('nme-edit-content').value.trim();
     const latestThreeChapters = getContinueContext(
-        editor.chapters,
-        editor.currentChapterId,
-        editor.generatedChapters,
+        state.chapters,
+        state.currentChapterId,
+        state.generatedChapters,
         editContent
     );
-    const continueLength = parseInt(document.getElementById('continue-length').value);
-    const temperature = parseFloat(document.getElementById('temperature').value);
-    const nextChapterNum = editor.currentChapterId + editor.generatedChapters.length + 2;
+    const continueLength = parseInt(container.getElementById('continue-length').value);
+    const temperature = parseFloat(container.getElementById('temperature').value);
+    const nextChapterNum = state.currentChapterId + state.generatedChapters.length + 2;
     // 生成Prompt
     const prompt = getContinuePrompt({
-        knowledgeGraph: editor.knowledgeGraph,
+        knowledgeGraph: state.knowledgeGraph,
         latestThreeChapters,
         continueLength,
         nextChapterNum
     });
     // 禁用按钮
-    editor.isProcessing = true;
-    document.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = true);
+    state.isProcessing = true;
+    container.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = true);
     try {
-        editor.addDebugLog('续写', `生成第${nextChapterNum}章`, `提示词长度: ${prompt.length}`);
+        state.addDebugLog('续写', `生成第${nextChapterNum}章`, `提示词长度: ${prompt.length}`);
         const result = await generateQuietPrompt(prompt, false, temperature, continueLength);
         // 生成新章节卡片
         const newChapterIndex = preChapterIndex + 1;
@@ -655,38 +669,39 @@ async function handleContinueWrite(preChapterIndex) {
             <textarea id="${cardId}-content" class="nme-textarea tall" placeholder="续写内容">${result}</textarea>
             <button class="nme-btn nme-btn-success continue-next-btn" data-index="${newChapterIndex}">⏩ 继续续写下一章</button>
         `;
-        document.getElementById('nme-continue-container').appendChild(card);
+        container.getElementById('nme-continue-container').appendChild(card);
         // 绑定事件
         card.querySelector('.continue-next-btn').addEventListener('click', async (e) => {
             const index = parseInt(e.target.dataset.index);
             await handleContinueWrite(index);
         });
         // 更新状态
-        editor.generatedChapters.push(result);
+        state.generatedChapters.push(result);
         card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        editor.addDebugLog('续写成功', `第${nextChapterNum}章生成完成`, `长度: ${result.length}`);
-        await savePluginData(editor);
+        state.addDebugLog('续写成功', `第${nextChapterNum}章生成完成`, `长度: ${result.length}`);
+        await savePluginData(state);
     } catch (err) {
-        editor.addDebugLog('续写失败', err.message);
+        state.addDebugLog('续写失败', err.message);
         alert(`续写失败：${err.message}`);
     } finally {
-        editor.isProcessing = false;
-        document.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = false);
+        state.isProcessing = false;
+        container.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = false);
     }
 }
 
 // ===================== UI刷新辅助函数 =====================
 function refreshUIData() {
-    const editor = window.novelMagicEditor;
+    const container = state.container;
+    if (!container) return;
     // 刷新章节选择器
-    const chapterSelect = document.getElementById('nme-chapter-select');
-    const sendChapterSelect = document.getElementById('nme-send-chapter-select');
-    const originalContentEl = document.getElementById('nme-original-content');
-    const editContentEl = document.getElementById('nme-edit-content');
-    if (editor.chapters.length > 0) {
+    const chapterSelect = container.getElementById('nme-chapter-select');
+    const sendChapterSelect = container.getElementById('nme-send-chapter-select');
+    const originalContentEl = container.getElementById('nme-original-content');
+    const editContentEl = container.getElementById('nme-edit-content');
+    if (state.chapters.length > 0) {
         chapterSelect.innerHTML = '';
         sendChapterSelect.innerHTML = '';
-        editor.chapters.forEach(chapter => {
+        state.chapters.forEach(chapter => {
             const option = document.createElement('option');
             option.value = chapter.id;
             option.textContent = `${chapter.id + 1} - ${chapter.title}`;
@@ -695,13 +710,13 @@ function refreshUIData() {
         });
         chapterSelect.disabled = false;
         sendChapterSelect.disabled = false;
-        document.getElementById('nme-regroup-btn').disabled = false;
-        document.getElementById('nme-send-single-btn').disabled = false;
-        document.getElementById('nme-send-batch-btn').disabled = false;
+        container.getElementById('nme-regroup-btn').disabled = false;
+        container.getElementById('nme-send-single-btn').disabled = false;
+        container.getElementById('nme-send-batch-btn').disabled = false;
         // 填充当前章节内容
-        const currentChapter = editor.chapters[editor.currentChapterId];
+        const currentChapter = state.chapters[state.currentChapterId];
         if (currentChapter) {
-            chapterSelect.value = editor.currentChapterId;
+            chapterSelect.value = state.currentChapterId;
             originalContentEl.value = currentChapter.fullContent;
             editContentEl.value = currentChapter.editContent;
         }
@@ -709,31 +724,32 @@ function refreshUIData() {
     // 刷新分组列表
     renderGroupList();
     // 刷新图谱内容
-    if (editor.knowledgeGraph && Object.keys(editor.knowledgeGraph).length > 0) {
-        document.getElementById('nme-graph-content').textContent = JSON.stringify(editor.knowledgeGraph, null, 2);
-        document.getElementById('nme-run-continue-btn').disabled = editor.chapters.length === 0;
+    if (state.knowledgeGraph && Object.keys(state.knowledgeGraph).length > 0) {
+        container.getElementById('nme-graph-content').textContent = JSON.stringify(state.knowledgeGraph, null, 2);
+        container.getElementById('nme-run-continue-btn').disabled = state.chapters.length === 0;
     }
     // 刷新分析范围
-    const totalGroups = editor.groups.length;
-    const startInput = document.getElementById('analyze-start');
-    const endInput = document.getElementById('analyze-end');
+    const totalGroups = state.groups.length;
+    const startInput = container.getElementById('analyze-start');
+    const endInput = container.getElementById('analyze-end');
     if (totalGroups > 0) {
         startInput.max = totalGroups;
         endInput.max = totalGroups;
         endInput.value = totalGroups;
-        document.getElementById('nme-analyze-btn').disabled = false;
+        container.getElementById('nme-analyze-btn').disabled = false;
     }
 }
 
 function renderGroupList() {
-    const editor = window.novelMagicEditor;
-    const container = document.getElementById('nme-group-list');
-    if (!editor.groups.length) {
-        container.innerHTML = '<div class="nme-empty">请先上传小说并生成分组</div>';
+    const container = state.container;
+    if (!container) return;
+    const groupContainer = container.getElementById('nme-group-list');
+    if (!state.groups.length) {
+        groupContainer.innerHTML = '<div class="nme-empty">请先上传小说并生成分组</div>';
         return;
     }
     let html = '';
-    editor.groups.forEach((group, idx) => {
+    state.groups.forEach((group, idx) => {
         const startNum = group.startIdx + 1;
         const endNum = group.endIdx + 1;
         let statusText = '', statusClass = '';
@@ -757,23 +773,22 @@ function renderGroupList() {
             </div>
         `;
     });
-    container.innerHTML = html;
+    groupContainer.innerHTML = html;
     // 绑定单组分析按钮
-    document.querySelectorAll('.analyze-group-btn').forEach(btn => {
+    groupContainer.querySelectorAll('.analyze-group-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             const idx = parseInt(e.target.dataset.index);
             if (isNaN(idx)) return;
-            const editor = window.novelMagicEditor;
-            if (editor.isProcessing) {
+            if (state.isProcessing) {
                 alert('已有任务进行中，请稍候');
                 return;
             }
-            const group = editor.groups[idx];
-            editor.isProcessing = true;
+            const group = state.groups[idx];
+            state.isProcessing = true;
             btn.disabled = true;
             try {
-                const prompt = getGroupAnalyzePrompt(group, editor.chapters);
-                const temperature = parseFloat(document.getElementById('temperature').value);
+                const prompt = getGroupAnalyzePrompt(group, state.chapters);
+                const temperature = parseFloat(container.getElementById('temperature').value);
                 const result = await generateQuietPrompt(prompt, false, temperature, 4000);
                 const jsonStr = extractJSON(result);
                 const parsed = JSON.parse(jsonStr);
@@ -782,60 +797,85 @@ function renderGroupList() {
                 group.status = 'success';
                 group.data = parsed;
                 group.error = null;
-                editor.addDebugLog('分组分析', `第${idx+1}组分析成功`);
+                state.addDebugLog('分组分析', `第${idx+1}组分析成功`);
             } catch (err) {
                 group.status = 'failed';
                 group.error = err.message;
-                editor.addDebugLog('分组分析', `第${idx+1}组分析失败`, err.message);
+                state.addDebugLog('分组分析', `第${idx+1}组分析失败`, err.message);
                 alert(`分析失败：${err.message}`);
             } finally {
-                editor.isProcessing = false;
+                state.isProcessing = false;
                 btn.disabled = false;
                 renderGroupList();
                 // 更新合并按钮状态
-                const hasSuccess = editor.groups.some(g => g.status === 'success');
-                document.getElementById('nme-merge-btn').disabled = !hasSuccess;
+                const hasSuccess = state.groups.some(g => g.status === 'success');
+                container.getElementById('nme-merge-btn').disabled = !hasSuccess;
             }
         });
     });
     // 更新合并按钮状态
-    const hasSuccess = editor.groups.some(g => g.status === 'success');
-    document.getElementById('nme-merge-btn').disabled = !hasSuccess;
+    const hasSuccess = state.groups.some(g => g.status === 'success');
+    container.getElementById('nme-merge-btn').disabled = !hasSuccess;
 }
 
-// ===================== 插件生命周期：加载 =====================
-async function loadPlugin() {
-    await initPlugin();
-    // 注册扩展面板
-    registerExtensionPanel({
-        id: 'novel-magic-editor',
-        title: '📖 小说魔改',
-        icon: 'fa-book',
-        onRender: (container) => {
-            renderPluginUI(container);
-        },
-        onDestroy: async () => {
-            await savePluginData(window.novelMagicEditor);
+// ===================== 【核心修复】ST插件规范：导出顶层load/unload函数 =====================
+/**
+ * ST插件启用时调用
+ * @returns {Promise<void>}
+ */
+export async function load() {
+    try {
+        console.log('📖 小说魔改神器插件加载中...');
+        // 预加载EPUB库（非阻塞）
+        loadEpubLib().catch(() => {});
+        // 加载持久化数据
+        const savedData = await loadPluginData();
+        if (savedData) {
+            Object.assign(state, savedData);
         }
-    });
-}
-
-// ===================== 插件生命周期：卸载 =====================
-async function unloadPlugin() {
-    await savePluginData(window.novelMagicEditor);
-}
-
-// 启动插件
-loadPlugin();
-
-// 导出插件对象
-window.novelMagicEditorPlugin = {
-    load: loadPlugin,
-    unload: unloadPlugin,
-    info: {
-        name: 'novel-magic-editor',
-        display_name: '📖 小说魔改神器',
-        version: '1.0.0',
-        author: 'Neohero521'
+        // 注册扩展面板
+        registerExtensionPanel({
+            id: 'novel-magic-editor',
+            title: '📖 小说魔改',
+            icon: 'fa-book',
+            onRender: (container) => {
+                renderPluginUI(container);
+            },
+            onDestroy: async () => {
+                await savePluginData(state);
+            }
+        });
+        console.log('✅ 小说魔改神器插件加载成功');
+    } catch (err) {
+        console.error('❌ 小说魔改神器插件加载失败', err);
+        // 抛出错误让ST捕获，避免静默失败
+        throw err;
     }
-};
+}
+
+/**
+ * ST插件禁用时调用
+ * @returns {Promise<void>}
+ */
+export async function unload() {
+    try {
+        console.log('📖 小说魔改神器插件卸载中...');
+        // 保存数据
+        await savePluginData(state);
+        // 清空状态
+        Object.assign(state, {
+            chapters: [],
+            groups: [],
+            knowledgeGraph: {},
+            currentChapterId: 0,
+            isProcessing: false,
+            generatedChapters: [],
+            debugLogs: [],
+            container: null
+        });
+        console.log('✅ 小说魔改神器插件卸载成功');
+    } catch (err) {
+        console.error('❌ 小说魔改神器插件卸载失败', err);
+        throw err;
+    }
+}
