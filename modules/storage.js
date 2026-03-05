@@ -1,13 +1,11 @@
-// ===================== 【修复】ST API正确导入路径 =====================
+// ===================== 【已修复】ST API导入路径 =====================
 import { getContext } from "../../../script.js";
 
 const EXTENSION_ID = 'novel-magic-editor';
 
-// ===================== 保存插件数据 =====================
 export async function savePluginData(data) {
     const context = getContext();
     try {
-        // 过滤非序列化数据
         const serializableData = {
             chapters: data.chapters,
             groups: data.groups,
@@ -23,7 +21,6 @@ export async function savePluginData(data) {
     }
 }
 
-// ===================== 读取插件数据 =====================
 export async function loadPluginData() {
     const context = getContext();
     try {
@@ -38,7 +35,6 @@ export async function loadPluginData() {
     }
 }
 
-// ===================== 清除插件数据 =====================
 export async function clearPluginData() {
     const context = getContext();
     try {
