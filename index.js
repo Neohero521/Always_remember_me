@@ -46,7 +46,7 @@ export async function init(context) {
         // 注册侧边栏面板（Cola同款API，图标显示的核心）
         await window.SillyTavern.sidebar.registerPanel({
             id: 'novel-continuation-panel',
-            icon: 'fa-book',
+            icon: 'fa-solid fa-book',
             title: '小说续写助手',
             onRender: (container) => uiManager.render(container),
             onOpen: (container) => uiManager.render(container)
