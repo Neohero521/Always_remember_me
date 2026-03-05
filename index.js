@@ -1,17 +1,14 @@
-// ===================== ST核心API导入（路径严格校验） =====================
-// 插件安装后路径：/public/scripts/extensions/Always_remember_me/index.js
-// 目标路径：/public/scripts/script.js → 相对路径 ../../script.js
-import { getContext, registerExtensionPanel, generateQuietPrompt } from "../../script.js";
-import { executeSlashCommand } from "../../slash-commands.js";
+// ===================== ST前端核心API 路径100%正确 =====================
+// 扩展安装后路径：/public/scripts/extensions/Always_remember_me/index.js
+// 目标API路径：/public/scripts/script.js → 相对路径 ../../script.js
+import { getContext, registerExtensionPanel, generateQuietPrompt, executeSlashCommand } from "../../script.js";
 
-// ===================== 内部模块导入（路径严格校验） =====================
-import { readTxtFile, splitChapters } from './modules/novelParser.js';
+// ===================== 内部模块导入 路径100%正确 =====================
+import { readTxtFile, readEpubFile, splitChapters } from './modules/novelParser.js';
 import { buildGroupsFromChapters, buildGroupsFromWords, getGroupAnalyzePrompt, getMergeGraphPrompt, extractJSON } from './modules/groupAnalyzer.js';
 import { getContinuePrompt, getFirstContinuePrompt, getContinueContext, getFirstPreContext } from './modules/continueWriter.js';
-import { sendChapterToChat, batchSendAllChapters } from './modules/chatSender.js';
-import { savePluginData, loadPluginData } from './modules/storage.js';
 
-// ===================== 全局状态（封闭作用域，无全局污染） =====================
+// ===================== 全局状态 封闭作用域 无全局污染 =====================
 const state = {
     chapters: [],
     groups: [],
@@ -20,51 +17,94 @@ const state = {
     isProcessing: false,
     generatedChapters: [],
     debugLogs: [],
-    isEpubSupported: false,
     container: null
 };
 
 // ===================== 调试日志 =====================
-state.addDebugLog = function(type, message, details = '') {
+function addDebugLog(type, message, details = '') {
     const timestamp = new Date().toLocaleTimeString();
     const log = `[${timestamp}] [${type}] ${message}\n${details ? details + '\n' : ''}`;
-    this.debugLogs.unshift(log);
-    if (this.debugLogs.length > 5) this.debugLogs.pop();
-    this.updateDebugDisplay();
-};
-
-state.updateDebugDisplay = function() {
-    if (!this.container) return;
-    const debugEl = this.container.querySelector('#debugContent');
-    if (debugEl) debugEl.textContent = this.debugLogs.join('\n---\n') || '暂无调试信息';
-};
-
-// ===================== EPUB库可选加载（无阻塞，失败不影响插件加载） =====================
-async function loadEpubLib() {
-    if (state.isEpubSupported || typeof ePub !== 'undefined') {
-        state.isEpubSupported = true;
-        return true;
-    }
-    return new Promise((resolve) => {
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js';
-        script.async = true;
-        script.crossOrigin = 'anonymous';
-        script.onload = () => {
-            state.isEpubSupported = true;
-            state.addDebugLog('初始化', 'EPUB解析库加载成功');
-            resolve(true);
-        };
-        script.onerror = () => {
-            state.addDebugLog('初始化', 'EPUB解析库加载失败，仅支持TXT文件');
-            resolve(false);
-        };
-        document.head.appendChild(script);
-    });
+    state.debugLogs.unshift(log);
+    if (state.debugLogs.length > 5) state.debugLogs.pop();
+    updateDebugDisplay();
 }
 
-// ===================== UI渲染（仅在面板激活时执行） =====================
-function renderPluginUI(container) {
+function updateDebugDisplay() {
+    if (!state.container) return;
+    const debugEl = state.container.querySelector('#debugContent');
+    if (debugEl) debugEl.textContent = state.debugLogs.join('\n---\n') || '暂无调试信息';
+}
+
+// ===================== 数据持久化 =====================
+const EXTENSION_ID = 'novel-magic-editor';
+async function saveData() {
+    try {
+        const context = getContext();
+        const saveData = {
+            chapters: state.chapters,
+            groups: state.groups,
+            knowledgeGraph: state.knowledgeGraph,
+            currentChapterId: state.currentChapterId,
+            generatedChapters: state.generatedChapters
+        };
+        await context.setExtensionSetting(EXTENSION_ID, 'data', JSON.stringify(saveData));
+    } catch (err) {
+        console.error('保存数据失败', err);
+    }
+}
+
+async function loadData() {
+    try {
+        const context = getContext();
+        const saved = await context.getExtensionSetting(EXTENSION_ID, 'data');
+        if (saved) return JSON.parse(saved);
+        return null;
+    } catch (err) {
+        console.error('加载数据失败', err);
+        return null;
+    }
+}
+
+// ===================== /sendas 发送章节功能 内置实现 =====================
+async function sendChapterToChat(chapter, isBatch = false) {
+    const context = getContext();
+    const currentChar = context.character;
+    if (!currentChar || !currentChar.name) throw new Error('请先选择聊天角色');
+    if (!chapter?.fullContent) throw new Error('章节内容为空');
+
+    const charName = currentChar.name.replace(/"/g, '\\"');
+    const maxLength = 4000;
+    const content = chapter.fullContent;
+    const chunks = [];
+    for (let i = 0; i < content.length; i += maxLength) chunks.push(content.slice(i, i + maxLength));
+
+    for (let idx = 0; idx < chunks.length; idx++) {
+        const chunk = chunks[idx];
+        const title = chunks.length > 1 ? `${chapter.title} (${idx+1}/${chunks.length})` : chapter.title;
+        const command = `/sendas name="${charName}" ${title}\n\n${chunk}`;
+        await executeSlashCommand(command);
+        if (isBatch || chunks.length > 1) await new Promise(r => setTimeout(r, 800));
+    }
+    return true;
+}
+
+async function batchSendChapters(onProgress) {
+    if (!state.chapters.length) throw new Error('暂无章节可发送');
+    let success = 0;
+    for (let i = 0; i < state.chapters.length; i++) {
+        try {
+            if (onProgress) onProgress(i+1, state.chapters.length);
+            await sendChapterToChat(state.chapters[i], true);
+            success++;
+        } catch (err) {
+            console.error(`第${i+1}章发送失败`, err);
+        }
+    }
+    return success;
+}
+
+// ===================== UI渲染 =====================
+function renderUI(container) {
     state.container = container;
     container.id = 'novel-magic-editor';
     container.innerHTML = `
@@ -86,7 +126,7 @@ function renderPluginUI(container) {
                 <div class="nme-card">
                     <h3>📂 上传小说文件</h3>
                     <input type="file" id="nme-file-input" accept=".txt,.epub" class="nme-file-input">
-                    <p id="nme-upload-status" class="nme-status">支持TXT或EPUB格式，自动识别编码、拆分章节</p>
+                    <p id="nme-upload-status" class="nme-status">支持TXT/EPUB，自动识别编码、拆分章节</p>
                 </div>
                 <div class="nme-card">
                     <h3>📑 章节列表</h3>
@@ -107,14 +147,8 @@ function renderPluginUI(container) {
                     <div class="nme-form-row">
                         <label>分组方式：</label>
                         <div class="nme-radio-group">
-                            <label class="nme-radio">
-                                <input type="radio" name="groupMode" value="chapter" checked>
-                                <span>按章节数</span>
-                            </label>
-                            <label class="nme-radio">
-                                <input type="radio" name="groupMode" value="word">
-                                <span>按字数</span>
-                            </label>
+                            <label class="nme-radio"><input type="radio" name="groupMode" value="chapter" checked><span>按章节数</span></label>
+                            <label class="nme-radio"><input type="radio" name="groupMode" value="word"><span>按字数</span></label>
                         </div>
                     </div>
                     <div class="nme-form-row" id="chapter-group-setting">
@@ -166,10 +200,7 @@ function renderPluginUI(container) {
                     <div class="nme-form-row">
                         <label>续写自由度：<span id="temperature-value">0.7</span></label>
                         <input type="range" id="temperature" min="0.1" max="1.0" step="0.1" value="0.7" class="nme-slider">
-                        <div class="nme-slider-desc">
-                            <span>贴合原文</span>
-                            <span>自由创作</span>
-                        </div>
+                        <div class="nme-slider-desc"><span>贴合原文</span><span>自由创作</span></div>
                     </div>
                 </div>
                 <div class="nme-card">
@@ -209,7 +240,7 @@ function renderPluginUI(container) {
         </div>
     `;
     bindEvents();
-    refreshUIData();
+    refreshUI();
 }
 
 // ===================== 事件绑定 =====================
@@ -231,22 +262,22 @@ function bindEvents() {
     // 分组方式切换
     container.querySelectorAll('input[name="groupMode"]').forEach(radio => {
         radio.addEventListener('change', () => {
-            const isChapterMode = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
-            container.getElementById('chapter-group-setting').classList.toggle('hidden', !isChapterMode);
-            container.getElementById('word-group-setting').classList.toggle('hidden', isChapterMode);
+            const isChapter = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
+            container.getElementById('chapter-group-setting').classList.toggle('hidden', !isChapter);
+            container.getElementById('word-group-setting').classList.toggle('hidden', isChapter);
         });
     });
 
     // 参数联动
-    container.getElementById('continue-length').addEventListener('input', (e) => {
+    container.getElementById('continue-length').addEventListener('input', e => {
         container.getElementById('length-display').textContent = e.target.value;
     });
-    container.getElementById('temperature').addEventListener('input', (e) => {
+    container.getElementById('temperature').addEventListener('input', e => {
         container.getElementById('temperature-value').textContent = e.target.value;
     });
 
     // 文件上传
-    container.getElementById('nme-file-input').addEventListener('change', async (e) => {
+    container.getElementById('nme-file-input').addEventListener('change', async e => {
         const file = e.target.files[0];
         if (!file) return;
         state.isProcessing = true;
@@ -254,52 +285,53 @@ function bindEvents() {
         const statusEl = container.getElementById('nme-upload-status');
         fileInput.disabled = true;
         try {
-            statusEl.textContent = '正在读取小说文件...';
-            let novelContent = '';
+            statusEl.textContent = '正在读取文件...';
+            let content = '';
             if (file.name.toLowerCase().endsWith('.txt')) {
-                novelContent = await readTxtFile(file);
+                content = await readTxtFile(file);
             } else if (file.name.toLowerCase().endsWith('.epub')) {
-                if (!state.isEpubSupported) {
-                    throw new Error('EPUB解析库未加载成功，请使用TXT格式');
+                if (typeof ePub === 'undefined') {
+                    await new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdn.jsdelivr.net/npm/epubjs@0.3.93/dist/epub.min.js';
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
                 }
-                const { readEpubFile } = await import('./modules/novelParser.js');
-                novelContent = await readEpubFile(file);
+                content = await readEpubFile(file);
             } else {
-                throw new Error('仅支持TXT和EPUB格式');
+                throw new Error('仅支持TXT/EPUB格式');
             }
-            if (!novelContent.trim()) throw new Error('文件内容为空');
+            if (!content.trim()) throw new Error('文件内容为空');
             
             statusEl.textContent = '正在拆分章节...';
-            const chapters = splitChapters(novelContent);
+            const chapters = splitChapters(content);
             state.chapters = chapters;
             state.currentChapterId = 0;
             state.generatedChapters = [];
             state.knowledgeGraph = {};
 
-            const isChapterMode = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
-            if (isChapterMode) {
-                const groupSize = parseInt(container.getElementById('group-chapter-size').value);
-                state.groups = buildGroupsFromChapters(chapters, groupSize);
-            } else {
-                const wordSize = parseInt(container.getElementById('group-word-size').value);
-                state.groups = buildGroupsFromWords(chapters, wordSize);
-            }
+            const isChapter = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
+            state.groups = isChapter 
+                ? buildGroupsFromChapters(chapters, parseInt(container.getElementById('group-chapter-size').value))
+                : buildGroupsFromWords(chapters, parseInt(container.getElementById('group-word-size').value));
 
-            refreshUIData();
-            await savePluginData(state);
+            await saveData();
+            refreshUI();
             statusEl.textContent = `✅ 加载完成，共 ${chapters.length} 章，${state.groups.length} 个分组`;
+            addDebugLog('文件加载', `成功加载${chapters.length}章`);
         } catch (err) {
             statusEl.textContent = `❌ ${err.message}`;
-            state.addDebugLog('文件读取失败', err.message);
-            console.error(err);
+            addDebugLog('文件加载失败', err.message);
         } finally {
             state.isProcessing = false;
             fileInput.disabled = false;
         }
     });
 
-    // 章节选择切换
-    container.getElementById('nme-chapter-select').addEventListener('change', (e) => {
+    // 章节选择
+    container.getElementById('nme-chapter-select').addEventListener('change', e => {
         const chapterId = parseInt(e.target.value);
         if (isNaN(chapterId)) return;
         const chapter = state.chapters.find(ch => ch.id === chapterId);
@@ -313,101 +345,79 @@ function bindEvents() {
         container.getElementById('nme-continue-next-btn').disabled = true;
     });
 
-    // 生成分组按钮
+    // 生成分组
     container.getElementById('nme-regroup-btn').addEventListener('click', () => {
-        if (state.isProcessing) {
-            alert('正在处理任务中，请稍候');
-            return;
-        }
-        if (!state.chapters.length) {
-            alert('请先上传小说');
-            return;
-        }
-        const isChapterMode = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
-        let groups = [];
-        if (isChapterMode) {
-            const groupSize = parseInt(container.getElementById('group-chapter-size').value);
-            groups = buildGroupsFromChapters(state.chapters, groupSize);
-        } else {
-            const wordSize = parseInt(container.getElementById('group-word-size').value);
-            groups = buildGroupsFromWords(state.chapters, wordSize);
-        }
-        state.groups = groups;
+        if (state.isProcessing || !state.chapters.length) return;
+        const isChapter = container.querySelector('input[name="groupMode"][value="chapter"]').checked;
+        state.groups = isChapter 
+            ? buildGroupsFromChapters(state.chapters, parseInt(container.getElementById('group-chapter-size').value))
+            : buildGroupsFromWords(state.chapters, parseInt(container.getElementById('group-word-size').value));
         state.knowledgeGraph = {};
         container.getElementById('nme-graph-content').textContent = '请先分析分组并合并汇总图谱';
-        renderGroupList();
-        alert(`重新分组成功！共生成${groups.length}个分组`);
+        refreshUI();
+        alert(`重新分组成功！共${state.groups.length}个分组`);
     });
 
-    // 分析分组按钮
+    // 分析分组
     container.getElementById('nme-analyze-btn').addEventListener('click', async () => {
-        if (state.isProcessing) {
-            alert('已有任务进行中，请稍候');
-            return;
-        }
+        if (state.isProcessing) return;
         const start = parseInt(container.getElementById('analyze-start').value) - 1;
         const end = parseInt(container.getElementById('analyze-end').value) - 1;
         if (isNaN(start) || isNaN(end) || start < 0 || end >= state.groups.length || start > end) {
-            alert('请设置正确的分析组范围');
+            alert('请设置正确的分析范围');
             return;
         }
         const toAnalyze = [];
-        for (let idx = start; idx <= end; idx++) {
-            if (state.groups[idx].status !== 'success') toAnalyze.push(idx);
+        for (let i = start; i <= end; i++) {
+            if (state.groups[i].status !== 'success') toAnalyze.push(i);
         }
         if (toAnalyze.length === 0) {
-            alert('所选范围内所有分组均已成功分析');
+            alert('所选范围无待分析分组');
             return;
         }
         state.isProcessing = true;
         const analyzeBtn = container.getElementById('nme-analyze-btn');
         analyzeBtn.disabled = true;
         try {
-            for (let idx of toAnalyze) {
-                if (state.groups[idx].status === 'success') continue;
+            for (const idx of toAnalyze) {
                 const group = state.groups[idx];
                 const prompt = getGroupAnalyzePrompt(group, state.chapters);
                 const temperature = parseFloat(container.getElementById('temperature').value);
                 try {
-                    state.addDebugLog('分组分析', `开始分析第${idx+1}组`);
+                    addDebugLog('分组分析', `开始分析第${idx+1}组`);
                     const result = await generateQuietPrompt(prompt, false, temperature, 4000);
                     const jsonStr = extractJSON(result);
                     const parsed = JSON.parse(jsonStr);
-                    const required = ['人物信息', '世界观设定', '核心剧情线', '文风特点'];
-                    required.forEach(f => { if (!parsed[f]) parsed[f] = f === '人物信息' || f === '实体关系网络' ? [] : '暂无'; });
+                    ['人物信息', '世界观设定', '核心剧情线', '文风特点'].forEach(f => {
+                        if (!parsed[f]) parsed[f] = f === '人物信息' || f === '实体关系网络' ? [] : '暂无';
+                    });
                     group.status = 'success';
                     group.data = parsed;
-                    group.error = null;
-                    state.addDebugLog('分组分析', `第${idx+1}组分析成功`);
                 } catch (err) {
                     group.status = 'failed';
                     group.error = err.message;
-                    state.addDebugLog('分组分析', `第${idx+1}组分析失败`, err.message);
+                    addDebugLog('分组分析失败', `第${idx+1}组`, err.message);
                 }
-                renderGroupList();
+                refreshUI();
                 await new Promise(r => setTimeout(r, 500));
             }
-            await savePluginData(state);
+            await saveData();
             alert('分析完成！');
         } catch (err) {
-            state.addDebugLog('批量分析失败', err.message);
+            addDebugLog('批量分析失败', err.message);
             alert(`分析失败：${err.message}`);
         } finally {
             state.isProcessing = false;
             analyzeBtn.disabled = false;
-            renderGroupList();
         }
     });
 
-    // 合并图谱按钮
+    // 合并图谱
     container.getElementById('nme-merge-btn').addEventListener('click', async () => {
-        if (state.isProcessing) {
-            alert('已有任务进行中，请稍候');
-            return;
-        }
+        if (state.isProcessing) return;
         const successGroups = state.groups.filter(g => g.status === 'success');
         if (successGroups.length === 0) {
-            alert('没有成功分析的分组，请先分析至少一个分组');
+            alert('无成功分析的分组');
             return;
         }
         state.isProcessing = true;
@@ -419,20 +429,17 @@ function bindEvents() {
             const temperature = parseFloat(container.getElementById('temperature').value);
             const result = await generateQuietPrompt(prompt, false, temperature, 8000);
             const jsonStr = extractJSON(result);
-            let merged = JSON.parse(jsonStr);
-            const requiredFields = ['人物信息', '世界观设定', '核心剧情线', '文风特点', '实体关系网络', '逆向分析洞察'];
-            requiredFields.forEach(field => {
-                if (!merged[field]) merged[field] = field === '人物信息' || field === '实体关系网络' ? [] : '暂无';
+            const merged = JSON.parse(jsonStr);
+            ['人物信息', '世界观设定', '核心剧情线', '文风特点', '实体关系网络', '逆向分析洞察'].forEach(f => {
+                if (!merged[f]) merged[f] = f === '人物信息' || f === '实体关系网络' ? [] : '暂无';
             });
-            if (!Array.isArray(merged.人物信息)) merged.人物信息 = [];
-            if (!Array.isArray(merged.实体关系网络)) merged.实体关系网络 = [];
             state.knowledgeGraph = merged;
             container.getElementById('nme-graph-content').textContent = JSON.stringify(merged, null, 2);
             container.getElementById('nme-run-continue-btn').disabled = state.chapters.length === 0;
-            await savePluginData(state);
+            await saveData();
             alert('合并成功！');
         } catch (err) {
-            state.addDebugLog('图谱合并失败', err.message);
+            addDebugLog('图谱合并失败', err.message);
             alert(`合并失败：${err.message}`);
         } finally {
             state.isProcessing = false;
@@ -441,29 +448,22 @@ function bindEvents() {
         }
     });
 
-    // 执行魔改续写按钮
+    // 执行续写
     container.getElementById('nme-run-continue-btn').addEventListener('click', async () => {
         if (state.isProcessing) return;
         if (!state.knowledgeGraph || Object.keys(state.knowledgeGraph).length === 0) {
-            alert('请先合并生成/导入知识图谱，以保证人设锁定');
-            state.addDebugLog('续写失败', '知识图谱为空');
+            alert('请先合并生成知识图谱');
             return;
         }
         const editContent = container.getElementById('nme-edit-content').value.trim();
         const continueLength = parseInt(container.getElementById('continue-length').value);
         const temperature = parseFloat(container.getElementById('temperature').value);
-        if (!editContent) {
-            alert('请在魔改编辑区输入内容');
-            return;
-        }
-        if (isNaN(continueLength) || continueLength < 500 || continueLength > 10000) {
-            alert('续写字数请设置在500-10000之间');
-            return;
-        }
+        if (!editContent || isNaN(continueLength)) return;
+
         state.isProcessing = true;
         const runBtn = container.getElementById('nme-run-continue-btn');
         runBtn.disabled = true;
-        runBtn.textContent = '正在生成续写内容...';
+        runBtn.textContent = '生成中...';
         try {
             const preContext = getFirstPreContext(state.chapters, state.currentChapterId);
             const prompt = getFirstContinuePrompt({
@@ -472,7 +472,6 @@ function bindEvents() {
                 editContent,
                 continueLength
             });
-            state.addDebugLog('续写', '构造提示词完成', `长度: ${prompt.length}`);
             const result = await generateQuietPrompt(prompt, false, temperature, continueLength);
             const currentChapter = state.chapters[state.currentChapterId];
             currentChapter.editContent = editContent;
@@ -481,10 +480,10 @@ function bindEvents() {
             container.getElementById('nme-continue-container').innerHTML = '';
             state.generatedChapters = [result];
             container.getElementById('nme-continue-next-btn').disabled = false;
-            await savePluginData(state);
-            state.addDebugLog('续写成功', '生成内容长度', result.length);
+            await saveData();
+            addDebugLog('续写成功', `生成内容长度${result.length}`);
         } catch (err) {
-            state.addDebugLog('续写失败', err.message);
+            addDebugLog('续写失败', err.message);
             alert(`续写失败：${err.message}`);
         } finally {
             state.isProcessing = false;
@@ -493,108 +492,145 @@ function bindEvents() {
         }
     });
 
-    // 继续续写按钮
+    // 继续续写
     container.getElementById('nme-continue-next-btn').addEventListener('click', async () => {
         await handleContinueWrite(-1);
     });
 
-    // 发送单章节按钮
+    // 续写核心函数
+    async function handleContinueWrite(preIndex) {
+        if (state.isProcessing || !state.knowledgeGraph) return;
+        const container = state.container;
+        let preContent = '';
+        if (preIndex === -1) {
+            preContent = container.getElementById('nme-result-content').value.trim();
+        } else {
+            const el = container.getElementById(`continue-chapter-${preIndex}-content`);
+            if (!el) return;
+            preContent = el.value.trim();
+        }
+        if (!preContent) {
+            alert('前置章节内容不能为空');
+            return;
+        }
+        const editContent = container.getElementById('nme-edit-content').value.trim();
+        const latestThree = getContinueContext(state.chapters, state.currentChapterId, state.generatedChapters, editContent);
+        const continueLength = parseInt(container.getElementById('continue-length').value);
+        const temperature = parseFloat(container.getElementById('temperature').value);
+        const nextChapterNum = state.currentChapterId + state.generatedChapters.length + 2;
+        const prompt = getContinuePrompt({
+            knowledgeGraph: state.knowledgeGraph,
+            latestThreeChapters: latestThree,
+            continueLength,
+            nextChapterNum
+        });
+
+        state.isProcessing = true;
+        container.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = true);
+        try {
+            const result = await generateQuietPrompt(prompt, false, temperature, continueLength);
+            const newIndex = preIndex + 1;
+            const cardId = `continue-chapter-${newIndex}`;
+            const card = document.createElement('div');
+            card.className = 'nme-card';
+            card.id = cardId;
+            card.innerHTML = `
+                <h4>✨ 续写章节 ${nextChapterNum}</h4>
+                <textarea id="${cardId}-content" class="nme-textarea tall">${result}</textarea>
+                <button class="nme-btn nme-btn-success continue-next-btn" data-index="${newIndex}">⏩ 继续续写下一章</button>
+            `;
+            container.getElementById('nme-continue-container').appendChild(card);
+            card.querySelector('.continue-next-btn').addEventListener('click', async e => {
+                await handleContinueWrite(parseInt(e.target.dataset.index));
+            });
+            state.generatedChapters.push(result);
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            await saveData();
+        } catch (err) {
+            addDebugLog('续写失败', err.message);
+            alert(`续写失败：${err.message}`);
+        } finally {
+            state.isProcessing = false;
+            container.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = false);
+        }
+    }
+
+    // 发送单章节
     container.getElementById('nme-send-single-btn').addEventListener('click', async () => {
         const chapterId = parseInt(container.getElementById('nme-send-chapter-select').value);
-        if (isNaN(chapterId)) return;
         const chapter = state.chapters.find(ch => ch.id === chapterId);
-        if (!chapter) return;
         const statusEl = container.getElementById('nme-send-status');
+        if (!chapter) return;
         try {
-            statusEl.textContent = '正在发送章节...';
+            statusEl.textContent = '正在发送...';
             await sendChapterToChat(chapter);
             statusEl.textContent = `✅ 章节「${chapter.title}」发送成功`;
         } catch (err) {
             statusEl.textContent = `❌ 发送失败：${err.message}`;
-            state.addDebugLog('发送失败', err.message);
+            addDebugLog('发送失败', err.message);
         }
     });
 
-    // 批量发送按钮
+    // 批量发送
     container.getElementById('nme-send-batch-btn').addEventListener('click', async () => {
-        if (!state.chapters.length) {
-            alert('请先上传小说');
-            return;
-        }
-        if (!confirm(`确定要批量发送${state.chapters.length}个章节到聊天吗？`)) {
-            return;
-        }
+        if (!state.chapters.length) return;
+        if (!confirm(`确定批量发送${state.chapters.length}个章节？`)) return;
         const statusEl = container.getElementById('nme-send-status');
         try {
-            const successCount = await batchSendAllChapters(state.chapters, (current, total) => {
+            const success = await batchSendChapters((current, total) => {
                 statusEl.textContent = `正在发送第${current}/${total}章...`;
             });
-            statusEl.textContent = `✅ 批量发送完成，成功${successCount}/${state.chapters.length}章`;
+            statusEl.textContent = `✅ 批量发送完成，成功${success}/${state.chapters.length}章`;
         } catch (err) {
             statusEl.textContent = `❌ 批量发送失败：${err.message}`;
-            state.addDebugLog('批量发送失败', err.message);
+            addDebugLog('批量发送失败', err.message);
         }
     });
 
     // 图谱导入导出
     container.getElementById('nme-export-graph-btn').addEventListener('click', () => {
-        const graph = state.knowledgeGraph;
-        if (!graph || Object.keys(graph).length === 0) {
-            alert('暂无可导出的知识图谱');
+        if (!state.knowledgeGraph || Object.keys(state.knowledgeGraph).length === 0) {
+            alert('暂无可导出的图谱');
             return;
         }
-        const jsonStr = JSON.stringify(graph, null, 2);
-        const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' });
+        const blob = new Blob([JSON.stringify(state.knowledgeGraph, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = `小说知识图谱_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        alert('知识图谱导出成功！');
     });
 
     container.getElementById('nme-import-graph-btn').addEventListener('click', () => {
         container.getElementById('graph-import-input').click();
     });
 
-    container.getElementById('graph-import-input').addEventListener('change', async (e) => {
+    container.getElementById('graph-import-input').addEventListener('change', async e => {
         const file = e.target.files[0];
         if (!file) return;
-        if (!file.name.toLowerCase().endsWith('.json')) {
-            alert('仅支持JSON格式的图谱文件');
-            return;
-        }
         try {
-            const text = await new Promise((resolve) => {
+            const text = await new Promise(resolve => {
                 const reader = new FileReader();
-                reader.onload = (ev) => resolve(ev.target.result);
+                reader.onload = ev => resolve(ev.target.result);
                 reader.readAsText(file, 'utf-8');
             });
             const graph = JSON.parse(text);
-            const requiredFields = ['人物信息', '世界观设定', '核心剧情线', '文风特点'];
-            requiredFields.forEach(field => {
-                if (!graph[field]) graph[field] = field === '人物信息' ? [] : '暂无';
-            });
             state.knowledgeGraph = graph;
             container.getElementById('nme-graph-content').textContent = JSON.stringify(graph, null, 2);
             container.getElementById('nme-run-continue-btn').disabled = state.chapters.length === 0;
-            await savePluginData(state);
-            alert('知识图谱导入成功！');
+            await saveData();
+            alert('图谱导入成功！');
         } catch (err) {
             alert(`导入失败：${err.message}`);
-            state.addDebugLog('图谱导入失败', err.message);
         } finally {
             e.target.value = '';
         }
     });
 
-    // 调试复制按钮
+    // 调试复制
     container.getElementById('nme-copy-debug-btn').addEventListener('click', () => {
-        const text = state.debugLogs.join('\n---\n');
-        navigator.clipboard.writeText(text).then(() => {
+        navigator.clipboard.writeText(state.debugLogs.join('\n---\n')).then(() => {
             alert('调试信息已复制');
         }).catch(() => {
             alert('复制失败');
@@ -602,249 +638,144 @@ function bindEvents() {
     });
 }
 
-// ===================== 续写核心处理 =====================
-async function handleContinueWrite(preChapterIndex) {
-    const container = state.container;
-    if (state.isProcessing) {
-        alert('已有任务进行中，请稍候');
-        return;
-    }
-    if (!state.knowledgeGraph || Object.keys(state.knowledgeGraph).length === 0) {
-        alert('请先合并生成知识图谱');
-        return;
-    }
-    let preChapterContent = '';
-    if (preChapterIndex === -1) {
-        preChapterContent = container.getElementById('nme-result-content').value.trim();
-    } else {
-        const preContentEl = container.getElementById(`continue-chapter-${preChapterIndex}-content`);
-        if (!preContentEl) return;
-        preChapterContent = preContentEl.value.trim();
-    }
-    if (!preChapterContent) {
-        alert('前置章节内容不能为空');
-        return;
-    }
-    const editContent = container.getElementById('nme-edit-content').value.trim();
-    const latestThreeChapters = getContinueContext(
-        state.chapters,
-        state.currentChapterId,
-        state.generatedChapters,
-        editContent
-    );
-    const continueLength = parseInt(container.getElementById('continue-length').value);
-    const temperature = parseFloat(container.getElementById('temperature').value);
-    const nextChapterNum = state.currentChapterId + state.generatedChapters.length + 2;
-    const prompt = getContinuePrompt({
-        knowledgeGraph: state.knowledgeGraph,
-        latestThreeChapters,
-        continueLength,
-        nextChapterNum
-    });
-    state.isProcessing = true;
-    container.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = true);
-    try {
-        state.addDebugLog('续写', `生成第${nextChapterNum}章`, `提示词长度: ${prompt.length}`);
-        const result = await generateQuietPrompt(prompt, false, temperature, continueLength);
-        const newChapterIndex = preChapterIndex + 1;
-        const cardId = `continue-chapter-${newChapterIndex}`;
-        const card = document.createElement('div');
-        card.className = 'nme-card continue-card';
-        card.id = cardId;
-        card.innerHTML = `
-            <h4>✨ 续写章节 ${nextChapterNum}</h4>
-            <textarea id="${cardId}-content" class="nme-textarea tall" placeholder="续写内容">${result}</textarea>
-            <button class="nme-btn nme-btn-success continue-next-btn" data-index="${newChapterIndex}">⏩ 继续续写下一章</button>
-        `;
-        container.getElementById('nme-continue-container').appendChild(card);
-        card.querySelector('.continue-next-btn').addEventListener('click', async (e) => {
-            const index = parseInt(e.target.dataset.index);
-            await handleContinueWrite(index);
-        });
-        state.generatedChapters.push(result);
-        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        state.addDebugLog('续写成功', `第${nextChapterNum}章生成完成`, `长度: ${result.length}`);
-        await savePluginData(state);
-    } catch (err) {
-        state.addDebugLog('续写失败', err.message);
-        alert(`续写失败：${err.message}`);
-    } finally {
-        state.isProcessing = false;
-        container.querySelectorAll('.nme-btn').forEach(btn => btn.disabled = false);
-    }
-}
-
-// ===================== UI刷新辅助函数 =====================
-function refreshUIData() {
+// ===================== UI刷新 =====================
+function refreshUI() {
     const container = state.container;
     if (!container) return;
     const chapterSelect = container.getElementById('nme-chapter-select');
-    const sendChapterSelect = container.getElementById('nme-send-chapter-select');
-    const originalContentEl = container.getElementById('nme-original-content');
-    const editContentEl = container.getElementById('nme-edit-content');
+    const sendSelect = container.getElementById('nme-send-chapter-select');
+    const originalEl = container.getElementById('nme-original-content');
+    const editEl = container.getElementById('nme-edit-content');
+
     if (state.chapters.length > 0) {
         chapterSelect.innerHTML = '';
-        sendChapterSelect.innerHTML = '';
-        state.chapters.forEach(chapter => {
-            const option = document.createElement('option');
-            option.value = chapter.id;
-            option.textContent = `${chapter.id + 1} - ${chapter.title}`;
-            chapterSelect.appendChild(option.cloneNode(true));
-            sendChapterSelect.appendChild(option);
+        sendSelect.innerHTML = '';
+        state.chapters.forEach(ch => {
+            const opt = document.createElement('option');
+            opt.value = ch.id;
+            opt.textContent = `${ch.id + 1} - ${ch.title}`;
+            chapterSelect.appendChild(opt.cloneNode(true));
+            sendSelect.appendChild(opt);
         });
         chapterSelect.disabled = false;
-        sendChapterSelect.disabled = false;
+        sendSelect.disabled = false;
         container.getElementById('nme-regroup-btn').disabled = false;
         container.getElementById('nme-send-single-btn').disabled = false;
         container.getElementById('nme-send-batch-btn').disabled = false;
-        const currentChapter = state.chapters[state.currentChapterId];
-        if (currentChapter) {
+        const current = state.chapters[state.currentChapterId];
+        if (current) {
             chapterSelect.value = state.currentChapterId;
-            originalContentEl.value = currentChapter.fullContent;
-            editContentEl.value = currentChapter.editContent;
+            originalEl.value = current.fullContent;
+            editEl.value = current.editContent;
         }
     }
-    renderGroupList();
+
+    // 刷新分组列表
+    const groupContainer = container.getElementById('nme-group-list');
+    if (state.groups.length > 0) {
+        let html = '';
+        state.groups.forEach((group, idx) => {
+            const start = group.startIdx + 1;
+            const end = group.endIdx + 1;
+            let status = '', statusClass = '';
+            if (group.status === 'pending') { status = '未分析'; statusClass = 'status-pending'; }
+            else if (group.status === 'success') { status = '成功'; statusClass = 'status-success'; }
+            else { status = '失败'; statusClass = 'status-failed'; }
+            html += `
+                <div class="nme-group-item">
+                    <span>第${start}-${end}章</span>
+                    <div class="nme-group-item-right">
+                        <span class="nme-badge ${statusClass}">${status}</span>
+                        <button class="nme-btn nme-btn-xs analyze-single-btn" data-index="${idx}">${group.status === 'success' ? '重析' : '分析'}</button>
+                    </div>
+                </div>
+            `;
+        });
+        groupContainer.innerHTML = html;
+        groupContainer.querySelectorAll('.analyze-single-btn').forEach(btn => {
+            btn.addEventListener('click', async e => {
+                const idx = parseInt(e.target.dataset.index);
+                if (state.isProcessing || isNaN(idx)) return;
+                const group = state.groups[idx];
+                state.isProcessing = true;
+                btn.disabled = true;
+                try {
+                    const prompt = getGroupAnalyzePrompt(group, state.chapters);
+                    const temperature = parseFloat(container.getElementById('temperature').value);
+                    const result = await generateQuietPrompt(prompt, false, temperature, 4000);
+                    const jsonStr = extractJSON(result);
+                    const parsed = JSON.parse(jsonStr);
+                    ['人物信息', '世界观设定', '核心剧情线', '文风特点'].forEach(f => {
+                        if (!parsed[f]) parsed[f] = f === '人物信息' || f === '实体关系网络' ? [] : '暂无';
+                    });
+                    group.status = 'success';
+                    group.data = parsed;
+                    refreshUI();
+                    await saveData();
+                } catch (err) {
+                    group.status = 'failed';
+                    group.error = err.message;
+                    alert(`分析失败：${err.message}`);
+                } finally {
+                    state.isProcessing = false;
+                    btn.disabled = false;
+                }
+            });
+        });
+        const hasSuccess = state.groups.some(g => g.status === 'success');
+        container.getElementById('nme-merge-btn').disabled = !hasSuccess;
+        container.getElementById('nme-analyze-btn').disabled = false;
+        const startInput = container.getElementById('analyze-start');
+        const endInput = container.getElementById('analyze-end');
+        startInput.max = state.groups.length;
+        endInput.max = state.groups.length;
+        endInput.value = state.groups.length;
+    } else {
+        groupContainer.innerHTML = '<div class="nme-empty">请先上传小说并生成分组</div>';
+    }
+
     if (state.knowledgeGraph && Object.keys(state.knowledgeGraph).length > 0) {
         container.getElementById('nme-graph-content').textContent = JSON.stringify(state.knowledgeGraph, null, 2);
         container.getElementById('nme-run-continue-btn').disabled = state.chapters.length === 0;
     }
-    const totalGroups = state.groups.length;
-    const startInput = container.getElementById('analyze-start');
-    const endInput = container.getElementById('analyze-end');
-    if (totalGroups > 0) {
-        startInput.max = totalGroups;
-        endInput.max = totalGroups;
-        endInput.value = totalGroups;
-        container.getElementById('nme-analyze-btn').disabled = false;
-    }
-    state.updateDebugDisplay();
+
+    updateDebugDisplay();
 }
 
-function renderGroupList() {
-    const container = state.container;
-    if (!container) return;
-    const groupContainer = container.getElementById('nme-group-list');
-    if (!state.groups.length) {
-        groupContainer.innerHTML = '<div class="nme-empty">请先上传小说并生成分组</div>';
-        return;
-    }
-    let html = '';
-    state.groups.forEach((group, idx) => {
-        const startNum = group.startIdx + 1;
-        const endNum = group.endIdx + 1;
-        let statusText = '', statusClass = '';
-        if (group.status === 'pending') {
-            statusText = '未分析';
-            statusClass = 'status-pending';
-        } else if (group.status === 'success') {
-            statusText = '成功';
-            statusClass = 'status-success';
-        } else {
-            statusText = '失败';
-            statusClass = 'status-failed';
-        }
-        html += `
-            <div class="nme-group-item">
-                <span>第${startNum}-${endNum}章</span>
-                <div class="nme-group-item-right">
-                    <span class="nme-badge ${statusClass}">${statusText}</span>
-                    <button class="nme-btn nme-btn-xs analyze-group-btn" data-index="${idx}">${group.status === 'success' ? '重析' : '分析'}</button>
-                </div>
-            </div>
-        `;
-    });
-    groupContainer.innerHTML = html;
-    groupContainer.querySelectorAll('.analyze-group-btn').forEach(btn => {
-        btn.addEventListener('click', async (e) => {
-            const idx = parseInt(e.target.dataset.index);
-            if (isNaN(idx)) return;
-            if (state.isProcessing) {
-                alert('已有任务进行中，请稍候');
-                return;
-            }
-            const group = state.groups[idx];
-            state.isProcessing = true;
-            btn.disabled = true;
-            try {
-                const prompt = getGroupAnalyzePrompt(group, state.chapters);
-                const temperature = parseFloat(container.getElementById('temperature').value);
-                const result = await generateQuietPrompt(prompt, false, temperature, 4000);
-                const jsonStr = extractJSON(result);
-                const parsed = JSON.parse(jsonStr);
-                const required = ['人物信息', '世界观设定', '核心剧情线', '文风特点'];
-                required.forEach(f => { if (!parsed[f]) parsed[f] = f === '人物信息' || f === '实体关系网络' ? [] : '暂无'; });
-                group.status = 'success';
-                group.data = parsed;
-                group.error = null;
-                state.addDebugLog('分组分析', `第${idx+1}组分析成功`);
-            } catch (err) {
-                group.status = 'failed';
-                group.error = err.message;
-                state.addDebugLog('分组分析', `第${idx+1}组分析失败`, err.message);
-                alert(`分析失败：${err.message}`);
-            } finally {
-                state.isProcessing = false;
-                btn.disabled = false;
-                renderGroupList();
-                const hasSuccess = state.groups.some(g => g.status === 'success');
-                container.getElementById('nme-merge-btn').disabled = !hasSuccess;
-            }
-        });
-    });
-    const hasSuccess = state.groups.some(g => g.status === 'success');
-    container.getElementById('nme-merge-btn').disabled = !hasSuccess;
-}
-
-// ===================== ST插件标准生命周期导出（必须顶层导出） =====================
+// ===================== ST扩展标准生命周期 顶层导出 =====================
 export async function load() {
     try {
-        console.log('📖 小说魔改神器插件开始加载');
-        // 非阻塞加载EPUB库，失败不影响主功能
-        loadEpubLib().catch(() => {});
+        console.log('📖 小说魔改神器 开始加载');
         // 加载持久化数据
-        const savedData = await loadPluginData();
-        if (savedData) {
-            Object.assign(state, savedData);
-        }
+        const saved = await loadData();
+        if (saved) Object.assign(state, saved);
         // 注册扩展面板
         registerExtensionPanel({
             id: 'novel-magic-editor',
             title: '📖 小说魔改',
             icon: 'fa-book',
-            onRender: (container) => {
-                renderPluginUI(container);
-            },
-            onDestroy: async () => {
-                await savePluginData(state);
-            }
+            onRender: (container) => renderUI(container),
+            onDestroy: async () => await saveData()
         });
-        console.log('✅ 小说魔改神器插件加载成功');
+        console.log('✅ 小说魔改神器 加载成功');
     } catch (err) {
-        console.error('❌ 小说魔改神器插件加载失败', err);
-        // 抛出错误让ST捕获，显示具体错误信息
-        throw new Error(`插件加载失败: ${err.message}`);
+        console.error('❌ 小说魔改神器 加载失败', err);
+        // 抛出具体错误，ST会显示详细信息，不再是模糊的[object Event]
+        throw new Error(`插件加载失败: ${err.message || err}`);
     }
 }
 
 export async function unload() {
     try {
-        console.log('📖 小说魔改神器插件卸载中');
-        await savePluginData(state);
-        // 清空状态
+        console.log('📖 小说魔改神器 卸载中');
+        await saveData();
         Object.assign(state, {
-            chapters: [],
-            groups: [],
-            knowledgeGraph: {},
-            currentChapterId: 0,
-            isProcessing: false,
-            generatedChapters: [],
-            debugLogs: [],
-            container: null
+            chapters: [], groups: [], knowledgeGraph: {}, currentChapterId: 0,
+            isProcessing: false, generatedChapters: [], debugLogs: [], container: null
         });
-        console.log('✅ 小说魔改神器插件卸载完成');
+        console.log('✅ 小说魔改神器 卸载完成');
     } catch (err) {
-        console.error('❌ 小说魔改神器插件卸载失败', err);
+        console.error('❌ 小说魔改神器 卸载失败', err);
         throw err;
     }
 }
