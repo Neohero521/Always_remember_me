@@ -1,16 +1,13 @@
 {
-  "name": "Novel-Magic-Editor",
-  "display_name": "📖 小说魔改神器",
-  "version": "1.0.0",
-  "author": "Neohero521",
-  "description": "小说章节魔改、知识图谱分析、无限续写插件，支持TXT/EPUB导入，一键发送章节到聊天",
-  "license": "MIT",
-  "homepage": "https://github.com/Neohero521/Always_remember_me",
-  "repository": "https://github.com/Neohero521/Always_remember_me",
-  "main": "index.js",
-  "style": "style.css",
-  "load_priority": 100,
-  "requires": [],
-  "optional": [],
-  "settings": []
+    "display_name": "📖 小说魔改神器",
+    "loading_order": 10,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Neohero521",
+    "version": "1.0.0",
+    "homePage": "https://github.com/Neohero521/Always_remember_me",
+    "auto_update": true,
+    "description": "小说章节魔改、知识图谱分析、无限续写、一键用/sendas命令发送章节到聊天"
 }
