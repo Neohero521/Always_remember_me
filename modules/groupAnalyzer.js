@@ -1,6 +1,3 @@
-import { extractJSON } from './utils.js';
-
-// ===================== 分组构建（完全复用原HTML修复后的逻辑） =====================
 export function buildGroupsFromChapters(chapters, groupSize) {
     if (!chapters.length) return [];
     const groups = [];
@@ -82,7 +79,6 @@ export function buildGroupsFromWords(chapters, wordPerGroup) {
     return groups;
 }
 
-// ===================== 单分组分析Prompt（100%复用原HTML规则） =====================
 export function getGroupAnalyzePrompt(group, chapters) {
     let groupContent = '';
     for (let i = group.startIdx; i <= group.endIdx; i++) {
@@ -92,8 +88,7 @@ export function getGroupAnalyzePrompt(group, chapters) {
     if (groupContent.length > 20000) groupContent = groupContent.slice(0, 20000) + '……(内容过长已截断)';
     
     return `你是一名精通小说分析和知识图谱治理的专家。请基于以下小说章节内容（第${group.startIdx+1}至${group.endIdx+1}章），运用逆向分析技术，构建一个详细、结构化、高质量的知识图谱JSON。
-【触发词：构建知识图谱JSON、小说章节分析】
-【强制约束，必须100%遵守，违反将直接作废】
+【强制约束，必须100%遵守】
 1. 输出必须为纯JSON格式，绝对不能包含任何前置文本、后置说明、注释、markdown代码块、换行符以外的多余内容。
 2. 输出必须以{开头，以}结尾，中间是完整的JSON结构，不能有任何其他字符。
 3. 只能基于提供的小说文本内容进行分析和推理，绝对不能引入任何文本中不存在的外部元素、设定、概念。
@@ -111,14 +106,12 @@ ${groupContent}
 请直接输出纯JSON：`;
 }
 
-// ===================== 图谱合并Prompt（100%复用原HTML规则） =====================
 export function getMergeGraphPrompt(successGroups) {
     const sampleGroup = successGroups[0];
     const groupSizeDesc = sampleGroup ? `每组${sampleGroup.endIdx - sampleGroup.startIdx + 1}章` : '若干章';
     
     return `你是一名知识图谱合并专家。以下是多组小说章节分析得出的知识图谱JSON（每组基于连续章节，${groupSizeDesc}）。请将它们合并成一个统一、完整、无冲突的图谱。
-【触发词：合并知识图谱JSON、图谱合并】
-【强制约束，必须100%遵守，违反将直接作废】
+【强制约束，必须100%遵守】
 1. 输出必须为纯JSON格式，绝对不能包含任何前置文本、后置说明、注释、markdown代码块、换行符以外的多余内容。
 2. 输出必须以{开头，以}结尾，中间是完整的JSON结构，不能有任何其他字符。
 3. 只能基于提供的多组知识图谱数据进行合并，绝对不能引入任何数据中不存在的外部元素、设定、概念。
@@ -132,7 +125,6 @@ ${JSON.stringify(successGroups.map(g => g.data), null, 2)}
 请直接输出纯JSON：`;
 }
 
-// ===================== 工具函数：JSON提取（完全复用原HTML容错逻辑） =====================
 export function extractJSON(text) {
     if (!text || typeof text !== 'string') throw new Error('输入内容为空，无法提取JSON');
     let cleaned = text.trim();
@@ -141,7 +133,7 @@ export function extractJSON(text) {
     const firstBrace = cleaned.indexOf('{');
     const lastBrace = cleaned.lastIndexOf('}');
     if (firstBrace === -1 || lastBrace === -1 || lastBrace <= firstBrace) {
-        throw new Error('返回内容中没有找到有效的JSON结构，未匹配到{}');
+        throw new Error('返回内容中没有找到有效的JSON结构');
     }
     let jsonStr = cleaned.substring(firstBrace, lastBrace + 1);
     jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
