@@ -1,93 +1,77 @@
-// modules/stCommandBridge.js
+// modules/stCommandBridge.js - 符合ST官方命令注册规范
 import storageManager from './storageManager.js';
 
 class STCommandBridge {
     constructor() {
-        // 您指定的核心命令链模板
         this.characterInputCommandTemplate = '/input 请输入{{char}}的动作或台词： | /sendas name={{char}} {{pipe}}';
     }
 
-    getCurrentCharacterName() {
-        if (!window.SillyTavern) throw new Error('SillyTavern API 不可用');
-        const currentChar = window.SillyTavern.getCurrentCharacter();
+    getCurrentCharacterName(context) {
+        const currentChar = context.characters.getCurrentCharacter();
         return currentChar?.name || '{{char}}';
     }
 
-    // 执行您指定的角色输入发送命令链
-    async executeCharacterInputCommand() {
-        try {
-            const charName = this.getCurrentCharacterName();
-            const command = this.characterInputCommandTemplate.replace(/{{char}}/g, charName);
-            await window.SillyTavern.executeSlashCommand(command);
-            return true;
-        } catch (error) {
-            throw new Error(`执行命令失败: ${error.message}`);
-        }
-    }
-
-    // 把章节内容导入到聊天输入框
-    importChapterToInput(chapterContent) {
-        if (!window.SillyTavern) throw new Error('SillyTavern API 不可用');
-        window.SillyTavern.setChatInputValue(chapterContent);
+    async executeCharacterInputCommand(context) {
+        const charName = this.getCurrentCharacterName(context);
+        const command = this.characterInputCommandTemplate.replace(/{{char}}/g, charName);
+        await context.slashCommands.execute(command);
         return true;
     }
 
-    // 以指定角色身份发送章节内容到对话框
-    async sendChapterAsCharacter(chapterContent, charName = null) {
-        if (!window.SillyTavern) throw new Error('SillyTavern API 不可用');
-        const targetCharName = charName || this.getCurrentCharacterName();
+    importChapterToInput(chapterContent, context) {
+        context.chat.setChatInputValue(chapterContent);
+        return true;
+    }
+
+    async sendChapterAsCharacter(chapterContent, charName = null, context) {
+        const targetCharName = charName || this.getCurrentCharacterName(context);
         const command = `/sendas name="${targetCharName}" ${chapterContent}`;
-        await window.SillyTavern.executeSlashCommand(command);
+        await context.slashCommands.execute(command);
         return true;
     }
 
-    // 发送章节内容为系统上下文
-    async sendChapterAsContext(chapterContent) {
-        if (!window.SillyTavern) throw new Error('SillyTavern API 不可用');
-        await window.SillyTavern.sendMessage(chapterContent, { isSystem: true });
+    async sendChapterAsContext(chapterContent, context) {
+        await context.chat.sendMessage(chapterContent, { isSystem: true });
         return true;
     }
 
-    // 注册插件自定义斜杠命令
-    registerCustomCommands() {
-        if (!window.SillyTavern) return;
-
+    registerCustomCommands(context) {
         // 打开插件面板命令
-        window.SillyTavern.registerSlashCommand({
+        context.slashCommands.register({
             name: 'novel_import',
-            description: '打开小说续写助手的小说导入面板',
-            handler: () => window.SillyTavern.openExtensionPanel('novelContinuationPanel')
+            description: '打开小说续写助手面板',
+            handler: () => context.sidebar.openPanel('novel-continuation-panel')
         });
 
         // 章节分析命令
-        window.SillyTavern.registerSlashCommand({
+        context.slashCommands.register({
             name: 'novel_analyze',
             description: '分析当前选中的小说章节，生成知识图谱',
             handler: async () => {
                 const currentChapter = storageManager.getCurrentChapter();
                 const currentNovel = storageManager.getCurrentNovel();
                 if (!currentNovel || !currentChapter) {
-                    return window.SillyTavern.showToast('请先选择要分析的小说和章节', 'error');
+                    return context.toaster.show('请先选择要分析的小说和章节', 'error');
                 }
                 window.dispatchEvent(new CustomEvent('novel-continuation:analyze-current-chapter'));
             }
         });
 
-        // 您指定的角色输入命令
-        window.SillyTavern.registerSlashCommand({
+        // 角色输入命令
+        context.slashCommands.register({
             name: 'char_input',
             description: '弹出输入框，输入角色的动作或台词，以当前角色的身份发送',
             handler: async () => {
                 try {
-                    await this.executeCharacterInputCommand();
+                    await this.executeCharacterInputCommand(context);
                 } catch (error) {
-                    window.SillyTavern.showToast(`执行命令失败: ${error.message}`, 'error');
+                    context.toaster.show(`执行命令失败: ${error.message}`, 'error');
                 }
             }
         });
 
         // 续写命令
-        window.SillyTavern.registerSlashCommand({
+        context.slashCommands.register({
             name: 'novel_continue',
             description: '续写当前选中的章节，参数：字数（默认1000）',
             handler: async (args) => {
@@ -95,7 +79,7 @@ class STCommandBridge {
                 const currentChapter = storageManager.getCurrentChapter();
                 const currentNovel = storageManager.getCurrentNovel();
                 if (!currentNovel || !currentChapter) {
-                    return window.SillyTavern.showToast('请先选择要续写的小说和章节', 'error');
+                    return context.toaster.show('请先选择要续写的小说和章节', 'error');
                 }
                 window.dispatchEvent(new CustomEvent('novel-continuation:continue-current-chapter', { detail: { wordCount } }));
             }
