@@ -1,23 +1,16 @@
 {
-  "name": "always-remember-me-novel-continuation",
+  "name": "always-remember-me",
   "version": "1.0.0",
-  "description": "SillyTavern 小说续写插件，支持章节拆分、知识图谱构建、AI续写、角色对话快捷发送",
+  "description": "SillyTavern小说续写插件",
   "main": "index.js",
   "scripts": {},
-  "keywords": ["sillytavern", "plugin", "novel", "continuation", "roleplay"],
+  "keywords": ["sillytavern", "novel", "continuation", "ai", "knowledge-graph"],
   "author": "Neohero521",
-  "license": "AGPL-3.0",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Neohero521/Always_remember_me.git"
-  },
-  "sillyTavern": {
+  "license": "MIT",
+  "sillytavern": {
     "title": "小说续写助手",
     "author": "Neohero521",
     "version": "1.0.0",
-    "entry": "index.js",
-    "requires": {
-      "sillyTavern": ">=1.10.6"
-    }
+    "description": "支持小说章节拆分、知识图谱构建、AI续写的SillyTavern插件"
   }
 }
