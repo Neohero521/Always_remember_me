@@ -1,0 +1,142 @@
+/* 全局样式适配ST容器 */
+#novel-magic-editor-panel {
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    scroll-behavior: smooth;
+    box-sizing: border-box;
+    padding: 16px;
+}
+
+/* 完全复用原HTML核心样式 */
+#novel-magic-editor-panel * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+}
+
+#novel-magic-editor-panel button, 
+#novel-magic-editor-panel select, 
+#novel-magic-editor-panel input[type=file]::file-selector-button {
+    touch-action: manipulation;
+    min-height: 44px;
+    transition: all 0.2s ease;
+}
+
+#novel-magic-editor-panel textarea {
+    font-size: 15px;
+    line-height: 1.7;
+    letter-spacing: 0.01em;
+    transition: all 0.2s ease;
+    width: 100%;
+    resize: none;
+}
+
+#novel-magic-editor-panel textarea:focus {
+    outline: none;
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+}
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 选项卡样式 */
+#novel-magic-editor-panel .tab-button {
+    transition: all 0.2s ease;
+    border-radius: 8px 8px 0 0;
+}
+#novel-magic-editor-panel .tab-button:hover {
+    background-color: #f1f5f9;
+    color: #3b82f6;
+}
+#novel-magic-editor-panel .tab-active {
+    color: #2563eb;
+    border-bottom: 2px solid #2563eb;
+    font-weight: 600;
+    background-color: #eff6ff;
+}
+
+/* 分组徽章 */
+#novel-magic-editor-panel .group-badge {
+    @apply text-xs px-2.5 py-0.5 rounded-full font-medium;
+}
+#novel-magic-editor-panel .group-badge.pending { @apply bg-gray-100 text-gray-600; }
+#novel-magic-editor-panel .group-badge.success { @apply bg-green-100 text-green-700; }
+#novel-magic-editor-panel .group-badge.failed { @apply bg-red-100 text-red-700; }
+
+/* 按钮动效 */
+#novel-magic-editor-panel .btn-click:active { transform: scale(0.98); }
+
+/* 卡片样式 */
+#novel-magic-editor-panel .card-item {
+    transition: all 0.3s ease;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9;
+    background: white;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+#novel-magic-editor-panel .card-item:hover {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+    transform: translateY(-1px);
+    border-color: #e2e8f0;
+}
+
+/* 适配ST暗黑主题 */
+:root(.dark) #novel-magic-editor-panel .card-item {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f1f5f9;
+}
+:root(.dark) #novel-magic-editor-panel .tab-button:hover {
+    background-color: #334155;
+}
+:root(.dark) #novel-magic-editor-panel .tab-active {
+    background-color: #1e3a8a;
+}
+
+/* 续写章节卡片 */
+#novel-magic-editor-panel .continue-chapter-card {
+    @apply bg-white shadow-md border border-gray-200 overflow-hidden mb-5 transition-all duration-300 rounded-2xl;
+}
+#novel-magic-editor-panel .continue-chapter-card:hover {
+    @apply shadow-lg -translate-y-0.5 border-blue-100;
+}
+#novel-magic-editor-panel .continue-chapter-header {
+    @apply bg-gray-50/80 px-5 py-3.5 border-b border-gray-200 flex justify-between items-center backdrop-blur-sm rounded-t-2xl;
+}
+#novel-magic-editor-panel .continue-chapter-header span:first-child {
+    @apply font-semibold text-gray-800 text-sm;
+}
+#novel-magic-editor-panel .continue-chapter-header span:last-child {
+    @apply text-xs font-medium text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200;
+}
+#novel-magic-editor-panel .continue-chapter-content {
+    @apply w-full h-36 p-5 text-base leading-relaxed resize-none focus:outline-none scrollbar-hide bg-white;
+}
+#novel-magic-editor-panel .continue-chapter-footer {
+    @apply p-3.5 border-t border-gray-100 flex justify-end bg-gray-50/50 rounded-b-2xl;
+}
+#novel-magic-editor-panel .continue-chapter-btn {
+    @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-7 rounded-full text-sm shadow-sm transition-all flex items-center gap-1.5 min-h-[40px];
+}
+#novel-magic-editor-panel .continue-chapter-btn:disabled {
+    @apply bg-gray-400 cursor-not-allowed hover:bg-gray-400;
+}
+
+/* 暗黑主题适配续写卡片 */
+:root(.dark) #novel-magic-editor-panel .continue-chapter-card {
+    background: #1e293b;
+    border-color: #334155;
+}
+:root(.dark) #novel-magic-editor-panel .continue-chapter-header,
+:root(.dark) #novel-magic-editor-panel .continue-chapter-footer {
+    background: #0f172a;
+    border-color: #334155;
+}
+:root(.dark) #novel-magic-editor-panel .continue-chapter-content {
+    background: #1e293b;
+    color: #f1f5f9;
+}
