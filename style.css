@@ -1,142 +1,366 @@
-/* 全局样式适配ST容器 */
-#novel-magic-editor-panel {
-    height: 100%;
-    width: 100%;
-    overflow-x: hidden !important;
-    overflow-y: auto !important;
-    scroll-behavior: smooth;
-    box-sizing: border-box;
+/* ===================== 小说魔改神器 全局样式 ===================== */
+#novel-magic-editor {
     padding: 16px;
+    height: 100%;
+    overflow-y: auto;
+    color: var(--text-color);
+    font-family: var(--main-font);
 }
 
-/* 完全复用原HTML核心样式 */
-#novel-magic-editor-panel * {
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+/* 头部 */
+#novel-magic-editor .nme-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+#novel-magic-editor .nme-header h2 {
+    margin: 0 0 8px 0;
+    font-size: 22px;
+    font-weight: 700;
+    background: linear-gradient(to right, #3b82f6, #6366f1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+#novel-magic-editor .nme-desc {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary-color);
 }
 
-#novel-magic-editor-panel button, 
-#novel-magic-editor-panel select, 
-#novel-magic-editor-panel input[type=file]::file-selector-button {
-    touch-action: manipulation;
-    min-height: 44px;
-    transition: all 0.2s ease;
+/* 选项卡 */
+#novel-magic-editor .nme-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 16px;
+    gap: 4px;
 }
-
-#novel-magic-editor-panel textarea {
-    font-size: 15px;
-    line-height: 1.7;
-    letter-spacing: 0.01em;
-    transition: all 0.2s ease;
-    width: 100%;
-    resize: none;
-}
-
-#novel-magic-editor-panel textarea:focus {
-    outline: none;
-    border-color: #3b82f6 !important;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
-}
-
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-/* 选项卡样式 */
-#novel-magic-editor-panel .tab-button {
+#novel-magic-editor .nme-tab-btn {
+    flex: 1;
+    padding: 12px 8px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary-color);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
     transition: all 0.2s ease;
     border-radius: 8px 8px 0 0;
 }
-#novel-magic-editor-panel .tab-button:hover {
-    background-color: #f1f5f9;
-    color: #3b82f6;
+#novel-magic-editor .nme-tab-btn:hover {
+    background: var(--hover-color);
+    color: var(--text-color);
 }
-#novel-magic-editor-panel .tab-active {
-    color: #2563eb;
-    border-bottom: 2px solid #2563eb;
+#novel-magic-editor .nme-tab-btn.active {
+    color: var(--main-color);
+    border-bottom-color: var(--main-color);
+    background: var(--input-bg);
     font-weight: 600;
-    background-color: #eff6ff;
 }
 
-/* 分组徽章 */
-#novel-magic-editor-panel .group-badge {
-    @apply text-xs px-2.5 py-0.5 rounded-full font-medium;
+/* 面板 */
+#novel-magic-editor .nme-panel {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
 }
-#novel-magic-editor-panel .group-badge.pending { @apply bg-gray-100 text-gray-600; }
-#novel-magic-editor-panel .group-badge.success { @apply bg-green-100 text-green-700; }
-#novel-magic-editor-panel .group-badge.failed { @apply bg-red-100 text-red-700; }
+#novel-magic-editor .nme-panel.active {
+    display: flex;
+}
 
-/* 按钮动效 */
-#novel-magic-editor-panel .btn-click:active { transform: scale(0.98); }
+/* 卡片 */
+#novel-magic-editor .nme-card {
+    background: var(--bg-secondary-color);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#novel-magic-editor .nme-card h3,
+#novel-magic-editor .nme-card h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-color);
+}
 
-/* 卡片样式 */
-#novel-magic-editor-panel .card-item {
-    transition: all 0.3s ease;
-    border-radius: 16px;
-    border: 1px solid #f1f5f9;
-    background: white;
+/* 表单元素 */
+#novel-magic-editor .nme-form-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+#novel-magic-editor .nme-form-row label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-color);
+}
+#novel-magic-editor .nme-radio-group {
+    display: flex;
+    gap: 16px;
+}
+#novel-magic-editor .nme-radio {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+#novel-magic-editor .nme-input-number {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 13px;
+    text-align: center;
+}
+#novel-magic-editor .nme-input-number.small {
+    width: 60px;
+}
+#novel-magic-editor .nme-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+    outline: none;
+    -webkit-appearance: none;
+}
+#novel-magic-editor .nme-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--main-color);
+    cursor: pointer;
+}
+#novel-magic-editor .nme-slider-desc {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    font-size: 11px;
+    color: var(--text-secondary-color);
+}
+
+/* 文件输入 */
+#novel-magic-editor .nme-file-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 13px;
+    cursor: pointer;
+}
+#novel-magic-editor .nme-file-input::file-selector-button {
+    margin-right: 12px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 8px;
+    background: var(--main-color);
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+/* 选择器 */
+#novel-magic-editor .nme-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 13px;
+}
+
+/* 文本域 */
+#novel-magic-editor .nme-textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text-color);
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+}
+#novel-magic-editor .nme-textarea.tall {
+    min-height: 180px;
+}
+#novel-magic-editor .nme-textarea:focus {
+    outline: none;
+    border-color: var(--main-color);
+    box-shadow: 0 0 0 2px rgba(var(--main-color-rgb), 0.1);
+}
+
+/* 按钮 */
+#novel-magic-editor .nme-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+#novel-magic-editor .nme-btn:active {
+    transform: scale(0.98);
+}
+#novel-magic-editor .nme-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+#novel-magic-editor .nme-btn.w-full {
+    width: 100%;
+}
+#novel-magic-editor .nme-btn-xs {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+#novel-magic-editor .nme-btn-primary {
+    background: var(--main-color);
+    color: white;
+}
+#novel-magic-editor .nme-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+}
+#novel-magic-editor .nme-btn-secondary {
+    background: var(--button-bg);
+    color: var(--button-text);
+    border: 1px solid var(--border-color);
+}
+#novel-magic-editor .nme-btn-secondary:hover:not(:disabled) {
+    background: var(--hover-color);
+}
+#novel-magic-editor .nme-btn-success {
+    background: #10b981;
+    color: white;
+}
+#novel-magic-editor .nme-btn-success:hover:not(:disabled) {
+    background: #059669;
+}
+#novel-magic-editor .nme-btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* 分组列表 */
+#novel-magic-editor .nme-group-list {
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px;
+    background: var(--input-bg);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#novel-magic-editor .nme-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: var(--bg-secondary-color);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+#novel-magic-editor .nme-group-item-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+#novel-magic-editor .nme-empty {
+    text-align: center;
     padding: 20px;
-    margin-bottom: 16px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-#novel-magic-editor-panel .card-item:hover {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
-    transform: translateY(-1px);
-    border-color: #e2e8f0;
+    color: var(--text-secondary-color);
+    font-size: 13px;
 }
 
-/* 适配ST暗黑主题 */
-:root(.dark) #novel-magic-editor-panel .card-item {
-    background: #1e293b;
-    border-color: #334155;
-    color: #f1f5f9;
+/* 徽章 */
+#novel-magic-editor .nme-badge {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 500;
 }
-:root(.dark) #novel-magic-editor-panel .tab-button:hover {
-    background-color: #334155;
+#novel-magic-editor .nme-badge.status-pending {
+    background: var(--bg-secondary-color);
+    color: var(--text-secondary-color);
 }
-:root(.dark) #novel-magic-editor-panel .tab-active {
-    background-color: #1e3a8a;
+#novel-magic-editor .nme-badge.status-success {
+    background: #d1fae5;
+    color: #065f46;
 }
-
-/* 续写章节卡片 */
-#novel-magic-editor-panel .continue-chapter-card {
-    @apply bg-white shadow-md border border-gray-200 overflow-hidden mb-5 transition-all duration-300 rounded-2xl;
-}
-#novel-magic-editor-panel .continue-chapter-card:hover {
-    @apply shadow-lg -translate-y-0.5 border-blue-100;
-}
-#novel-magic-editor-panel .continue-chapter-header {
-    @apply bg-gray-50/80 px-5 py-3.5 border-b border-gray-200 flex justify-between items-center backdrop-blur-sm rounded-t-2xl;
-}
-#novel-magic-editor-panel .continue-chapter-header span:first-child {
-    @apply font-semibold text-gray-800 text-sm;
-}
-#novel-magic-editor-panel .continue-chapter-header span:last-child {
-    @apply text-xs font-medium text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200;
-}
-#novel-magic-editor-panel .continue-chapter-content {
-    @apply w-full h-36 p-5 text-base leading-relaxed resize-none focus:outline-none scrollbar-hide bg-white;
-}
-#novel-magic-editor-panel .continue-chapter-footer {
-    @apply p-3.5 border-t border-gray-100 flex justify-end bg-gray-50/50 rounded-b-2xl;
-}
-#novel-magic-editor-panel .continue-chapter-btn {
-    @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-7 rounded-full text-sm shadow-sm transition-all flex items-center gap-1.5 min-h-[40px];
-}
-#novel-magic-editor-panel .continue-chapter-btn:disabled {
-    @apply bg-gray-400 cursor-not-allowed hover:bg-gray-400;
+#novel-magic-editor .nme-badge.status-failed {
+    background: #fee2e2;
+    color: #991b1b;
 }
 
-/* 暗黑主题适配续写卡片 */
-:root(.dark) #novel-magic-editor-panel .continue-chapter-card {
-    background: #1e293b;
-    border-color: #334155;
+/* 预格式化文本 */
+#novel-magic-editor .nme-pre {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--input-bg);
+    font-family: var(--mono-font);
+    font-size: 11px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--text-color);
 }
-:root(.dark) #novel-magic-editor-panel .continue-chapter-header,
-:root(.dark) #novel-magic-editor-panel .continue-chapter-footer {
-    background: #0f172a;
-    border-color: #334155;
+
+/* 状态文本 */
+#novel-magic-editor .nme-status {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-secondary-color);
 }
-:root(.dark) #novel-magic-editor-panel .continue-chapter-content {
-    background: #1e293b;
-    color: #f1f5f9;
+#novel-magic-editor .nme-divider {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-secondary-color);
+    position: relative;
+    margin: 8px 0;
+}
+#novel-magic-editor .nme-divider::before,
+#novel-magic-editor .nme-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: var(--border-color);
+}
+#novel-magic-editor .nme-divider::before {
+    left: 0;
+}
+#novel-magic-editor .nme-divider::after {
+    right: 0;
+}
+
+/* 续写容器 */
+#novel-magic-editor .nme-continue-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* 工具类 */
+#novel-magic-editor .hidden {
+    display: none !important;
 }
