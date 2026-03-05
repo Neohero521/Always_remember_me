@@ -1,74 +1,44 @@
-// index.js - 100%对齐Cola插件的入口规范，零报错兼容所有ST正式版
+// index.js - 完全符合ST官方扩展规范
 import storageManager from './modules/storageManager.js';
 import stCommandBridge from './modules/stCommandBridge.js';
 import uiManager from './modules/uiManager.js';
-import chapterSplitter from './modules/chapterSplitter.js';
-import knowledgeGraph from './modules/knowledgeGraph.js';
-import continuationEngine from './modules/continuationEngine.js';
 
-// 全局挂载模块（和Cola插件写法完全一致）
-window.STNovelPlugin = {
-    storageManager,
-    stCommandBridge,
-    uiManager,
-    chapterSplitter,
-    knowledgeGraph,
-    continuationEngine
-};
-
-/**
- * ST插件初始化入口（Cola同款标准写法）
- * @param {Object} context ST注入的上下文
- */
-export async function init(context) {
-    console.log('[小说续写助手] 插件开始初始化...');
-
+// ST插件初始化入口，必须导出async init函数
+export async function init() {
+    console.log('[小说续写助手] 插件开始加载...');
     try {
-        // 等待ST完全加载，确保全局API可用（解决初始化报错的核心）
-        if (!window.SillyTavern) {
-            await new Promise(resolve => {
-                const check = setInterval(() => {
-                    if (window.SillyTavern) {
-                        clearInterval(check);
-                        resolve();
-                    }
-                }, 100);
-            });
+        // 等待ST全局上下文完全加载
+        const context = window.SillyTavern?.getContext?.();
+        if (!context) {
+            throw new Error('无法获取SillyTavern上下文');
         }
 
         // 初始化核心模块
         storageManager.initStorage();
-        console.log('[小说续写助手] 存储模块初始化完成');
+        stCommandBridge.registerCommands(context);
 
-        stCommandBridge.registerCommands();
-        console.log('[小说续写助手] 命令注册完成');
-
-        // 注册侧边栏面板（Cola同款API，图标显示的核心）
-        await window.SillyTavern.sidebar.registerPanel({
+        // 注册侧边栏面板（官方标准写法，图标显示的核心）
+        await context.sidebar.registerPanel({
             id: 'novel-continuation-panel',
-            icon: 'fa-solid fa-book',
+            icon: 'fa-book',
             title: '小说续写助手',
-            onRender: (container) => uiManager.render(container),
-            onOpen: (container) => uiManager.render(container)
+            onRender: (container) => uiManager.render(container, context),
+            onOpen: (container) => uiManager.render(container, context)
         });
 
-        console.log('[小说续写助手] 侧边栏面板注册成功！图标已加载');
-        console.log('[小说续写助手] 插件初始化完成！');
+        console.log('[小说续写助手] 插件加载完成！已出现在侧边栏');
     } catch (error) {
-        console.error('[小说续写助手] 初始化失败:', error);
+        console.error('[小说续写助手] 加载失败:', error);
         throw error;
     }
 }
 
-/**
- * 插件卸载钩子（ST标准要求）
- */
+// ST插件卸载钩子，必须导出async exit函数
 export async function exit() {
-    console.log('[小说续写助手] 插件开始卸载');
+    console.log('[小说续写助手] 插件卸载');
     try {
-        await window.SillyTavern.sidebar.unregisterPanel('novel-continuation-panel');
-        delete window.STNovelPlugin;
-        console.log('[小说续写助手] 插件卸载完成');
+        const context = window.SillyTavern?.getContext?.();
+        await context?.sidebar?.unregisterPanel?.('novel-continuation-panel');
     } catch (error) {
         console.error('[小说续写助手] 卸载失败:', error);
     }
