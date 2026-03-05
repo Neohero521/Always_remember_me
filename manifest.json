@@ -4,7 +4,7 @@
   "author": "Neohero521",
   "version": "1.0.0",
   "description": "专为SillyTavern打造的小说续写插件，支持章节拆分、知识图谱、AI续写",
-  "icon": "fa-book",
+  "icon": "fa-solid fa-book",
   "minSTVersion": "1.10.0",
   "entry": "index.js",
   "style": "style.css",
