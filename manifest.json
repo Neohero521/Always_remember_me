@@ -3,12 +3,12 @@
   "displayName": "小说续写助手",
   "author": "Neohero521",
   "version": "1.0.0",
-  "description": "SillyTavern小说续写插件，支持章节拆分、知识图谱、AI续写、角色快捷命令",
+  "description": "专为SillyTavern打造的小说续写插件，支持章节拆分、知识图谱、AI续写",
   "icon": "fa-book",
-  "minSTVersion": "1.10.6",
-  "license": "AGPL-3.0",
-  "homepage": "https://github.com/Neohero521/Always_remember_me",
+  "minSTVersion": "1.10.0",
   "entry": "index.js",
   "style": "style.css",
-  "tags": ["小说", "续写", "剧情", "角色"]
+  "license": "AGPL-3.0",
+  "homepage": "https://github.com/Neohero521/Always_remember_me",
+  "tags": ["sillytavern", "小说", "续写", "剧情"]
 }
