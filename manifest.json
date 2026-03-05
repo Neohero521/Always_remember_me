@@ -1,12 +1,32 @@
 {
-  "name": "always-remember-me-novel",
+  "manifest_version": 2,
+  "name": "Always_remember_me",
   "display_name": "小说续写助手",
-  "author": "Neohero521",
   "version": "1.0.0",
-  "description": "SillyTavern 小说续写插件，支持章节拆分、知识图谱构建、AI续写、角色对话快捷发送",
-  "icon": "fa-book",
-  "minimum_client_version": "1.10.0",
-  "js": "index.legacy.js",
-  "css": "style.css",
-  "auto_update": true
+  "author": "Neohero521",
+  "description": "SillyTavern小说续写插件，支持章节拆分、知识图谱构建、AI续写、章节快速导入对话框",
+  "main": "index.js",
+  "style": "style.css",
+  "requires": [],
+  "loadAfter": ["builtin-chat"],
+  "settings": [
+    {
+      "id": "chapter_split_regex",
+      "name": "章节拆分正则",
+      "description": "用于匹配章节标题的正则表达式",
+      "type": "input",
+      "default": "^\\s*第[0-9一二三四五六七八九十百千]+[章回节卷集]\\s*.*",
+      "scope": "global"
+    },
+    {
+      "id": "default_continuation_length",
+      "name": "默认续写字数",
+      "description": "续写内容的默认字数",
+      "type": "number",
+      "default": 1000,
+      "min": 500,
+      "max": 10000,
+      "scope": "global"
+    }
+  ]
 }
