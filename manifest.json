@@ -6,8 +6,8 @@
     "js": "index.js",
     "css": "style.css",
     "author": "Neohero521",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "homePage": "https://github.com/Neohero521/Always_remember_me",
     "auto_update": true,
-    "description": "小说章节解析、知识图谱分析、人设锁定无限续写，支持/sendas命令一键发送章节到聊天"
+    "description": "小说章节解析、知识图谱分析、人设锁定续写，支持/sendas命令一键发送章节到聊天"
 }
