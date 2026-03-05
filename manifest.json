@@ -1,14 +1,12 @@
 {
+  "name": "always-remember-me-novel",
   "display_name": "小说续写助手",
-  "loading_order": 10,
-  "requires": [],
-  "optional": [],
-  "dependencies": [],
-  "js": "index.js",
-  "css": "style.css",
   "author": "Neohero521",
   "version": "1.0.0",
+  "description": "SillyTavern 小说续写插件，支持章节拆分、知识图谱构建、AI续写、角色对话快捷发送",
+  "icon": "fa-book",
   "minimum_client_version": "1.10.0",
-  "homePage": "https://github.com/Neohero521/Always_remember_me",
+  "js": "index.legacy.js",
+  "css": "style.css",
   "auto_update": true
 }
