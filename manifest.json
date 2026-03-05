@@ -1,0 +1,13 @@
+{
+  "name": "novel-continuation",
+  "display_name": "小说续写助手",
+  "version": "1.0.0",
+  "author": "你的名称",
+  "description": "小说文本导入、自动拆分章节、一键导入聊天对话框的续写辅助插件",
+  "license": "MIT",
+  "homepage": "你的仓库地址",
+  "main": "index.js",
+  "style": "style.css",
+  "minimum_tavern_version": "1.12.0",
+  "tags": ["小说", "续写", "导入", "章节管理"]
+}
