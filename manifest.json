@@ -1,1 +1,16 @@
-{\n  "name": "SillyTavern Extension",\n  "description": "An extension for SillyTavern that enhances user experience.",\n  "version": "1.0.0",\n  "manifest_version": 3,\n  "permissions": [\n    "storage",\n    "activeTab"\n  ],\n  "background": {\n    "service_worker": "background.js"\n  },\n  "action": {\n    "default_popup": "popup.html",\n    "default_icon": "icon.png"\n  },\n  "icons": {\n    "48": "icon.png"\n  }\n}
+{
+  "name": "Novel-Magic-Editor",
+  "display_name": "📖 小说魔改神器",
+  "version": "1.0.0",
+  "author": "Neohero521",
+  "description": "小说章节魔改、知识图谱分析、无限续写插件，支持TXT/EPUB导入，一键发送章节到聊天",
+  "license": "MIT",
+  "homepage": "https://github.com/Neohero521/Always_remember_me",
+  "repository": "https://github.com/Neohero521/Always_remember_me",
+  "main": "index.js",
+  "style": "style.css",
+  "load_priority": 100,
+  "requires": [],
+  "optional": [],
+  "settings": []
+}
