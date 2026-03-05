@@ -1,32 +1,46 @@
+// SillyTavern Server Plugin for Importing TXT Novel Files
+
 const fs = require('fs');
 const path = require('path');
 
-// Function to read chapters from a TXT file
-function readChapters(filePath) {
-    const data = fs.readFileSync(filePath, 'utf-8');
-    const chapters = data.split(/Chapter \d+/).filter(chapter => chapter.trim()); // Assuming chapters start with "Chapter X"
-    return chapters.map((chapter, index) => ({
-        chapterNumber: index + 1,
-        content: chapter.trim()
-    }));
+class NovelImporter {
+    constructor(directory) {
+        this.directory = directory;
+    }
+
+    parseChapter(content) {
+        // Basic implementation to split chapters by a specific pattern
+        return content.split(/\n\s*Chapter \d+/).filter(chapter => chapter.trim() !== '').map(ch => ch.trim());
+    }
+
+    importNovels() {
+        const files = fs.readdirSync(this.directory);
+        const novels = {};
+
+        files.forEach(file => {
+            if (path.extname(file) === '.txt') {
+                const content = fs.readFileSync(path.join(this.directory, file), 'utf-8');
+                const chapters = this.parseChapter(content);
+                novels[file] = chapters;
+            }
+        });
+
+        return novels;
+    }
+
+    sendChapters(chatInterface, novelName) {
+        const novels = this.importNovels();
+        const chapters = novels[novelName];
+
+        if (!chapters) {
+            chatInterface.sendMessage(`Novel ${novelName} not found!`);
+            return;
+        }
+
+        chapters.forEach((chapter, index) => {
+            chatInterface.sendMessage(`/sendas chapter ${index + 1}: ${chapter}`);
+        });
+    }
 }
 
-// Function to send chapters as chat messages
-function sendChatMessages(chapters) {
-    chapters.forEach(chapter => {
-        // Simulating sending chat message
-        console.log(`Chapter ${chapter.chapterNumber}:`);
-        console.log(chapter.content);
-        console.log('---'); // Separator for messages
-    });
-}
-
-// Main function to execute chapter parsing and message sending
-function main() {
-    const filePath = path.join(__dirname, 'novel.txt'); // Assuming the novel is in the same directory as this script
-    const chapters = readChapters(filePath);
-    sendChatMessages(chapters);
-}
-
-// Execute the main function
-main();
+module.exports = NovelImporter;
