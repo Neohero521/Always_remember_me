@@ -1,4 +1,4 @@
-// 严格遵循模板导入规范，路径与官方模板完全一致
+// 严格遵循模板导入规范，与官方模板路径完全一致
 import {
   extension_settings,
   getContext,
@@ -7,18 +7,14 @@ import {
 
 import { saveSettingsDebounced } from "../../../../script.js";
 
-// 【关键修复1】导入ST原生斜杠命令处理核心函数，全版本兼容
-import { processSlashCommand } from "../../slash-commands.js";
-
-// 与仓库名称完全一致，确保路径正确
+// 与你的仓库名称完全一致，确保路径正确
 const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-// 【关键修复2】修正默认命令模板，用/echo替代/input，实现无交互批量发送
 const defaultSettings = {
   chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
-  sendTemplate: "/echo {{content}} | /sendas name={{char}} {{pipe}}",
+  sendTemplate: "/input 章节内容：| /sendas name={{char}} {{pipe}}",
   sendDelay: 1500,
-  example_setting: false,
+  example_setting: false, // 保留模板示例字段，兼容模板结构
 };
 
 // 全局状态缓存
@@ -33,12 +29,14 @@ async function loadSettings() {
     Object.assign(extension_settings[extensionName], defaultSettings);
   }
 
+  // 补全更新后新增的默认字段，兼容版本迭代
   for (const key of Object.keys(defaultSettings)) {
     if (!Object.hasOwn(extension_settings[extensionName], key)) {
       extension_settings[extensionName][key] = defaultSettings[key];
     }
   }
 
+  // 更新UI中的设置值，与模板写法完全一致
   $("#example_setting").prop("checked", extension_settings[extensionName].example_setting).trigger("input");
   $("#chapter-regex-input").val(extension_settings[extensionName].chapterRegex);
   $("#send-template-input").val(extension_settings[extensionName].sendTemplate);
@@ -52,6 +50,7 @@ function onExampleInput(event) {
   saveSettingsDebounced();
 }
 
+// 模板示例按钮功能保留
 function onButtonClick() {
   toastr.info(
     `The checkbox is ${ extension_settings[extensionName].example_setting ? "checked" : "not checked" }`,
@@ -59,7 +58,7 @@ function onButtonClick() {
   );
 }
 
-// 章节拆分逻辑
+// 章节拆分核心逻辑
 function splitNovelIntoChapters(novelText, regexSource) {
   try {
     const chapterRegex = new RegExp(regexSource, 'gm');
@@ -114,14 +113,11 @@ function renderChapterList(chapters) {
   $listContainer.html(listHtml);
 }
 
-// 【关键修复3】优化命令模板变量替换，修复特殊字符转义问题
+// 模板变量替换，适配管道命令格式
 function renderCommandTemplate(template, charName, chapterContent) {
-  // 转义双引号，避免破坏命令结构
-  const escapedContent = chapterContent.replace(/"/g, '\\"').replace(/\n/g, '\\n');
   return template
     .replace(/{{char}}/g, charName || '角色')
-    .replace(/{{content}}/g, escapedContent)
-    .replace(/{{pipe}}/g, `"${escapedContent}"`);
+    .replace(/{{pipe}}/g, `"${chapterContent.replace(/"/g, '\\"').replace(/\|/g, '\\|')}"`); // 转义引号和管道符，避免解析异常
 }
 
 // 更新发送进度
@@ -140,9 +136,9 @@ function updateSendProgress(current, total) {
   $statusEl.text(`发送进度: ${current}/${total} (${percent}%)`);
 }
 
-// 【关键修复4】替换报错的执行方法，用ST原生processSlashCommand
+// 核心修正：批量发送章节，使用官方正确API执行斜杠命令
 async function sendChaptersBatch(chapters) {
-  const { characters, characterId } = getContext();
+  const context = getContext();
   const settings = extension_settings[extensionName];
   
   // 前置校验
@@ -154,7 +150,7 @@ async function sendChaptersBatch(chapters) {
     toastr.warning('没有可发送的章节', "小说导入");
     return;
   }
-  const currentCharName = characters[characterId]?.name;
+  const currentCharName = context.characters[context.characterId]?.name;
   if (!currentCharName) {
     toastr.error('请先选择一个聊天角色', "小说导入");
     return;
@@ -172,13 +168,9 @@ async function sendChaptersBatch(chapters) {
       const chapter = chapters[i];
       const command = renderCommandTemplate(settings.sendTemplate, currentCharName, chapter.content);
       
-      // 【核心修复】使用ST原生官方函数执行斜杠命令，全版本兼容
-      const isSuccess = await processSlashCommand(command);
-      if (isSuccess) {
-        successCount++;
-      } else {
-        toastr.warning(`第${i+1}章「${chapter.title}」发送失败`, "小说导入");
-      }
+      // 官方正确API：执行斜杠命令，原生支持管道符，异步等待执行完成
+      await context.executeSlashCommandsWithOptions(command);
+      successCount++;
 
       // 更新进度
       updateSendProgress(i + 1, chapters.length);
@@ -200,14 +192,6 @@ async function sendChaptersBatch(chapters) {
   }
 }
 
-// 停止发送
-function stopChapterSending() {
-  if (isSending) {
-    stopSending = true;
-    toastr.info('已停止发送', "小说导入");
-  }
-}
-
 // 扩展入口，完全与模板的jQuery初始化结构一致
 jQuery(async () => {
   // 与模板完全一致：加载外部HTML文件，追加到ST扩展设置面板
@@ -218,6 +202,7 @@ jQuery(async () => {
   $("#my_button").on("click", onButtonClick);
   $("#example_setting").on("input", onExampleInput);
 
+  // 新增功能事件绑定
   // 解析章节
   $("#parse-chapter-btn").on("click", () => {
     const file = $("#novel-file-upload")[0].files[0];
@@ -253,7 +238,7 @@ jQuery(async () => {
     $(".chapter-select").prop("checked", false);
   });
 
-  // 保存模板设置
+  // 保存模板和间隔设置
   $("#send-template-input").on("change", (e) => {
     extension_settings[extensionName].sendTemplate = $(e.target).val().trim();
     saveSettingsDebounced();
@@ -284,7 +269,12 @@ jQuery(async () => {
   });
 
   // 停止发送
-  $("#stop-send-btn").on("click", stopChapterSending);
+  $("#stop-send-btn").on("click", () => {
+    if (isSending) {
+      stopSending = true;
+      toastr.info('已停止发送', "小说导入");
+    }
+  });
 
   // 与模板完全一致：初始化加载设置
   loadSettings();
