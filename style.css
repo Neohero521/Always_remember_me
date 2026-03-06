@@ -8,12 +8,10 @@
   --novel-hover: var(--SmartTheme-HoverColor, #2f2f2f);
   --novel-success: var(--SmartTheme-SuccessColor, #4ade80);
   --novel-danger: var(--SmartTheme-DangerColor, #f87171);
-  --novel-warning: var(--SmartTheme-WarningColor, #fbbf24);
   --novel-radius-sm: 4px;
   --novel-radius-md: 8px;
   --novel-radius-lg: 12px;
   --novel-radius-full: 50%;
-  --novel-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
   --novel-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
   --novel-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
@@ -83,16 +81,11 @@
   margin: 4px 0 0 0;
 }
 
-/* 操作行通用样式 */
 .novel-writer-inner .action-row {
   display: flex;
   align-items: center;
   margin-bottom: 16px;
   width: 100%;
-}
-
-.novel-writer-inner .action-row.justify-between {
-  justify-content: space-between;
 }
 
 .novel-writer-inner .action-row.gap-10 {
@@ -107,11 +100,6 @@
 
 .novel-writer-inner .action-group.mt-8 {
   margin-top: 8px;
-}
-
-.novel-writer-inner .block-desc {
-  color: var(--novel-text-muted);
-  font-size: 0.85rem;
 }
 
 .novel-writer-inner .list-header {
@@ -135,7 +123,6 @@
   margin: 0;
 }
 
-/* 抽屉标题美化 */
 .novel-writer-inner .drawer-title-group {
   display: flex;
   align-items: center;
@@ -165,7 +152,7 @@
    悬浮球核心样式
    ============================================== */
 .novel-writer-ball {
-  position: fixed;
+  position: fixed !important;
   width: 56px;
   height: 56px;
   border-radius: var(--novel-radius-full);
@@ -173,17 +160,16 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999;
+  z-index: 999999 !important;
   cursor: pointer;
   box-shadow: var(--novel-shadow-md);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   user-select: none;
 }
 
 .novel-writer-ball:hover {
   transform: scale(1.1);
   box-shadow: var(--novel-shadow-lg);
-  animation: breathe 2s infinite ease-in-out;
 }
 
 .novel-writer-ball.dragging {
@@ -197,18 +183,8 @@
   color: #ffffff;
 }
 
-/* 悬浮球呼吸动画 */
-@keyframes breathe {
-  0%, 100% {
-    box-shadow: 0 4px 16px rgba(91, 134, 229, 0.4);
-  }
-  50% {
-    box-shadow: 0 6px 24px rgba(91, 134, 229, 0.7);
-  }
-}
-
 /* ==============================================
-   全局面板核心样式（修复版）
+   全局面板核心样式
    ============================================== */
 .novel-writer-panel {
   position: fixed !important;
@@ -218,19 +194,15 @@
   height: 100vh !important;
   z-index: 999990 !important;
   pointer-events: none !important;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: opacity 0.3s ease !important;
   opacity: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
 }
 
-/* 面板打开状态（优先级拉满，确保生效） */
 .novel-writer-panel.open {
   opacity: 1 !important;
   pointer-events: all !important;
 }
 
-/* 面板遮罩 */
 .panel-mask {
   position: absolute !important;
   top: 0 !important;
@@ -239,11 +211,9 @@
   height: 100% !important;
   background: rgba(0, 0, 0, 0.6) !important;
   backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
   z-index: 1 !important;
 }
 
-/* 面板内容容器（修复滑入动画） */
 .panel-content {
   position: absolute !important;
   top: 20px !important;
@@ -256,20 +226,87 @@
   border-radius: var(--novel-radius-lg) !important;
   box-shadow: var(--novel-shadow-lg) !important;
   transform: translateX(calc(100% + 40px)) !important;
-  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: transform 0.4s ease !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
   z-index: 2 !important;
 }
 
-/* 打开时滑入动画（优先级拉满） */
 .novel-writer-panel.open .panel-content {
   transform: translateX(0) !important;
 }
 
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--novel-border);
+  flex-shrink: 0;
+}
+
+.panel-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-title-icon {
+  color: var(--novel-primary);
+  font-size: 1.2rem;
+}
+
+.panel-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--novel-text);
+  font-weight: 600;
+}
+
+.panel-close-btn {
+  background: var(--novel-card-bg);
+  border: 1px solid var(--novel-border);
+  border-radius: var(--novel-radius-sm);
+  font-size: 1rem;
+  color: var(--novel-text);
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.panel-close-btn:hover {
+  background: var(--novel-hover);
+  border-color: var(--novel-danger);
+  color: var(--novel-danger);
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.panel-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.panel-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.panel-body::-webkit-scrollbar-thumb {
+  background: var(--novel-border);
+  border-radius: var(--novel-radius-full);
+}
+
 /* ==============================================
-   章节列表美化样式
+   章节列表样式
    ============================================== */
 .chapter-list-container {
   max-height: 280px;
@@ -318,38 +355,8 @@
   font-size: 0.9rem;
 }
 
-.chapter-tag {
-  padding: 2px 8px;
-  border-radius: var(--novel-radius-full);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.chapter-tag.tag-success {
-  background: rgba(74, 222, 128, 0.15);
-  color: var(--novel-success);
-}
-
-.chapter-tag.tag-muted {
-  background: rgba(170, 170, 170, 0.15);
-  color: var(--novel-text-muted);
-}
-
-.chapter-list-container::-webkit-scrollbar {
-  width: 6px;
-}
-
-.chapter-list-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.chapter-list-container::-webkit-scrollbar-thumb {
-  background: var(--novel-border);
-  border-radius: var(--novel-radius-full);
-}
-
 /* ==============================================
-   进度条美化样式
+   进度条样式
    ============================================== */
 .progress-group {
   margin-bottom: 16px;
@@ -379,25 +386,21 @@
 }
 
 /* ==============================================
-   全端响应式适配
+   手机端适配
    ============================================== */
 @media (max-width: 768px) {
   .panel-content {
-    width: 100%;
-    max-width: 100vw;
-    top: 0;
-    right: 0;
-    height: 100vh;
-    border-radius: 0;
+    width: 100% !important;
+    max-width: 100vw !important;
+    top: 0 !important;
+    right: 0 !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
   }
 
   .novel-writer-ball {
     width: 50px;
     height: 50px;
-  }
-
-  .novel-writer-ball i {
-    font-size: 20px;
   }
 
   .novel-writer-inner .form-row {
@@ -409,34 +412,5 @@
   .novel-writer-inner .form-row .flex-2 {
     width: 100%;
     min-width: 100%;
-  }
-
-  .novel-writer-inner .action-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-
-  .novel-writer-inner .action-group {
-    width: 100%;
-    justify-content: space-between;
-  }
-}
-
-@media (max-width: 375px) {
-  .panel-header {
-    padding: 12px 16px;
-  }
-
-  .panel-body {
-    padding: 12px;
-  }
-
-  .novel-writer-inner .inline-drawer-header {
-    padding: 10px 12px;
-  }
-
-  .novel-writer-inner .inline-drawer-content {
-    padding: 10px 12px;
   }
 }
