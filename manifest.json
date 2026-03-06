@@ -1,0 +1,12 @@
+{
+  "author": "Neohero521",
+  "version": "1.0.0",
+  "name": "Always_remember_me",
+  "id": "always-remember-me",
+  "description": "小说导入拆分章节 + /input /sendas 命令发送到对话框",
+  "shortName": "ChapterImporter",
+  "permissions": [],
+  "dependencies": [],
+  "supported": ["stable", "dev"],
+  "assets": []
+}
