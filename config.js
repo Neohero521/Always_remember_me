@@ -1,24 +1,22 @@
 // 扩展基础配置
 export const extensionName = "Always_remember_me";
-export const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+export const extensionBasePath = `scripts/extensions/third-party/${extensionName}`;
 
 // 默认配置
 export const defaultSettings = Object.freeze({
-  // 章节导入配置
   chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
   sendTemplate: "/sendas name={{char}} {{pipe}}",
   sendDelay: 100,
   example_setting: false,
-  // 数据持久化
   chapterList: [],
   chapterGraphMap: {},
   mergedGraph: {},
-  // 悬浮球配置（和Cola一致的初始位置：左下角）
+  // 和Cola完全一致的左下角初始位置
   ballPosition: { x: 20, y: window.innerHeight - 180 },
   panelOpen: false,
 });
 
-// 知识图谱JSON Schema
+// 知识图谱Schema
 export const graphJsonSchema = Object.freeze({
   name: 'NovelKnowledgeGraph',
   strict: true,
@@ -107,7 +105,6 @@ export const graphJsonSchema = Object.freeze({
   }
 });
 
-// 合并图谱JSON Schema
 export const mergeGraphJsonSchema = Object.freeze({
   name: 'MergedNovelKnowledgeGraph',
   strict: true,
