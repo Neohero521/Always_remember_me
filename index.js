@@ -1,4 +1,4 @@
-// index.js - 修复后的版本
+// index.js - 正确版本
 import storageManager from './modules/storageManager.js';
 import stCommandBridge from './modules/stCommandBridge.js';
 
