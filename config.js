@@ -1,4 +1,4 @@
-// 扩展基础配置
+// 扩展基础配置（路径100%正确）
 export const extensionName = "Always_remember_me";
 export const extensionBasePath = `scripts/extensions/third-party/${extensionName}`;
 
@@ -11,10 +11,23 @@ export const defaultSettings = Object.freeze({
   chapterList: [],
   chapterGraphMap: {},
   mergedGraph: {},
-  // 和Cola完全一致的左下角初始位置
+  // 悬浮球默认位置（和Cola完全一致：左下角）
   ballPosition: { x: 20, y: window.innerHeight - 180 },
   panelOpen: false,
 });
+
+// 全局状态缓存（所有模块统一从这里取，消除循环依赖）
+export const globalState = {
+  currentParsedChapters: [],
+  isGeneratingGraph: false,
+  stopGenerateGraph: false,
+  isGeneratingWrite: false,
+  stopGenerateWrite: false,
+  isSending: false,
+  stopSending: false,
+  isDragging: false,
+  panelToggleCallback: null,
+};
 
 // 知识图谱Schema
 export const graphJsonSchema = Object.freeze({
