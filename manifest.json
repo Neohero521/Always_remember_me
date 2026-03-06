@@ -1,14 +1,14 @@
 {
   "display_name": "小说续写器",
-  "loading_order": 9,
+  "loading_order": 1,
   "requires": [],
   "optional": [],
   "js": "index.js",
   "css": "style.css",
   "author": "Neohero521",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "homePage": "https://github.com/Neohero521/Always_remember_me",
   "minimum_client_version": "1.12.0",
   "auto_update": true,
-  "description": "Cola风格悬浮球全局面板，小说章节导入、知识图谱、智能续写一体化扩展"
+  "description": "带悬浮球全局面板的小说续写器，支持章节导入、知识图谱、智能续写"
 }
