@@ -1,16 +1,11 @@
 {
     "display_name": "小说章节导入助手",
     "loading_order": 100,
-    "requires": [],
-    "optional": [],
-    "dependencies": [],
     "js": "index.js",
     "css": "style.css",
     "author": "Neohero521",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "homePage": "https://github.com/Neohero521/Always_remember_me",
     "auto_update": true,
-    "minimum_client_version": "1.10.0",
-    "description": "一键导入小说TXT文件，自动拆分章节，通过斜杠命令批量发送到聊天对话框",
-    "i18n": {}
+    "description": "一键导入小说TXT文件，自动拆分章节，通过斜杠命令批量发送到聊天对话框"
 }
