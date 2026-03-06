@@ -7,15 +7,18 @@ import {
 
 import { saveSettingsDebounced } from "../../../../script.js";
 
+// 【关键修复1】导入ST原生斜杠命令处理核心函数，全版本兼容
+import { processSlashCommand } from "../../slash-commands.js";
+
 // 与仓库名称完全一致，确保路径正确
 const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-// 初始化扩展设置，已更新为你指定的默认斜杠命令
+// 【关键修复2】修正默认命令模板，用/echo替代/input，实现无交互批量发送
 const defaultSettings = {
   chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
-  sendTemplate: "/input 章节内容：| /sendas name={{char}} {{pipe}}",
+  sendTemplate: "/echo {{content}} | /sendas name={{char}} {{pipe}}",
   sendDelay: 1500,
-  example_setting: false, // 保留模板示例字段，兼容模板结构
+  example_setting: false,
 };
 
 // 全局状态缓存
@@ -23,56 +26,32 @@ let currentParsedChapters = [];
 let isSending = false;
 let stopSending = false;
 
-// ==================== 修复：ST原生斜杠命令执行函数（解决报错核心）====================
-/**
- * 执行SillyTavern斜杠命令，完美支持管道符|多命令串联
- * @param {string} text 要执行的斜杠命令完整文本
- */
-const triggerQuickReply = async (text) => {
-  // 校验文本有效性，过滤空内容
-  if (!text || text.trim().length === 0 || ["...", ""].includes(text.trim())) {
-    return;
-  }
-  // 优先使用ST全局原生triggerSlash（官方内置斜杠命令执行函数，100%兼容所有指令）
-  if (typeof triggerSlash === "function") {
-    await triggerSlash(text);
-  } else {
-    // 兜底日志，兼容异常环境
-    window.simpleLog("SillyTavern通信", "SillyTavern环境未检测到，无法发送命令");
-    throw new Error("SillyTavern环境异常：未找到triggerSlash原生函数");
-  }
-};
-
-// 完全复用模板的设置加载逻辑，扩展适配多字段
+// 完全复用模板的设置加载逻辑
 async function loadSettings() {
-  // 初始化设置，与模板逻辑完全一致
   extension_settings[extensionName] = extension_settings[extensionName] || {};
   if (Object.keys(extension_settings[extensionName]).length === 0) {
     Object.assign(extension_settings[extensionName], defaultSettings);
   }
 
-  // 补全更新后新增的默认字段，兼容版本迭代
   for (const key of Object.keys(defaultSettings)) {
     if (!Object.hasOwn(extension_settings[extensionName], key)) {
       extension_settings[extensionName][key] = defaultSettings[key];
     }
   }
 
-  // 更新UI中的设置值，与模板的prop/trigger写法完全一致
   $("#example_setting").prop("checked", extension_settings[extensionName].example_setting).trigger("input");
   $("#chapter-regex-input").val(extension_settings[extensionName].chapterRegex);
   $("#send-template-input").val(extension_settings[extensionName].sendTemplate);
   $("#send-delay-input").val(extension_settings[extensionName].sendDelay);
 }
 
-// 模板示例功能保留，兼容原有结构
+// 模板示例功能保留
 function onExampleInput(event) {
   const value = Boolean($(event.target).prop("checked"));
   extension_settings[extensionName].example_setting = value;
   saveSettingsDebounced();
 }
 
-// 模板示例按钮功能保留，可自行删除
 function onButtonClick() {
   toastr.info(
     `The checkbox is ${ extension_settings[extensionName].example_setting ? "checked" : "not checked" }`,
@@ -80,7 +59,7 @@ function onButtonClick() {
   );
 }
 
-// 核心功能：章节拆分逻辑
+// 章节拆分逻辑
 function splitNovelIntoChapters(novelText, regexSource) {
   try {
     const chapterRegex = new RegExp(regexSource, 'gm');
@@ -91,7 +70,6 @@ function splitNovelIntoChapters(novelText, regexSource) {
       return [{ title: '全文', content: novelText }];
     }
 
-    // 拆分章节标题与内容
     for (let i = 0; i < matches.length; i++) {
       const start = matches[i].index + matches[i][0].length;
       const end = i < matches.length - 1 ? matches[i + 1].index : novelText.length;
@@ -112,7 +90,7 @@ function splitNovelIntoChapters(novelText, regexSource) {
   }
 }
 
-// 核心功能：渲染章节列表
+// 渲染章节列表
 function renderChapterList(chapters) {
   const $listContainer = $('#novel-chapter-list');
 
@@ -121,7 +99,6 @@ function renderChapterList(chapters) {
     return;
   }
 
-  // 生成章节列表HTML，适配ST原生样式
   const listHtml = chapters.map((chapter, index) => `
     <div class="chapter-item flex-container flexColumn margin-b5 padding5 borderR5">
       <label class="chapter-checkbox flex-container alignCenter gap5">
@@ -137,14 +114,17 @@ function renderChapterList(chapters) {
   $listContainer.html(listHtml);
 }
 
-// 核心功能：模板变量替换
+// 【关键修复3】优化命令模板变量替换，修复特殊字符转义问题
 function renderCommandTemplate(template, charName, chapterContent) {
+  // 转义双引号，避免破坏命令结构
+  const escapedContent = chapterContent.replace(/"/g, '\\"').replace(/\n/g, '\\n');
   return template
     .replace(/{{char}}/g, charName || '角色')
-    .replace(/{{pipe}}/g, `"${chapterContent.replace(/"/g, '\\"')}"`); // 转义引号，避免命令解析异常
+    .replace(/{{content}}/g, escapedContent)
+    .replace(/{{pipe}}/g, `"${escapedContent}"`);
 }
 
-// 核心功能：更新发送进度
+// 更新发送进度
 function updateSendProgress(current, total) {
   const $progressEl = $('#novel-import-progress');
   const $statusEl = $('#novel-import-status');
@@ -160,7 +140,7 @@ function updateSendProgress(current, total) {
   $statusEl.text(`发送进度: ${current}/${total} (${percent}%)`);
 }
 
-// ==================== 修复：批量发送章节逻辑，改用新的执行函数 ====================
+// 【关键修复4】替换报错的执行方法，用ST原生processSlashCommand
 async function sendChaptersBatch(chapters) {
   const { characters, characterId } = getContext();
   const settings = extension_settings[extensionName];
@@ -192,14 +172,18 @@ async function sendChaptersBatch(chapters) {
       const chapter = chapters[i];
       const command = renderCommandTemplate(settings.sendTemplate, currentCharName, chapter.content);
       
-      // 修复：改用ST原生函数执行斜杠命令，解决报错
-      await triggerQuickReply(command);
-      successCount++;
+      // 【核心修复】使用ST原生官方函数执行斜杠命令，全版本兼容
+      const isSuccess = await processSlashCommand(command);
+      if (isSuccess) {
+        successCount++;
+      } else {
+        toastr.warning(`第${i+1}章「${chapter.title}」发送失败`, "小说导入");
+      }
 
       // 更新进度
       updateSendProgress(i + 1, chapters.length);
       
-      // 发送间隔防刷屏，可在面板自定义调整
+      // 发送间隔防刷屏
       if (i < chapters.length - 1 && !stopSending) {
         await new Promise(resolve => setTimeout(resolve, settings.sendDelay));
       }
@@ -216,6 +200,14 @@ async function sendChaptersBatch(chapters) {
   }
 }
 
+// 停止发送
+function stopChapterSending() {
+  if (isSending) {
+    stopSending = true;
+    toastr.info('已停止发送', "小说导入");
+  }
+}
+
 // 扩展入口，完全与模板的jQuery初始化结构一致
 jQuery(async () => {
   // 与模板完全一致：加载外部HTML文件，追加到ST扩展设置面板
@@ -226,7 +218,6 @@ jQuery(async () => {
   $("#my_button").on("click", onButtonClick);
   $("#example_setting").on("input", onExampleInput);
 
-  // 新增功能事件绑定，与模板写法完全一致
   // 解析章节
   $("#parse-chapter-btn").on("click", () => {
     const file = $("#novel-file-upload")[0].files[0];
@@ -293,12 +284,7 @@ jQuery(async () => {
   });
 
   // 停止发送
-  $("#stop-send-btn").on("click", () => {
-    if (isSending) {
-      stopSending = true;
-      toastr.info('已停止发送', "小说导入");
-    }
-  });
+  $("#stop-send-btn").on("click", stopChapterSending);
 
   // 与模板完全一致：初始化加载设置
   loadSettings();
