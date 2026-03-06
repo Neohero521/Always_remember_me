@@ -1,25 +1,25 @@
-#always_remember_me_novel_importer_panel .form-text {
+#always_remember_me_panel .form-text {
     font-size: 12px;
     color: var(--text-muted);
     margin-top: 4px;
 }
 
-#always_remember_me_novel_importer_panel .menu_button {
+#always_remember_me_panel .menu_button {
     flex: 1;
     white-space: nowrap;
 }
 
-#always_remember_me_novel_importer_panel .form_checkbox {
+#always_remember_me_panel .form_checkbox {
     width: 16px;
     height: 16px;
     margin: 0;
 }
 
-#always_remember_me_novel_importer_panel .scrollable-y::-webkit-scrollbar {
+#always_remember_me_panel .scrollable-y::-webkit-scrollbar {
     width: 6px;
 }
 
-#always_remember_me_novel_importer_panel .scrollable-y::-webkit-scrollbar-thumb {
+#always_remember_me_panel .scrollable-y::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 3px;
 }
