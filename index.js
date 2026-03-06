@@ -1,25 +1,29 @@
-// 扩展唯一标识，避免与其他扩展冲突，建议和你的仓库名一致
+// 扩展唯一标识，避免与其他扩展冲突
 const MODULE_NAME = 'novel-chapter-importer';
-// 默认配置，支持用户自定义后持久化保存
+// 默认配置
 const defaultSettings = Object.freeze({
-    // 默认章节拆分正则，适配绝大多数「第X章」格式的小说，可自定义
     splitRegex: '^\\s*第[0-9一二三四五六七八九十百千]+章.*$',
-    // 斜杠命令模板，完全兼容你提供的命令格式，支持变量替换
-    // {{char}}=当前角色名，{{content}}=章节内容，{{pipe}}=管道符传参
     sendCommandTemplate: '/sendas name={{char}} {{content}}',
 });
 
-// 获取SillyTavern全局上下文，官方推荐的标准用法
-const getSTContext = () => SillyTavern.getContext();
+// 兼容获取ST全局上下文
+const getSTContext = () => {
+    if (typeof SillyTavern !== 'undefined') {
+        return SillyTavern.getContext?.() || SillyTavern;
+    }
+    console.error(`[${MODULE_NAME}] 未获取到SillyTavern上下文`);
+    return null;
+};
 
-// 初始化&校验扩展配置，确保配置持久化
+// 初始化配置
 function initSettings() {
-    const { extensionSettings } = getSTContext();
-    // 初始化配置
+    const context = getSTContext();
+    if (!context) return defaultSettings;
+
+    const { extensionSettings } = context;
     if (!extensionSettings[MODULE_NAME]) {
         extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
     }
-    // 补全更新后新增的配置项，避免版本更新报错
     for (const key of Object.keys(defaultSettings)) {
         if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
             extensionSettings[MODULE_NAME][key] = defaultSettings[key];
@@ -28,52 +32,45 @@ function initSettings() {
     return extensionSettings[MODULE_NAME];
 }
 
-// 保存用户自定义配置到ST
+// 保存配置
 function saveSettings() {
-    const { saveSettingsDebounced } = getSTContext();
-    saveSettingsDebounced();
+    const context = getSTContext();
+    if (!context) return;
+    context.saveSettingsDebounced?.();
 }
 
-// 获取当前选中的角色名称，用于替换{{char}}变量
+// 获取当前角色名
 function getCurrentCharName() {
-    const { characters, characterId } = getSTContext();
-    // 处理群聊/未选角色的边界情况
-    if (characterId === undefined || !characters[characterId]) {
-        return null;
-    }
+    const context = getSTContext();
+    if (!context) return null;
+    const { characters, characterId } = context;
+    if (characterId === undefined || !characters[characterId]) return null;
     return characters[characterId].name;
 }
 
-// 核心：小说文本章节拆分逻辑
+// 章节拆分
 function splitNovelChapters(text, splitRegex) {
     try {
         const regex = new RegExp(splitRegex, 'gm');
         const matches = [...text.matchAll(regex)];
         const chapters = [];
 
-        // 未匹配到章节标题时，全文作为单章节处理
         if (matches.length === 0) {
-            chapters.push({
-                title: '全文',
-                content: text.trim(),
-            });
+            chapters.push({ title: '全文', content: text.trim() });
             return chapters;
         }
 
-        // 按章节标题拆分文本，生成章节列表
         for (let i = 0; i < matches.length; i++) {
             const match = matches[i];
             const startIndex = match.index;
             const endIndex = i < matches.length - 1 ? matches[i + 1].index : text.length;
             const fullChapter = text.slice(startIndex, endIndex).trim();
-            // 拆分章节标题和正文
             const [title, ...contentLines] = fullChapter.split('\n');
             chapters.push({
                 title: title.trim(),
                 content: contentLines.join('\n').trim(),
             });
         }
-
         return chapters;
     } catch (error) {
         console.error(`[${MODULE_NAME}] 章节拆分失败:`, error);
@@ -82,12 +79,11 @@ function splitNovelChapters(text, splitRegex) {
     }
 }
 
-// 核心：执行斜杠命令，发送章节内容到对话框
+// 执行发送命令
 async function executeSendCommand(chapterContent) {
     const settings = initSettings();
     const charName = getCurrentCharName();
 
-    // 前置校验
     if (!charName) {
         alert('请先选择一个角色，再执行导入操作');
         return false;
@@ -97,15 +93,14 @@ async function executeSendCommand(chapterContent) {
         return true;
     }
 
-    // 替换命令模板中的变量
     let command = settings.sendCommandTemplate
         .replaceAll('{{char}}', charName)
         .replaceAll('{{content}}', chapterContent)
         .replaceAll('{{pipe}}', chapterContent);
 
     try {
-        const { SlashCommandParser } = getSTContext();
-        // 官方标准API，执行斜杠命令
+        const context = getSTContext();
+        const { SlashCommandParser } = context;
         await SlashCommandParser.parse(command);
         return true;
     } catch (error) {
@@ -121,8 +116,6 @@ async function importChapters(chapters) {
         alert('没有可导入的章节');
         return;
     }
-
-    // 二次确认，避免误操作
     if (!confirm(`确定要导入 ${chapters.length} 个章节吗？`)) {
         return;
     }
@@ -133,22 +126,21 @@ async function importChapters(chapters) {
         if (success) {
             successCount++;
         } else {
-            // 失败时支持中断/继续
             if (!confirm(`章节「${chapter.title}」导入失败，是否继续导入剩余章节？`)) {
                 break;
             }
         }
-        // 发送延迟，避免请求过快导致ST处理异常，可自行调整
         await new Promise(resolve => setTimeout(resolve, 500));
     }
-
     alert(`导入完成！成功导入 ${successCount}/${chapters.length} 个章节`);
 }
 
-// 渲染导入面板UI
+// 渲染导入面板
 function renderImportPanel() {
+    // 避免重复渲染面板
+    if ($(`#${MODULE_NAME}-panel`).length > 0) return;
+
     const settings = initSettings();
-    // 面板HTML结构，适配ST原生UI风格
     const panelHtml = `
     <div id="${MODULE_NAME}-panel" class="modal-dialog">
         <div class="modal-content">
@@ -159,18 +151,15 @@ function renderImportPanel() {
                 </button>
             </div>
             <div class="modal-body">
-                <!-- 文件上传 -->
                 <div class="form-group">
                     <label for="${MODULE_NAME}-file">选择小说TXT文件</label>
                     <input type="file" id="${MODULE_NAME}-file" class="form-control" accept=".txt">
                 </div>
-                <!-- 拆分正则配置 -->
                 <div class="form-group">
                     <label for="${MODULE_NAME}-regex">章节拆分正则表达式</label>
                     <input type="text" id="${MODULE_NAME}-regex" class="form-control" value="${settings.splitRegex}">
                     <small class="form-text text-muted">默认匹配「第X章」格式，可自定义适配不同小说标题</small>
                 </div>
-                <!-- 斜杠命令模板配置 -->
                 <div class="form-group">
                     <label for="${MODULE_NAME}-command">发送命令模板</label>
                     <input type="text" id="${MODULE_NAME}-command" class="form-control" value="${settings.sendCommandTemplate}">
@@ -178,12 +167,10 @@ function renderImportPanel() {
                 </div>
                 <button id="${MODULE_NAME}-split" class="btn btn-primary">解析章节</button>
                 <hr>
-                <!-- 章节预览 -->
                 <h4>章节预览</h4>
                 <div id="${MODULE_NAME}-chapter-list" class="form-group" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
                     <p>请先选择小说文件并点击「解析章节」</p>
                 </div>
-                <!-- 导入按钮 -->
                 <button id="${MODULE_NAME}-import" class="btn btn-success" disabled>导入选中章节</button>
                 <button id="${MODULE_NAME}-import-all" class="btn btn-info" disabled>导入全部章节</button>
             </div>
@@ -191,17 +178,16 @@ function renderImportPanel() {
     </div>
     `;
 
-    // 将面板插入到页面
     $('body').append(panelHtml);
     const $panel = $(`#${MODULE_NAME}-panel`);
-    let currentChapters = []; // 存储当前解析的章节列表
+    let currentChapters = [];
 
-    // 关闭面板事件
+    // 关闭面板
     $panel.find('.close, [data-dismiss="modal"]').on('click', () => {
         $panel.modal('hide');
     });
 
-    // 解析章节按钮点击事件
+    // 解析章节
     $panel.find(`#${MODULE_NAME}-split`).on('click', () => {
         const fileInput = $(`#${MODULE_NAME}-file`)[0];
         const file = fileInput.files[0];
@@ -210,19 +196,16 @@ function renderImportPanel() {
             return;
         }
 
-        // 保存用户自定义配置
         const settings = initSettings();
         settings.splitRegex = $(`#${MODULE_NAME}-regex`).val().trim();
         settings.sendCommandTemplate = $(`#${MODULE_NAME}-command`).val().trim();
         saveSettings();
 
-        // 读取TXT文件内容
         const reader = new FileReader();
         reader.onload = (e) => {
             const text = e.target.result;
             currentChapters = splitNovelChapters(text, settings.splitRegex);
             
-            // 渲染章节列表
             const $list = $(`#${MODULE_NAME}-chapter-list`);
             $list.empty();
 
@@ -232,7 +215,6 @@ function renderImportPanel() {
                 return;
             }
 
-            // 生成章节复选框
             currentChapters.forEach((chapter, index) => {
                 $list.append(`
                 <div class="form-check">
@@ -244,10 +226,8 @@ function renderImportPanel() {
                 `);
             });
 
-            // 启用导入按钮
             $(`#${MODULE_NAME}-import, #${MODULE_NAME}-import-all`).prop('disabled', false);
         };
-        // 兼容中文编码
         reader.readAsText(file, 'utf-8');
     });
 
@@ -262,15 +242,37 @@ function renderImportPanel() {
     $panel.find(`#${MODULE_NAME}-import-all`).on('click', async () => {
         await importChapters(currentChapters);
     });
+
+    console.log(`[${MODULE_NAME}] 面板渲染完成`);
 }
 
-// 扩展初始化入口
-function initExtension() {
-    initSettings();
-    renderImportPanel();
+// 添加侧边栏按钮（兼容多版本）
+function addSidebarButton() {
+    // 兼容多个常见的侧边栏扩展导航容器ID
+    const sidebarSelectors = [
+        '#extensionsNav',
+        '#extensions-sidebar',
+        '.extensions-nav-list',
+        '#nav_extensionsList',
+        '.sidebar-content'
+    ];
 
-    // 在ST侧边栏扩展导航区添加入口按钮
-    const $sidebar = $('#extensionsNav');
+    let $sidebar = null;
+    for (const selector of sidebarSelectors) {
+        const $target = $(selector);
+        if ($target.length > 0) {
+            $sidebar = $target;
+            break;
+        }
+    }
+
+    // 没找到侧边栏容器，输出日志，走兜底入口
+    if (!$sidebar || $sidebar.length === 0) {
+        console.warn(`[${MODULE_NAME}] 未找到侧边栏容器，已启用兜底入口`);
+        return;
+    }
+
+    // 避免重复添加按钮
     if ($sidebar.find(`#${MODULE_NAME}-toggle`).length === 0) {
         $sidebar.append(`
         <li id="${MODULE_NAME}-toggle" class="nav-item">
@@ -280,11 +282,62 @@ function initExtension() {
             </a>
         </li>
         `);
+        console.log(`[${MODULE_NAME}] 侧边栏按钮添加成功`);
     }
+}
+
+// 添加兜底入口：扩展设置面板里的打开按钮
+function addFallbackEntry() {
+    const context = getSTContext();
+    if (!context) return;
+
+    // 监听扩展设置面板打开事件，添加按钮
+    const { eventSource, event_types } = context;
+    eventSource?.on(event_types.SETTINGS_UPDATED, () => {
+        const $extensionSettings = $('#extension_settings');
+        if ($extensionSettings.length > 0 && $extensionSettings.find(`#${MODULE_NAME}-open-btn`).length === 0) {
+            $extensionSettings.append(`
+            <div class="panel panel-default" id="${MODULE_NAME}-settings">
+                <div class="panel-heading">小说章节导入助手</div>
+                <div class="panel-body">
+                    <button id="${MODULE_NAME}-open-btn" class="btn btn-primary" data-toggle="modal" data-target="#${MODULE_NAME}-panel">
+                        打开小说导入面板
+                    </button>
+                </div>
+            </div>
+            `);
+        }
+    });
+}
+
+// 扩展主初始化
+function initExtension() {
+    const context = getSTContext();
+    if (!context) {
+        console.error(`[${MODULE_NAME}] 初始化失败：未获取到SillyTavern上下文`);
+        return;
+    }
+
+    initSettings();
+    renderImportPanel();
+    addSidebarButton();
+    addFallbackEntry();
 
     console.log(`[${MODULE_NAME}] 扩展初始化完成`);
 }
 
-// 官方标准写法：等待ST应用完全加载后，再初始化扩展
-const { eventSource, event_types } = getSTContext();
-eventSource.on(event_types.APP_READY, initExtension);
+// 等待ST应用完全加载后初始化（官方标准写法，避免提前执行报错）
+const context = getSTContext();
+if (context?.eventSource && context?.event_types) {
+    context.eventSource.on(context.event_types.APP_READY, initExtension);
+} else {
+    // 兜底：延迟初始化，避免上下文还没加载
+    setTimeout(() => {
+        const retryContext = getSTContext();
+        if (retryContext?.eventSource && retryContext?.event_types) {
+            retryContext.eventSource.on(retryContext.event_types.APP_READY, initExtension);
+        } else {
+            console.error(`[${MODULE_NAME}] 初始化失败：SillyTavern全局对象不存在`);
+        }
+    }, 1000);
+}
