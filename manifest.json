@@ -1,14 +1,13 @@
 {
-  "display_name": "小说章节导入助手",
-  "loading_order": 10,
-  "requires": [],
-  "optional": [],
-  "dependencies": [],
-  "js": "index.js",
-  "css": "style.css",
+  "name": "always-remember-me",
+  "display_name": "小说续写助手",
+  "version": "1.1.0",
   "author": "Neohero521",
-  "version": "1.0.0",
-  "minimum_client_version": "1.10.0",
-  "homePage": "https://github.com/Neohero521/Always_remember_me",
-  "auto_update": true
+  "description": "小说文本导入、自动拆分章节、一键导入聊天对话框 + 交互模式",
+  "license": "MIT",
+  "homepage": "https://github.com/Neohero521/Always_remember_me",
+  "main": "index.js",
+  "style": "style.css",
+  "minimum_tavern_version": "1.12.0",
+  "tags": ["小说", "续写", "导入", "章节管理"]
 }
