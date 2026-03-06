@@ -1,12 +1,8 @@
 import { getSTContext, getExtensionSettings, saveExtensionSettings, updateProgress, getSelectedChapters, showToast } from "./utils.js";
-import { currentParsedChapters } from "./chapter-import.js";
-import { graphJsonSchema, mergeGraphJsonSchema } from "./config.js";
+import { globalState, graphJsonSchema, mergeGraphJsonSchema } from "./config.js";
+import { renderChapterList } from "./chapter-import.js";
 
-// 全局状态
-let isGeneratingGraph = false;
-let stopGenerateGraph = false;
-
-// 生成单章节知识图谱
+// 生成单章节图谱
 export const generateSingleChapterGraph = async (chapter) => {
   const context = getSTContext();
   const { generateRaw } = context;
@@ -35,9 +31,9 @@ export const generateSingleChapterGraph = async (chapter) => {
   }
 };
 
-// 批量生成章节图谱
+// 批量生成图谱
 export const generateChapterGraphBatch = async (chapters) => {
-  if (isGeneratingGraph) {
+  if (globalState.isGeneratingGraph) {
     showToast('正在生成图谱中，请等待完成', "warning");
     return;
   }
@@ -47,18 +43,17 @@ export const generateChapterGraphBatch = async (chapters) => {
   }
 
   const settings = getExtensionSettings();
-  isGeneratingGraph = true;
-  stopGenerateGraph = false;
+  globalState.isGeneratingGraph = true;
+  globalState.stopGenerateGraph = false;
   let successCount = 0;
   const graphMap = settings.chapterGraphMap || {};
 
   try {
     for (let i = 0; i < chapters.length; i++) {
-      if (stopGenerateGraph) break;
+      if (globalState.stopGenerateGraph) break;
       const chapter = chapters[i];
       updateProgress('graph-progress', 'graph-generate-status', i + 1, chapters.length, "图谱生成进度");
 
-      // 跳过已生成的图谱
       if (graphMap[chapter.id]) {
         successCount++;
         continue;
@@ -67,36 +62,32 @@ export const generateChapterGraphBatch = async (chapters) => {
       const graphData = await generateSingleChapterGraph(chapter);
       if (graphData) {
         graphMap[chapter.id] = graphData;
-        currentParsedChapters.find(item => item.id === chapter.id).hasGraph = true;
+        globalState.currentParsedChapters.find(item => item.id === chapter.id).hasGraph = true;
         successCount++;
       }
 
-      // 生成间隔，避免API限流
-      if (i < chapters.length - 1 && !stopGenerateGraph) {
+      if (i < chapters.length - 1 && !globalState.stopGenerateGraph) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
-    // 持久化保存
     settings.chapterGraphMap = graphMap;
-    settings.chapterList = currentParsedChapters;
+    settings.chapterList = globalState.currentParsedChapters;
     saveExtensionSettings();
-    // 重新渲染章节列表
-    const { renderChapterList } = await import("./chapter-import.js");
-    renderChapterList(currentParsedChapters);
+    renderChapterList(globalState.currentParsedChapters);
 
     showToast(`图谱生成完成！成功生成 ${successCount}/${chapters.length} 个章节图谱`, "success");
   } catch (error) {
     console.error('批量生成图谱失败:', error);
     showToast(`图谱生成失败: ${error.message}`, "error");
   } finally {
-    isGeneratingGraph = false;
-    stopGenerateGraph = false;
+    globalState.isGeneratingGraph = false;
+    globalState.stopGenerateGraph = false;
     updateProgress('graph-progress', 'graph-generate-status', 0, 0);
   }
 };
 
-// 合并所有章节图谱
+// 合并所有图谱
 export const mergeAllGraphs = async () => {
   const context = getSTContext();
   const { generateRaw } = context;
@@ -128,10 +119,8 @@ export const mergeAllGraphs = async () => {
     const result = await generateRaw({ systemPrompt, prompt: userPrompt, jsonSchema: mergeGraphJsonSchema });
     const mergedGraph = JSON.parse(result.trim());
     
-    // 持久化保存
     settings.mergedGraph = mergedGraph;
     saveExtensionSettings();
-    // 更新预览
     $('#merged-graph-preview').val(JSON.stringify(mergedGraph, null, 2));
 
     showToast('知识图谱合并完成！', "success");
@@ -140,13 +129,5 @@ export const mergeAllGraphs = async () => {
     console.error('图谱合并失败:', error);
     showToast(`图谱合并失败: ${error.message}`, "error");
     return null;
-  }
-};
-
-// 停止图谱生成
-export const stopGraphGenerate = () => {
-  if (isGeneratingGraph) {
-    stopGenerateGraph = true;
-    showToast('已停止生成图谱', "info");
   }
 };
