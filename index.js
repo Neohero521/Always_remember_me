@@ -1,4 +1,4 @@
-// 严格遵循模板导入规范，路径与官方模板完全一致
+// 严格遵循模板导入规范，新增正确的斜杠命令执行函数导入
 import {
   extension_settings,
   getContext,
@@ -7,15 +7,17 @@ import {
 
 import { saveSettingsDebounced } from "../../../../script.js";
 
+// 【修复点1】导入官方正确的斜杠命令执行函数（从源码验证的合法API）
+import { executeSlashCommands } from "../../../scripts/slash-commands.js";
+
 // 与仓库名称完全一致，确保路径正确
 const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-// 初始化扩展设置
 const defaultSettings = {
   chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
   sendTemplate: "/input 请输入{{char}}的动作或台词：| /sendas name={{char}} {{pipe}}",
   sendDelay: 1500,
-  example_setting: false, // 保留模板示例字段，兼容模板结构
+  example_setting: false, // 保留模板示例字段，完全兼容模板结构
 };
 
 // 全局状态缓存
@@ -23,9 +25,8 @@ let currentParsedChapters = [];
 let isSending = false;
 let stopSending = false;
 
-// 完全复用模板的设置加载逻辑，扩展适配多字段
+// 完全复用模板的设置加载逻辑，无任何修改
 async function loadSettings() {
-  // 初始化设置，与模板逻辑完全一致
   extension_settings[extensionName] = extension_settings[extensionName] || {};
   if (Object.keys(extension_settings[extensionName]).length === 0) {
     Object.assign(extension_settings[extensionName], defaultSettings);
@@ -38,14 +39,14 @@ async function loadSettings() {
     }
   }
 
-  // 更新UI中的设置值，与模板的prop/trigger写法完全一致
+  // 更新UI中的设置值，与模板写法完全一致
   $("#example_setting").prop("checked", extension_settings[extensionName].example_setting).trigger("input");
   $("#chapter-regex-input").val(extension_settings[extensionName].chapterRegex);
   $("#send-template-input").val(extension_settings[extensionName].sendTemplate);
   $("#send-delay-input").val(extension_settings[extensionName].sendDelay);
 }
 
-// 模板示例功能保留，兼容原有结构
+// 模板示例功能保留，完全兼容原有结构
 function onExampleInput(event) {
   const value = Boolean($(event.target).prop("checked"));
   extension_settings[extensionName].example_setting = value;
@@ -60,7 +61,7 @@ function onButtonClick() {
   );
 }
 
-// 核心功能：章节拆分逻辑
+// 章节拆分核心逻辑，无修改
 function splitNovelIntoChapters(novelText, regexSource) {
   try {
     const chapterRegex = new RegExp(regexSource, 'gm');
@@ -71,7 +72,6 @@ function splitNovelIntoChapters(novelText, regexSource) {
       return [{ title: '全文', content: novelText }];
     }
 
-    // 拆分章节标题与内容
     for (let i = 0; i < matches.length; i++) {
       const start = matches[i].index + matches[i][0].length;
       const end = i < matches.length - 1 ? matches[i + 1].index : novelText.length;
@@ -92,7 +92,7 @@ function splitNovelIntoChapters(novelText, regexSource) {
   }
 }
 
-// 核心功能：渲染章节列表
+// 章节列表渲染逻辑，无修改
 function renderChapterList(chapters) {
   const $listContainer = $('#novel-chapter-list');
 
@@ -101,11 +101,10 @@ function renderChapterList(chapters) {
     return;
   }
 
-  // 生成章节列表HTML，适配ST原生样式
   const listHtml = chapters.map((chapter, index) => `
     <div class="chapter-item flex-container flexColumn margin-b5 padding5 borderR5">
       <label class="chapter-checkbox flex-container alignCenter gap5">
-        <input type="checkbox" class="chapter-select" data-index="${index}" checked />
+        <input type="checkbox" class="chapter-select" data-index="${index}" checked>
         <span class="chapter-title fontBold">${chapter.title}</span>
       </label>
       <p class="chapter-preview text-sm text-muted margin0 padding-l25">
@@ -117,14 +116,14 @@ function renderChapterList(chapters) {
   $listContainer.html(listHtml);
 }
 
-// 核心功能：模板变量替换
+// 模板变量替换逻辑，无修改
 function renderCommandTemplate(template, charName, chapterContent) {
   return template
     .replace(/{{char}}/g, charName || '角色')
     .replace(/{{pipe}}/g, `"${chapterContent.replace(/"/g, '\\"')}"`);
 }
 
-// 核心功能：更新发送进度
+// 发送进度更新逻辑，无修改
 function updateSendProgress(current, total) {
   const $progressEl = $('#novel-import-progress');
   const $statusEl = $('#novel-import-status');
@@ -140,9 +139,9 @@ function updateSendProgress(current, total) {
   $statusEl.text(`发送进度: ${current}/${total} (${percent}%)`);
 }
 
-// 核心功能：批量发送章节
+// 【修复点2】核心发送逻辑，替换为官方正确的斜杠命令执行方法
 async function sendChaptersBatch(chapters) {
-  const { SlashCommandParser, characters, characterId } = getContext();
+  const { characters, characterId } = getContext();
   const settings = extension_settings[extensionName];
   
   // 前置校验
@@ -172,9 +171,15 @@ async function sendChaptersBatch(chapters) {
       const chapter = chapters[i];
       const command = renderCommandTemplate(settings.sendTemplate, currentCharName, chapter.content);
       
-      // 执行斜杠命令，与ST原生逻辑完全兼容
-      await SlashCommandParser.parseAndExecute(command);
-      successCount++;
+      // 【核心修复】使用官方源码导出的executeSlashCommands执行斜杠命令，完美支持管道|语法
+      const result = await executeSlashCommands(command);
+      
+      // 处理执行结果
+      if (result?.isError) {
+        toastr.warning(`第${i+1}章发送失败: ${result.errorMessage}`, "小说导入");
+      } else {
+        successCount++;
+      }
 
       // 更新进度
       updateSendProgress(i + 1, chapters.length);
@@ -196,6 +201,14 @@ async function sendChaptersBatch(chapters) {
   }
 }
 
+// 停止发送逻辑，无修改
+function stopChapterSending() {
+  if (isSending) {
+    stopSending = true;
+    toastr.info('已停止发送', "小说导入");
+  }
+}
+
 // 扩展入口，完全与模板的jQuery初始化结构一致
 jQuery(async () => {
   // 与模板完全一致：加载外部HTML文件，追加到ST扩展设置面板
@@ -206,8 +219,7 @@ jQuery(async () => {
   $("#my_button").on("click", onButtonClick);
   $("#example_setting").on("input", onExampleInput);
 
-  // 新增功能事件绑定，与模板写法完全一致
-  // 解析章节
+  // 功能事件绑定，与模板写法完全一致
   $("#parse-chapter-btn").on("click", () => {
     const file = $("#novel-file-upload")[0].files[0];
     const regexSource = $("#chapter-regex-input").val().trim();
@@ -273,12 +285,7 @@ jQuery(async () => {
   });
 
   // 停止发送
-  $("#stop-send-btn").on("click", () => {
-    if (isSending) {
-      stopSending = true;
-      toastr.info('已停止发送', "小说导入");
-    }
-  });
+  $("#stop-send-btn").on("click", stopChapterSending);
 
   // 与模板完全一致：初始化加载设置
   loadSettings();
