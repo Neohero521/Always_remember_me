@@ -1,12 +1,15 @@
 {
-  "author": "Neohero521",
-  "version": "1.0.0",
-  "name": "Always_remember_me",
-  "id": "always-remember-me",
-  "description": "小说导入拆分章节 + /input /sendas 命令发送到对话框",
-  "shortName": "ChapterImporter",
-  "permissions": [],
-  "dependencies": [],
-  "supported": ["stable", "dev"],
-  "assets": []
+    "display_name": "Always Remember Me - 小说章节导入助手",
+    "loading_order": 10,
+    "requires": [],
+    "optional": [],
+    "dependencies": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Neohero521",
+    "version": "1.0.0",
+    "homePage": "https://github.com/Neohero521/Always_remember_me",
+    "auto_update": true,
+    "minimum_client_version": "1.12.0",
+    "i18n": {}
 }
