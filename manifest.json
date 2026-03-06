@@ -1,13 +1,31 @@
 {
-  "name": "novel-continuation",
-  "display_name": "小说续写助手",
+  "name": "novel-continue-helper",
+  "displayName": "小说续写助手",
+  "author": "你的昵称",
   "version": "1.0.0",
-  "author": "你的名称",
-  "description": "小说文本导入、自动拆分章节、一键导入聊天对话框的续写辅助插件",
+  "description": "支持小说导入、章节自动拆分，一键发送章节到对话框，适配酒馆斜杠命令",
   "license": "MIT",
-  "homepage": "你的仓库地址",
+  "homepage": "https://github.com/你的用户名/你的仓库名",
   "main": "index.js",
+  "legacy": "index.legacy.js",
   "style": "style.css",
-  "minimum_tavern_version": "1.12.0",
-  "tags": ["小说", "续写", "导入", "章节管理"]
+  "minimumTavernVersion": "1.10.0",
+  "dependencies": {},
+  "settings": {
+    "defaultCommandTemplate": {
+      "type": "string",
+      "default": "/input 请输入{{char}}的动作或台词：| /sendas name={{char}} {{pipe}}",
+      "description": "默认使用的斜杠命令模板"
+    },
+    "chapterSplitRegex": {
+      "type": "string",
+      "default": "^\\s*第[0-9一二三四五六七八九十百千]+[章回节卷集].*$",
+      "description": "章节拆分正则表达式，匹配章节标题行"
+    },
+    "autoTrimContent": {
+      "type": "boolean",
+      "default": true,
+      "description": "是否自动去除章节内容首尾空白"
+    }
+  }
 }
