@@ -1,6 +1,6 @@
-<!-- 官方模板规范：扩展设置面板UI，同时用于悬浮球面板 -->
+<!-- 小说续写器UI模板，必须放在仓库根目录 -->
 <div class="novel-writer-inner">
-  <!-- 模块1：章节导入与管理 -->
+  <!-- 章节导入与管理 -->
   <div class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
       <div class="drawer-title-group">
@@ -59,47 +59,7 @@
     </div>
   </div>
 
-  <!-- 模块2：知识图谱构建与合并 -->
-  <div class="inline-drawer">
-    <div class="inline-drawer-toggle inline-drawer-header">
-      <div class="drawer-title-group">
-        <i class="fa-solid fa-diagram-project drawer-icon"></i>
-        <span>知识图谱构建与合并</span>
-      </div>
-      <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-    </div>
-    <div class="inline-drawer-content">
-      <div class="action-row justify-between">
-        <span class="block-desc">基于小说章节生成结构化知识图谱，保证续写人设不崩塌</span>
-        <div class="action-group">
-          <input id="graph-single-btn" class="menu_button menu_button--primary" type="submit" value="生成选中章节图谱" />
-          <input id="graph-batch-btn" class="menu_button menu_button--secondary" type="submit" value="批量生成全章节图谱" />
-        </div>
-      </div>
-      <div class="progress-group">
-        <p id="graph-generate-status" class="progress-text"></p>
-        <div class="progress-bar">
-          <div id="graph-progress" class="progress-fill"></div>
-        </div>
-      </div>
-      <hr class="sysHR" />
-      <div class="action-row justify-between">
-        <span class="block-desc">合并全章节图谱，生成完整的小说世界观设定</span>
-        <input id="graph-merge-btn" class="menu_button menu_button--primary" type="submit" value="合并已生成的章节图谱" />
-      </div>
-      <div class="form-group">
-        <label class="form-label">合并后完整知识图谱</label>
-        <textarea id="merged-graph-preview" rows="6" class="form-control" readonly placeholder="合并后的图谱JSON将显示在这里..."></textarea>
-        <div class="action-group mt-8">
-          <input id="graph-copy-btn" class="menu_button menu_button--sm" type="submit" value="复制JSON" />
-          <input id="graph-export-btn" class="menu_button menu_button--sm" type="submit" value="导出JSON文件" />
-          <input id="graph-clear-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空图谱" />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 模块3：小说续写生成 -->
+  <!-- 小说续写生成 -->
   <div class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
       <div class="drawer-title-group">
@@ -146,7 +106,7 @@
     </div>
   </div>
 
-  <!-- 模板示例模块（官方模板要求保留） -->
+  <!-- 模板示例模块（官方模板要求） -->
   <div class="inline-drawer">
     <div class="inline-drawer-toggle inline-drawer-header">
       <b>模板示例模块</b>
