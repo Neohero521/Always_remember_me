@@ -1,418 +1,361 @@
 // ==============================
-// 常量定义（唯一命名，避免与其他扩展冲突）
+// 官方规范：唯一模块标识，避免和其他扩展冲突
 // ==============================
-const MODULE_NAME = 'always_remember_me_novel_importer';
-const { event_types, SlashCommandParser, SlashCommand, ARGUMENT_TYPE } = SillyTavern.getContext();
+const MODULE_NAME = 'always_remember_me';
+const context = SillyTavern.getContext();
+const { event_types, SlashCommandParser, lodash } = context;
+const { DOMPurify } = SillyTavern.libs;
 
-// 默认配置（支持持久化保存）
+// ==============================
+// 官方规范：默认配置 + 持久化逻辑（完全匹配官方文档示例）
+// ==============================
 const DEFAULT_SETTINGS = Object.freeze({
     chapterRegex: '第[零一二三四五六七八九十百千\\d]+章.*|楔子|序言|尾声|番外',
-    sendCommandTemplate: '/input 请输入{{char}}的动作或台词：| /sendas name={{char}} {{pipe}}',
-    sendDelay: 1500,
-    autoScroll: true
+    sendCommand: '/input 请输入{{char}}的动作或台词：| /sendas name={{char}} {{pipe}}',
+    sendInterval: 1500
 });
 
-// 全局状态
 let currentSettings = {};
 let parsedChapters = [];
-let selectedChapterIds = new Set();
+let selectedChapters = new Set();
 let isSending = false;
 
-// ==============================
-// 初始化入口（官方标准：等待APP_READY事件）
-// ==============================
-async function initExtension() {
-    console.log(`[${MODULE_NAME}] 插件加载中...`);
-    loadSettings();
-    createExtensionUI();
-    registerCustomCommands();
-    bindEventListeners();
-    console.log(`[${MODULE_NAME}] 插件加载完成`);
-    toastr.success('小说章节导入助手加载完成', 'Always Remember Me');
-}
-
-// 等待应用完全就绪后初始化
-SillyTavern.getContext().eventSource.once(event_types.APP_READY, initExtension);
-
-// ==============================
-// 配置管理（官方标准持久化方案）
-// ==============================
+// 官方规范：加载并初始化配置
 function loadSettings() {
-    const { extensionSettings } = SillyTavern.getContext();
-    // 初始化配置，合并默认值（兼容更新后新增配置项）
-    if (!extensionSettings[MODULE_NAME]) {
-        extensionSettings[MODULE_NAME] = structuredClone(DEFAULT_SETTINGS);
+    if (!context.extensionSettings[MODULE_NAME]) {
+        context.extensionSettings[MODULE_NAME] = structuredClone(DEFAULT_SETTINGS);
     }
-    for (const key of Object.keys(DEFAULT_SETTINGS)) {
-        if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
-            extensionSettings[MODULE_NAME][key] = DEFAULT_SETTINGS[key];
-        }
-    }
-    currentSettings = extensionSettings[MODULE_NAME];
+    // 合并默认配置，兼容版本更新新增字段
+    currentSettings = lodash.merge(
+        structuredClone(DEFAULT_SETTINGS),
+        context.extensionSettings[MODULE_NAME]
+    );
+    console.log(`[${MODULE_NAME}] 配置加载完成`, currentSettings);
 }
 
+// 官方规范：保存配置
 function saveSettings() {
-    const { saveSettingsDebounced } = SillyTavern.getContext();
-    saveSettingsDebounced();
-    toastr.success('配置已保存', 'Always Remember Me');
+    context.extensionSettings[MODULE_NAME] = currentSettings;
+    context.saveSettingsDebounced();
+    console.log(`[${MODULE_NAME}] 配置已保存`);
+    toastr.success('配置已保存', MODULE_NAME);
 }
 
 // ==============================
-// UI创建（适配酒馆原生界面）
-// ==============================
-function createExtensionUI() {
-    const { DOMPurify } = SillyTavern.libs;
-    // 扩展面板HTML
-    const panelHTML = `
-    <div id="${MODULE_NAME}_panel" class="panel-group">
-        <div class="panel-title">
-            <span>📖 小说章节导入助手</span>
-        </div>
-        <div class="panel-body">
-            <!-- 文件选择区 -->
-            <div class="form-group">
-                <label>选择小说TXT文件（UTF-8编码）</label>
-                <input type="file" id="${MODULE_NAME}_fileInput" accept=".txt" class="form-control">
-            </div>
-
-            <!-- 章节拆分配置 -->
-            <div class="form-group">
-                <label>章节拆分正则表达式</label>
-                <input type="text" id="${MODULE_NAME}_regexInput" class="form-control" 
-                    value="${DOMPurify.sanitize(currentSettings.chapterRegex)}">
-                <div class="form-text">默认适配绝大多数小说的章节标题格式，可自定义修改</div>
-            </div>
-
-            <!-- 发送命令模板 -->
-            <div class="form-group">
-                <label>发送命令模板</label>
-                <textarea id="${MODULE_NAME}_commandInput" class="form-control" rows="2">${DOMPurify.sanitize(currentSettings.sendCommandTemplate)}</textarea>
-                <div class="form-text">
-                    变量说明：{{char}}=当前角色名，{{pipe}}/{{content}}=章节正文内容<br>
-                    你的默认命令：<code>/input 请输入{{char}}的动作或台词：| /sendas name={{char}} {{pipe}}</code>
-                </div>
-            </div>
-
-            <!-- 发送延迟配置 -->
-            <div class="form-group">
-                <label>批量发送间隔（毫秒）</label>
-                <input type="number" id="${MODULE_NAME}_delayInput" class="form-control" 
-                    value="${currentSettings.sendDelay}" min="500" max="5000">
-                <div class="form-text">防止刷屏报错，建议1000-2000毫秒</div>
-            </div>
-
-            <!-- 操作按钮 -->
-            <div class="flex-container" style="gap: 8px; margin: 12px 0;">
-                <button id="${MODULE_NAME}_parseBtn" class="menu_button">解析章节</button>
-                <button id="${MODULE_NAME}_saveConfigBtn" class="menu_button">保存配置</button>
-                <button id="${MODULE_NAME}_selectAllBtn" class="menu_button">全选章节</button>
-            </div>
-
-            <!-- 章节列表 -->
-            <div class="form-group">
-                <label>解析后的章节列表 <span id="${MODULE_NAME}_chapterCount">（共0章）</span></label>
-                <div id="${MODULE_NAME}_chapterList" class="scrollable-y" 
-                    style="max-height: 300px; border: 1px solid var(--border); border-radius: 4px; padding: 8px;">
-                    <div class="text-muted">请先选择小说文件并点击「解析章节」</div>
-                </div>
-            </div>
-
-            <!-- 导入按钮 -->
-            <div class="flex-container" style="gap: 8px; margin-top: 12px;">
-                <button id="${MODULE_NAME}_sendSelectedBtn" class="menu_button success" ${isSending ? 'disabled' : ''}>
-                    导入选中章节
-                </button>
-                <button id="${MODULE_NAME}_sendAllBtn" class="menu_button primary" ${isSending ? 'disabled' : ''}>
-                    导入全部章节
-                </button>
-            </div>
-        </div>
-    </div>
-    `;
-
-    // 插入到酒馆的扩展面板区域
-    const extensionsTab = document.getElementById('extensions_tab');
-    if (extensionsTab) {
-        extensionsTab.insertAdjacentHTML('beforeend', panelHTML);
-    }
-
-    // 绑定UI事件
-    bindUIEvents();
-}
-
-// ==============================
-// 核心功能：文件解析与章节拆分
+// 核心功能：小说文件读取与章节拆分
 // ==============================
 // 读取TXT文件
-function handleFileSelect(event) {
+function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
-        const { DOMPurify } = SillyTavern.libs;
-        // 清理内容，防止XSS
-        const rawContent = DOMPurify.sanitize(e.target.result);
-        parseChapters(rawContent);
+        const rawText = DOMPurify.sanitize(e.target.result);
+        splitChapters(rawText);
     };
     reader.onerror = () => {
-        toastr.error('文件读取失败，请检查文件格式', '错误');
+        console.error(`[${MODULE_NAME}] 文件读取失败`);
+        toastr.error('文件读取失败，请检查TXT文件编码（需UTF-8）', '错误');
     };
     reader.readAsText(file, 'UTF-8');
 }
 
-// 拆分章节
-function parseChapters(content) {
+// 按正则拆分章节
+function splitChapters(text) {
     try {
-        const regex = new RegExp(`(${currentSettings.chapterRegex})`, 'g');
-        const parts = content.split(regex).filter(Boolean);
+        const chapterReg = new RegExp(`(${currentSettings.chapterRegex})`, 'g');
+        const contentParts = text.split(chapterReg).filter(Boolean);
         parsedChapters = [];
 
-        // 合并标题与正文
-        for (let i = 0; i < parts.length; i += 2) {
-            const title = parts[i]?.trim() || `未命名章节 ${parsedChapters.length + 1}`;
-            const content = parts[i + 1]?.trim() || '';
-            if (title && content) {
+        for (let i = 0; i < contentParts.length; i += 2) {
+            const title = contentParts[i]?.trim() || `未命名章节 ${parsedChapters.length + 1}`;
+            const content = contentParts[i + 1]?.trim() || '';
+            if (content) {
                 parsedChapters.push({
                     id: parsedChapters.length,
                     title: title,
-                    content: `${title}\n${content}`
+                    fullContent: `${title}\n${content}`
                 });
             }
         }
 
-        // 重置选中状态
-        selectedChapterIds.clear();
+        selectedChapters.clear();
         renderChapterList();
+        console.log(`[${MODULE_NAME}] 章节解析完成，共${parsedChapters.length}章`);
         toastr.success(`成功解析出 ${parsedChapters.length} 章`, '解析完成');
-    } catch (error) {
-        console.error(`[${MODULE_NAME}] 章节解析失败:`, error);
-        toastr.error('章节解析失败，请检查正则表达式是否正确', '错误');
+    } catch (err) {
+        console.error(`[${MODULE_NAME}] 章节拆分失败`, err);
+        toastr.error('章节拆分失败，请检查正则表达式格式', '错误');
     }
 }
 
 // 渲染章节列表
 function renderChapterList() {
-    const listContainer = document.getElementById(`${MODULE_NAME}_chapterList`);
-    const countLabel = document.getElementById(`${MODULE_NAME}_chapterCount`);
-    const { DOMPurify } = SillyTavern.libs;
+    const listContainer = document.getElementById(`${MODULE_NAME}_chapter_list`);
+    const countLabel = document.getElementById(`${MODULE_NAME}_chapter_count`);
 
-    countLabel.textContent = `（共${parsedChapters.length}章）`;
-
+    countLabel.textContent = `共 ${parsedChapters.length} 章`;
     if (parsedChapters.length === 0) {
-        listContainer.innerHTML = '<div class="text-muted">暂无解析后的章节</div>';
+        listContainer.innerHTML = '<div style="padding: 8px; color: var(--text-muted);">暂无解析后的章节，请先上传小说文件</div>';
         return;
     }
 
-    // 生成列表HTML
     listContainer.innerHTML = parsedChapters.map(chapter => `
-    <div class="flex-container align-items-center" style="padding: 6px 0; border-bottom: 1px solid var(--border-light); gap: 8px;">
-        <input type="checkbox" id="${MODULE_NAME}_chapter_${chapter.id}" 
-            class="form_checkbox" ${selectedChapterIds.has(chapter.id) ? 'checked' : ''}>
-        <label for="${MODULE_NAME}_chapter_${chapter.id}" style="flex: 1; margin: 0; cursor: pointer;">
-            ${DOMPurify.sanitize(chapter.title)}
-        </label>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--border-light);">
+        <input type="checkbox" id="${MODULE_NAME}_check_${chapter.id}" class="form_checkbox" ${selectedChapters.has(chapter.id) ? 'checked' : ''}>
+        <label for="${MODULE_NAME}_check_${chapter.id}" style="flex: 1; margin: 0; cursor: pointer;">${DOMPurify.sanitize(chapter.title)}</label>
     </div>
     `).join('');
 
     // 绑定复选框事件
     parsedChapters.forEach(chapter => {
-        const checkbox = document.getElementById(`${MODULE_NAME}_chapter_${chapter.id}`);
-        checkbox?.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                selectedChapterIds.add(chapter.id);
-            } else {
-                selectedChapterIds.delete(chapter.id);
-            }
+        document.getElementById(`${MODULE_NAME}_check_${chapter.id}`).addEventListener('change', (e) => {
+            e.target.checked ? selectedChapters.add(chapter.id) : selectedChapters.delete(chapter.id);
         });
     });
 }
 
 // ==============================
-// 核心功能：命令执行与章节发送
+// 核心功能：执行斜杠命令发送章节（完全调用酒馆原生命令）
 // ==============================
 // 获取当前角色名称
-function getCurrentCharName() {
-    const { characters, characterId } = SillyTavern.getContext();
+function getCurrentChar() {
+    const { characters, characterId } = context;
     if (characterId === undefined || !characters[characterId]) {
         return null;
     }
     return characters[characterId].name;
 }
 
-// 替换模板变量
-function renderCommandTemplate(template, chapterContent) {
-    const charName = getCurrentCharName();
+// 渲染命令模板，替换变量
+function renderCommand(chapterContent) {
+    const charName = getCurrentChar();
     if (!charName) {
-        throw new Error('未选择有效角色，请先打开一个角色聊天');
+        throw new Error('未选择有效角色，请先打开角色聊天窗口');
     }
-    return template
+    return currentSettings.sendCommand
         .replaceAll('{{char}}', charName)
         .replaceAll('{{pipe}}', chapterContent)
         .replaceAll('{{content}}', chapterContent);
 }
 
-// 执行单条发送命令
-async function sendChapter(chapter) {
+// 执行单条章节发送
+async function sendSingleChapter(chapter) {
     try {
-        const charName = getCurrentCharName();
-        if (!charName) {
-            throw new Error('未选择有效角色');
-        }
-
-        // 渲染命令模板
-        const command = renderCommandTemplate(currentSettings.sendCommandTemplate, chapter.content);
-        console.log(`[${MODULE_NAME}] 执行命令:`, command);
-
-        // 调用酒馆官方斜杠命令解析器执行命令
-        await SlashCommandParser.parse(command);
-
-        // 自动滚动到底部
-        if (currentSettings.autoScroll) {
-            const chatContainer = document.getElementById('chat');
-            if (chatContainer) {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-        }
-
+        const finalCommand = renderCommand(chapter.fullContent);
+        console.log(`[${MODULE_NAME}] 执行原生命令:`, finalCommand);
+        
+        // 官方规范：直接调用酒馆原生斜杠命令解析器，支持管道符|
+        await SlashCommandParser.parse(finalCommand);
         return true;
-    } catch (error) {
-        console.error(`[${MODULE_NAME}] 章节发送失败:`, error);
-        toastr.error(`「${chapter.title}」发送失败: ${error.message}`, '发送错误');
+    } catch (err) {
+        console.error(`[${MODULE_NAME}] 章节「${chapter.title}」发送失败`, err);
+        toastr.error(`「${chapter.title}」发送失败: ${err.message}`, '发送错误');
         return false;
     }
 }
 
 // 批量发送章节
-async function batchSendChapters(chapters) {
+async function batchSendChapters(targetChapters) {
     if (isSending) return;
-    if (chapters.length === 0) {
-        toastr.warning('请先选择要导入的章节', '提示');
+    if (targetChapters.length === 0) {
+        toastr.warning('请先选择要发送的章节', '提示');
         return;
     }
-    if (!getCurrentCharName()) {
+    if (!getCurrentChar()) {
         toastr.error('请先打开一个角色聊天窗口，选择有效角色', '错误');
         return;
     }
 
-    // 锁定发送状态
     isSending = true;
-    updateSendButtonState();
-
+    updateButtonState();
     let successCount = 0;
-    const totalCount = chapters.length;
+    const total = targetChapters.length;
 
     try {
-        toastr.info(`开始导入 ${totalCount} 章，请勿关闭页面`, '导入中');
-        for (let i = 0; i < chapters.length; i++) {
-            const chapter = chapters[i];
-            const success = await sendChapter(chapter);
-            if (success) {
-                successCount++;
-            }
-            // 最后一章不需要延迟
-            if (i < chapters.length - 1) {
-                await new Promise(resolve => setTimeout(resolve, currentSettings.sendDelay));
+        toastr.info(`开始发送 ${total} 章，请勿关闭页面`, '发送中');
+        console.log(`[${MODULE_NAME}] 开始批量发送，共${total}章`);
+
+        for (let i = 0; i < targetChapters.length; i++) {
+            const success = await sendSingleChapter(targetChapters[i]);
+            success && successCount++;
+            // 非最后一章添加发送间隔，防止刷屏
+            if (i < targetChapters.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, currentSettings.sendInterval));
             }
         }
-        toastr.success(`导入完成！成功导入 ${successCount}/${totalCount} 章`, '导入完成');
-    } catch (error) {
-        console.error(`[${MODULE_NAME}] 批量导入失败:`, error);
-        toastr.error(`批量导入失败: ${error.message}`, '错误');
+
+        toastr.success(`发送完成！成功 ${successCount}/${total} 章`, '完成');
+        console.log(`[${MODULE_NAME}] 批量发送完成，成功${successCount}章`);
+    } catch (err) {
+        console.error(`[${MODULE_NAME}] 批量发送失败`, err);
+        toastr.error(`批量发送失败: ${err.message}`, '错误');
     } finally {
-        // 解锁发送状态
         isSending = false;
-        updateSendButtonState();
+        updateButtonState();
     }
 }
 
-// 更新发送按钮状态
-function updateSendButtonState() {
-    const sendSelectedBtn = document.getElementById(`${MODULE_NAME}_sendSelectedBtn`);
-    const sendAllBtn = document.getElementById(`${MODULE_NAME}_sendAllBtn`);
-    if (sendSelectedBtn && sendAllBtn) {
-        sendSelectedBtn.disabled = isSending;
-        sendAllBtn.disabled = isSending;
-        sendSelectedBtn.textContent = isSending ? '导入中...' : '导入选中章节';
-        sendAllBtn.textContent = isSending ? '导入中...' : '导入全部章节';
+// 更新按钮状态
+function updateButtonState() {
+    const sendSelectedBtn = document.getElementById(`${MODULE_NAME}_send_selected`);
+    const sendAllBtn = document.getElementById(`${MODULE_NAME}_send_all`);
+    if (!sendSelectedBtn || !sendAllBtn) return;
+
+    sendSelectedBtn.disabled = isSending;
+    sendAllBtn.disabled = isSending;
+    sendSelectedBtn.textContent = isSending ? '发送中...' : '发送选中章节';
+    sendAllBtn.textContent = isSending ? '发送中...' : '发送全部章节';
+}
+
+// ==============================
+// 官方规范：创建UI面板（匹配基础模板的设置面板写法）
+// ==============================
+function createExtensionUI() {
+    // 扩展面板HTML，完全适配酒馆原生样式类
+    const panelHTML = `
+    <div id="${MODULE_NAME}_panel" class="panel-group">
+        <div class="panel-title">
+            <span>📖 Always Remember Me - 小说章节导入</span>
+        </div>
+        <div class="panel-body">
+            <!-- 1. 文件上传 -->
+            <div class="form-group">
+                <label>选择小说TXT文件（UTF-8编码）</label>
+                <input type="file" id="${MODULE_NAME}_file_input" accept=".txt" class="form-control">
+            </div>
+
+            <!-- 2. 章节拆分配置 -->
+            <div class="form-group">
+                <label>章节拆分正则表达式</label>
+                <input type="text" id="${MODULE_NAME}_regex_input" class="form-control" 
+                    value="${DOMPurify.sanitize(currentSettings.chapterRegex)}">
+                <small class="form-text text-muted">默认适配绝大多数小说章节格式，可自定义修改</small>
+            </div>
+
+            <!-- 3. 发送命令配置（你的需求默认值） -->
+            <div class="form-group">
+                <label>发送命令模板</label>
+                <textarea id="${MODULE_NAME}_command_input" class="form-control" rows="2">${DOMPurify.sanitize(currentSettings.sendCommand)}</textarea>
+                <small class="form-text text-muted">
+                    变量：{{char}}=当前角色名，{{pipe}}/{{content}}=章节正文<br>
+                    你的默认命令：<code>/input 请输入{{char}}的动作或台词：| /sendas name={{char}} {{pipe}}</code>
+                </small>
+            </div>
+
+            <!-- 4. 发送间隔配置 -->
+            <div class="form-group">
+                <label>批量发送间隔（毫秒）</label>
+                <input type="number" id="${MODULE_NAME}_interval_input" class="form-control" 
+                    value="${currentSettings.sendInterval}" min="500" max="5000">
+                <small class="form-text text-muted">防止刷屏报错，建议1000-2000毫秒</small>
+            </div>
+
+            <!-- 操作按钮 -->
+            <div class="flex-container" style="gap: 8px; margin: 12px 0;">
+                <button id="${MODULE_NAME}_parse_btn" class="menu_button">解析章节</button>
+                <button id="${MODULE_NAME}_save_btn" class="menu_button">保存配置</button>
+                <button id="${MODULE_NAME}_select_all_btn" class="menu_button">全选/反选</button>
+            </div>
+
+            <!-- 章节列表 -->
+            <div class="form-group">
+                <label>章节列表 <span id="${MODULE_NAME}_chapter_count" class="text-muted">（共0章）</span></label>
+                <div id="${MODULE_NAME}_chapter_list" class="scrollable-y" 
+                    style="max-height: 300px; border: 1px solid var(--border); border-radius: 4px; padding: 8px;">
+                    <div style="color: var(--text-muted);">请先上传小说文件并点击「解析章节」</div>
+                </div>
+            </div>
+
+            <!-- 发送按钮 -->
+            <div class="flex-container" style="gap: 8px; margin-top: 12px;">
+                <button id="${MODULE_NAME}_send_selected" class="menu_button success">发送选中章节</button>
+                <button id="${MODULE_NAME}_send_all" class="menu_button primary">发送全部章节</button>
+            </div>
+        </div>
+    </div>
+    `;
+
+    // 官方规范：插入到酒馆扩展设置面板，确保DOM存在
+    const extensionsContainer = document.getElementById('extensions_settings');
+    if (extensionsContainer) {
+        extensionsContainer.insertAdjacentHTML('beforeend', panelHTML);
+        console.log(`[${MODULE_NAME}] UI面板创建成功`);
+        bindUIEvents();
+    } else {
+        console.error(`[${MODULE_NAME}] 未找到扩展面板容器，UI创建失败`);
+        toastr.error('扩展面板加载失败，请刷新页面重试', '错误');
     }
 }
 
 // ==============================
-// 事件绑定
+// UI事件绑定
 // ==============================
 function bindUIEvents() {
-    // 文件选择
-    document.getElementById(`${MODULE_NAME}_fileInput`).addEventListener('change', handleFileSelect);
-    // 解析按钮
-    document.getElementById(`${MODULE_NAME}_parseBtn`).addEventListener('click', () => {
-        const fileInput = document.getElementById(`${MODULE_NAME}_fileInput`);
+    // 文件上传
+    document.getElementById(`${MODULE_NAME}_file_input`).addEventListener('change', handleFileUpload);
+
+    // 解析章节按钮
+    document.getElementById(`${MODULE_NAME}_parse_btn`).addEventListener('click', () => {
+        const fileInput = document.getElementById(`${MODULE_NAME}_file_input`);
         if (!fileInput.files[0]) {
             toastr.warning('请先选择小说TXT文件', '提示');
             return;
         }
         // 更新配置后重新解析
-        currentSettings.chapterRegex = document.getElementById(`${MODULE_NAME}_regexInput`).value.trim();
-        currentSettings.sendCommandTemplate = document.getElementById(`${MODULE_NAME}_commandInput`).value.trim();
-        currentSettings.sendDelay = parseInt(document.getElementById(`${MODULE_NAME}_delayInput`).value) || DEFAULT_SETTINGS.sendDelay;
+        currentSettings.chapterRegex = document.getElementById(`${MODULE_NAME}_regex_input`).value.trim();
+        currentSettings.sendCommand = document.getElementById(`${MODULE_NAME}_command_input`).value.trim();
+        currentSettings.sendInterval = parseInt(document.getElementById(`${MODULE_NAME}_interval_input`).value) || DEFAULT_SETTINGS.sendInterval;
         saveSettings();
-        // 重新触发文件读取
-        handleFileSelect({ target: { files: fileInput.files } });
+        // 重新触发文件解析
+        handleFileUpload({ target: { files: fileInput.files } });
     });
+
     // 保存配置按钮
-    document.getElementById(`${MODULE_NAME}_saveConfigBtn`).addEventListener('click', () => {
-        currentSettings.chapterRegex = document.getElementById(`${MODULE_NAME}_regexInput`).value.trim();
-        currentSettings.sendCommandTemplate = document.getElementById(`${MODULE_NAME}_commandInput`).value.trim();
-        currentSettings.sendDelay = parseInt(document.getElementById(`${MODULE_NAME}_delayInput`).value) || DEFAULT_SETTINGS.sendDelay;
+    document.getElementById(`${MODULE_NAME}_save_btn`).addEventListener('click', () => {
+        currentSettings.chapterRegex = document.getElementById(`${MODULE_NAME}_regex_input`).value.trim();
+        currentSettings.sendCommand = document.getElementById(`${MODULE_NAME}_command_input`).value.trim();
+        currentSettings.sendInterval = parseInt(document.getElementById(`${MODULE_NAME}_interval_input`).value) || DEFAULT_SETTINGS.sendInterval;
         saveSettings();
     });
-    // 全选按钮
-    document.getElementById(`${MODULE_NAME}_selectAllBtn`).addEventListener('click', () => {
+
+    // 全选/反选按钮
+    document.getElementById(`${MODULE_NAME}_select_all_btn`).addEventListener('click', () => {
         if (parsedChapters.length === 0) return;
-        const allSelected = selectedChapterIds.size === parsedChapters.length;
-        if (allSelected) {
-            selectedChapterIds.clear();
-        } else {
-            parsedChapters.forEach(chapter => selectedChapterIds.add(chapter.id));
-        }
+        const isAllSelected = selectedChapters.size === parsedChapters.length;
+        isAllSelected ? selectedChapters.clear() : parsedChapters.forEach(chap => selectedChapters.add(chap.id));
         renderChapterList();
     });
-    // 导入选中章节
-    document.getElementById(`${MODULE_NAME}_sendSelectedBtn`).addEventListener('click', () => {
-        const selectedChapters = parsedChapters.filter(chapter => selectedChapterIds.has(chapter.id));
-        batchSendChapters(selectedChapters);
+
+    // 发送选中章节
+    document.getElementById(`${MODULE_NAME}_send_selected`).addEventListener('click', () => {
+        const targetChapters = parsedChapters.filter(chap => selectedChapters.has(chap.id));
+        batchSendChapters(targetChapters);
     });
-    // 导入全部章节
-    document.getElementById(`${MODULE_NAME}_sendAllBtn`).addEventListener('click', () => {
+
+    // 发送全部章节
+    document.getElementById(`${MODULE_NAME}_send_all`).addEventListener('click', () => {
         batchSendChapters([...parsedChapters]);
     });
-}
 
-function bindEventListeners() {
-    // 切换聊天时重置状态
-    const { eventSource } = SillyTavern.getContext();
-    eventSource.on(event_types.CHAT_CHANGED, () => {
-        selectedChapterIds.clear();
+    // 切换聊天时重置选中状态
+    context.eventSource.on(event_types.CHAT_CHANGED, () => {
+        selectedChapters.clear();
         renderChapterList();
     });
 }
 
 // ==============================
-// 注册自定义斜杠命令（官方新标准）
+// 官方规范：插件初始化入口（APP_READY事件触发，确保应用完全加载）
 // ==============================
-function registerCustomCommands() {
-    // 注册快速导入命令
-    SlashCommandParser.addCommandObject(SlashCommand.fromProps({
-        name: 'novel-import',
-        callback: async () => {
-            document.getElementById(`${MODULE_NAME}_fileInput`)?.click();
-            return '已打开小说文件选择窗口';
-        },
-        aliases: ['导入小说'],
-        returns: '操作提示',
-        helpString: `
-            <div>快速打开小说章节导入助手的文件选择窗口</div>
-            <div><strong>示例:</strong> <pre><code class="language-stscript">/novel-import</code></pre></div>
-        `,
-    }));
+function initExtension() {
+    console.log(`[${MODULE_NAME}] 开始初始化插件`);
+    loadSettings();
+    createExtensionUI();
+    console.log(`[${MODULE_NAME}] 插件初始化完成！`);
+    toastr.success('小说章节导入插件加载完成', 'Always Remember Me');
 }
+
+// 官方规范：等待应用完全就绪后执行初始化（和基础模板完全一致）
+context.eventSource.once(event_types.APP_READY, initExtension);
