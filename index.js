@@ -12,7 +12,7 @@ const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 const defaultSettings = {
   chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
-  sendTemplate: "/input 章节内容：| /sendas name={{char}} {{pipe}}",
+  sendTemplate: "/sendas name={{char}} {{pipe}}",
   sendDelay: 1500,
   example_setting: false, // 保留模板示例字段，兼容模板结构
 };
@@ -244,7 +244,7 @@ jQuery(async () => {
     saveSettingsDebounced();
   });
   $("#send-delay-input").on("change", (e) => {
-    extension_settings[extensionName].sendDelay = parseInt($(e.target).val()) || 1500;
+    extension_settings[extensionName].sendDelay = parseInt($(e.target).val()) || 100;
     saveSettingsDebounced();
   });
 
