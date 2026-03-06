@@ -1,26 +1,24 @@
-import { loadNovelUI, registerNovelButton } from './novel-ui.js';
-import { initUtils } from './utils.js';
+import { pluginName, pluginDisplayName, pluginVersion } from './config.js';
+import { initPlugin, registerSettings, registerCommands, registerPanel } from './main.js';
+import { toast } from './toast.js';
 
-// 插件初始化入口（和参考案例入口逻辑对齐）
 (function () {
-  const pluginName = "小说续写助手";
+  'use strict';
 
-  // 插件加载完成钩子
-  $(document).on('tavern:ready', async function () {
+  $(document).ready(async function () {
     try {
-      console.log(`[${pluginName}] 插件加载中...`);
+      console.log(`[${pluginName}] 正在加载插件 v${pluginVersion}`);
       
-      // 初始化工具模块
-      initUtils();
-      // 加载UI面板
-      loadNovelUI();
-      // 注册侧边栏功能按钮
-      registerNovelButton();
+      await registerSettings();
+      await registerCommands();
+      await registerPanel();
+      await initPlugin();
 
-      console.log(`[${pluginName}] 插件加载成功`);
+      toast.success(`${pluginDisplayName} 插件加载成功！`);
+      console.log(`[${pluginName}] 插件加载完成 v${pluginVersion}`);
     } catch (error) {
       console.error(`[${pluginName}] 插件加载失败`, error);
-      toastr.error(`小说续写助手加载失败: ${error.message}`, "插件错误");
+      toast.error(`${pluginDisplayName} 插件加载失败：${error.message}`);
     }
   });
 })();
