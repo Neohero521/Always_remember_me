@@ -10,7 +10,7 @@ import { saveSettingsDebounced } from "../../../../script.js";
 // 与仓库名称完全一致，确保路径正确
 const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
-// 按要求修改默认配置，新增悬浮相关默认项
+// 按要求修改默认配置
 const defaultSettings = {
   chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
   sendTemplate: "/sendas name={{char}} {{pipe}}", // 按要求修改发送命令
@@ -19,11 +19,6 @@ const defaultSettings = {
   chapterList: [],
   chapterGraphMap: {},
   mergedGraph: {},
-  // 新增Cola同款悬浮功能默认配置
-  floatingBallEnabled: true,
-  floatingBallPosition: null,
-  floatingWindowVisible: false,
-  floatingWindowPosition: null,
 };
 
 // 全局状态缓存
@@ -33,755 +28,6 @@ let isGeneratingWrite = false;
 let stopGenerateFlag = false;
 let isSending = false;
 let stopSending = false;
-
-// ====================== 新增：Cola同款悬浮球与悬浮窗核心逻辑 ======================
-// 悬浮球状态管理
-let floatingBallState = {
-  isDragging: false,
-  startX: 0,
-  startY: 0,
-  initialX: 0,
-  initialY: 0,
-  currentX: 0,
-  currentY: 0,
-  hasMoved: false
-};
-
-// 悬浮窗状态管理
-let floatingWindowState = {
-  isDragging: false,
-  isMinimized: false,
-  startX: 0,
-  startY: 0,
-  initialLeft: 0,
-  initialTop: 0,
-  hasMoved: false
-};
-
-// Cola同款猫咪悬浮球SVG图标
-const FLOATING_BALL_SVG = `
-<svg viewBox="0 0 100 100" width="30" height="30" class="floating-ball-svg">
-<defs>
-<linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-<stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
-<stop offset="100%" style="stop-color:#FFE4EC;stop-opacity:1" />
-</linearGradient>
-</defs>
-<!-- 圆形背景 -->
-<circle cx="50" cy="50" r="48" fill="url(#bg-gradient)" />
-<!-- 左耳 -->
-<path d="M18,45 L28,12 L45,38" fill="#FFB6C1" stroke="#333" stroke-width="2" stroke-linejoin="round" />
-<!-- 右耳 -->
-<path d="M82,45 L72,12 L55,38" fill="#FFB6C1" stroke="#333" stroke-width="2" stroke-linejoin="round" />
-<!-- 胡须 -->
-<g stroke="#333" stroke-width="2" stroke-linecap="round">
-<path d="M8,52 L35,56" />
-<path d="M8,64 L35,62" />
-<path d="M92,52 L65,56" />
-<path d="M92,64 L65,62" />
-</g>
-</svg>
-`;
-
-// 生成悬浮窗HTML（完整包含原有所有功能UI，ID加前缀避免冲突）
-function generateFloatingWindowHTML() {
-  return `
-  <div id="novel-writer-floating-window" class="novel-writer-floating-window">
-    <!-- 悬浮窗顶部拖拽栏 -->
-    <div class="floating-window-header">
-      <span class="floating-window-title">小说续写器</span>
-      <div class="floating-window-actions">
-        <button id="floating-window-minimize-btn" class="floating-window-btn" title="最小化">
-          <svg viewBox="0 0 24 24" width="16" height="16"><rect x="2" y="10" width="20" height="2" fill="currentColor" /></svg>
-        </button>
-        <button id="floating-window-close-btn" class="floating-window-btn" title="关闭">
-          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" /></svg>
-        </button>
-      </div>
-    </div>
-    <!-- 悬浮窗内容区域（完整原有功能） -->
-    <div class="floating-window-content">
-      <div class="novel-writer-extension floating-version">
-        <!-- 模块1：章节导入与管理 -->
-        <div class="inline-drawer">
-          <div class="inline-drawer-toggle inline-drawer-header">
-            <b>1. 章节导入与管理</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-          </div>
-          <div class="inline-drawer-content">
-            <div class="novel-block flex-container">
-              <label for="floating-novel-file-upload" class="margin-r5">小说TXT文件</label>
-              <input id="floating-novel-file-upload" type="file" accept=".txt" class="flex1" />
-            </div>
-            <div class="novel-block flex-container">
-              <label for="floating-chapter-regex-input" class="margin-r5">章节拆分正则</label>
-              <input id="floating-chapter-regex-input" type="text" class="flex1" placeholder="^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$" />
-            </div>
-            <div class="novel-block flex-container">
-              <label for="floating-send-template-input" class="margin-r5">发送命令模板</label>
-              <input id="floating-send-template-input" type="text" class="flex1" value="/sendas name={{char}} {{pipe}}" />
-            </div>
-            <div class="novel-block flex-container">
-              <label for="floating-send-delay-input" class="margin-r5">发送间隔(ms)</label>
-              <input id="floating-send-delay-input" type="number" min="50" step="10" class="flex1" value="100" />
-            </div>
-            <div class="novel-block flex-container">
-              <input id="floating-parse-chapter-btn" class="menu_button menu_button--primary" type="submit" value="解析章节" />
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container justifySpaceBetween">
-              <b>章节列表（仅显示标题）</b>
-              <div class="flex-container gap5">
-                <input id="floating-select-all-btn" class="menu_button menu_button--sm" type="submit" value="全选" />
-                <input id="floating-unselect-all-btn" class="menu_button menu_button--sm" type="submit" value="全不选" />
-              </div>
-            </div>
-            <div id="floating-novel-chapter-list" class="novel-block chapter-list">
-              <p class="text-muted text-center">请上传小说文件并点击「解析章节」</p>
-            </div>
-            <div class="novel-block">
-              <p id="floating-novel-import-status" class="text-sm margin0"></p>
-              <div class="progress-bar">
-                <div id="floating-novel-import-progress" class="progress-fill"></div>
-              </div>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container gap5">
-              <input id="floating-stop-send-btn" class="menu_button menu_button--danger" type="submit" value="停止发送" />
-              <input id="floating-import-selected-btn" class="menu_button menu_button--primary" type="submit" value="导入选中章节到对话框" />
-              <input id="floating-import-all-btn" class="menu_button menu_button--secondary" type="submit" value="导入全部章节到对话框" />
-            </div>
-          </div>
-        </div>
-
-        <!-- 模块2：知识图谱构建与合并 -->
-        <div class="inline-drawer">
-          <div class="inline-drawer-toggle inline-drawer-header">
-            <b>2. 知识图谱构建与合并</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-          </div>
-          <div class="inline-drawer-content">
-            <div class="novel-block flex-container justifySpaceBetween">
-              <b>图谱生成</b>
-              <div class="flex-container gap5">
-                <input id="floating-graph-single-btn" class="menu_button menu_button--primary" type="submit" value="生成选中章节图谱" />
-                <input id="floating-graph-batch-btn" class="menu_button menu_button--secondary" type="submit" value="批量生成全章节图谱" />
-              </div>
-            </div>
-            <div class="novel-block">
-              <p id="floating-graph-generate-status" class="text-sm margin0"></p>
-              <div class="progress-bar">
-                <div id="floating-graph-progress" class="progress-fill"></div>
-              </div>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container justifySpaceBetween">
-              <b>全量图谱合并</b>
-              <input id="floating-graph-merge-btn" class="menu_button menu_button--primary" type="submit" value="合并已生成的章节图谱" />
-            </div>
-            <div class="novel-block">
-              <label class="form-label">合并后完整知识图谱</label>
-              <textarea id="floating-merged-graph-preview" rows="6" class="form-control w100" readonly placeholder="合并后的图谱JSON将显示在这里..."></textarea>
-              <div class="flex-container gap5 margin-t5">
-                <input id="floating-graph-copy-btn" class="menu_button menu_button--sm" type="submit" value="复制JSON" />
-                <input id="floating-graph-export-btn" class="menu_button menu_button--sm" type="submit" value="导出JSON文件" />
-                <input id="floating-graph-clear-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空图谱" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 模块3：小说续写生成 -->
-        <div class="inline-drawer">
-          <div class="inline-drawer-toggle inline-drawer-header">
-            <b>3. 小说续写生成</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-          </div>
-          <div class="inline-drawer-content">
-            <div class="novel-block flex-container">
-              <label for="floating-write-chapter-select" class="margin-r5">选择续写基准章节</label>
-              <select id="floating-write-chapter-select" class="flex1">
-                <option value="">请先解析章节</option>
-              </select>
-            </div>
-            <div class="novel-block">
-              <label class="form-label">基准章节内容（可直接编辑修改）</label>
-              <textarea id="floating-write-chapter-content" rows="12" class="form-control w100" placeholder="请先选择上方的基准章节..." readonly></textarea>
-            </div>
-            <div class="novel-block flex-container">
-              <label for="floating-write-word-count" class="margin-r5">续写字数</label>
-              <input id="floating-write-word-count" type="number" min="500" max="10000" step="100" class="flex1" value="2000" />
-              <span class="margin-l5 text-muted">范围：500-10000</span>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container gap5">
-              <input id="floating-write-generate-btn" class="menu_button menu_button--primary" type="submit" value="生成续写章节" />
-              <input id="floating-write-stop-btn" class="menu_button menu_button--danger" type="submit" value="停止生成" />
-            </div>
-            <div class="novel-block">
-              <p id="floating-write-status" class="text-sm margin0"></p>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block">
-              <label class="form-label">续写生成结果</label>
-              <textarea id="floating-write-content-preview" rows="15" class="form-control w100" placeholder="生成的续写章节内容将显示在这里..."></textarea>
-              <div class="flex-container gap5 margin-t5">
-                <input id="floating-write-copy-btn" class="menu_button menu_button--sm" type="submit" value="复制内容" />
-                <input id="floating-write-send-btn" class="menu_button menu_button--primary" type="submit" value="发送到对话框" />
-                <input id="floating-write-clear-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空内容" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  `;
-}
-
-// 创建悬浮球（Cola同款逻辑）
-function createFloatingBall() {
-  if (document.getElementById('novel-writer-floating-ball')) return;
-  const ball = document.createElement('div');
-  ball.id = 'novel-writer-floating-ball';
-  ball.className = 'novel-writer-floating-ball';
-  ball.innerHTML = FLOATING_BALL_SVG;
-  document.body.appendChild(ball);
-  restoreFloatingBallPosition(ball);
-  bindFloatingBallEvents(ball);
-  return ball;
-}
-
-// 恢复悬浮球保存的位置
-function restoreFloatingBallPosition(ball) {
-  const savedPos = extension_settings[extensionName]?.floatingBallPosition;
-  if (savedPos && savedPos.x !== undefined && savedPos.y !== undefined) {
-    const maxX = window.innerWidth - 30;
-    const maxY = window.innerHeight - 30;
-    floatingBallState.currentX = Math.min(Math.max(0, savedPos.x), maxX);
-    floatingBallState.currentY = Math.min(Math.max(0, savedPos.y), maxY);
-  } else {
-    // 默认位置：右侧中间（和Cola一致）
-    floatingBallState.currentX = window.innerWidth - 40;
-    floatingBallState.currentY = (window.innerHeight - 30) / 2;
-  }
-  ball.style.left = floatingBallState.currentX + 'px';
-  ball.style.top = floatingBallState.currentY + 'px';
-}
-
-// 保存悬浮球位置
-function saveFloatingBallPosition() {
-  if (!extension_settings[extensionName]) return;
-  extension_settings[extensionName].floatingBallPosition = {
-    x: floatingBallState.currentX,
-    y: floatingBallState.currentY
-  };
-  saveSettingsDebounced();
-}
-
-// 绑定悬浮球事件
-function bindFloatingBallEvents(ball) {
-  // 鼠标事件
-  ball.addEventListener('mousedown', onFloatingBallDragStart);
-  document.addEventListener('mousemove', onFloatingBallDragMove);
-  document.addEventListener('mouseup', onFloatingBallDragEnd);
-  // 触摸事件（移动端适配）
-  ball.addEventListener('touchstart', onFloatingBallDragStart, { passive: false });
-  document.addEventListener('touchmove', onFloatingBallDragMove, { passive: false });
-  document.addEventListener('touchend', onFloatingBallDragEnd);
-  // 窗口大小变化时边界适配
-  window.addEventListener('resize', () => {
-    const maxX = window.innerWidth - 30;
-    const maxY = window.innerHeight - 30;
-    if (floatingBallState.currentX > maxX) {
-      floatingBallState.currentX = maxX;
-      ball.style.left = floatingBallState.currentX + 'px';
-    }
-    if (floatingBallState.currentY > maxY) {
-      floatingBallState.currentY = maxY;
-      ball.style.top = floatingBallState.currentY + 'px';
-    }
-  });
-}
-
-// 悬浮球拖拽开始
-function onFloatingBallDragStart(e) {
-  const ball = document.getElementById('novel-writer-floating-ball');
-  if (!ball) return;
-  floatingBallState.isDragging = true;
-  floatingBallState.hasMoved = false;
-  if (e.type === 'touchstart') {
-    floatingBallState.startX = e.touches[0].clientX;
-    floatingBallState.startY = e.touches[0].clientY;
-    e.preventDefault();
-  } else {
-    floatingBallState.startX = e.clientX;
-    floatingBallState.startY = e.clientY;
-  }
-  floatingBallState.initialX = floatingBallState.currentX;
-  floatingBallState.initialY = floatingBallState.currentY;
-  ball.classList.add('dragging');
-}
-
-// 悬浮球拖拽移动
-function onFloatingBallDragMove(e) {
-  if (!floatingBallState.isDragging) return;
-  const ball = document.getElementById('novel-writer-floating-ball');
-  if (!ball) return;
-  let clientX, clientY;
-  if (e.type === 'touchmove') {
-    clientX = e.touches[0].clientX;
-    clientY = e.touches[0].clientY;
-    e.preventDefault();
-  } else {
-    clientX = e.clientX;
-    clientY = e.clientY;
-  }
-  const deltaX = clientX - floatingBallState.startX;
-  const deltaY = clientY - floatingBallState.startY;
-  // 移动超过5px判定为拖拽，避免和点击冲突
-  if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-    floatingBallState.hasMoved = true;
-  }
-  // 边界限制
-  let newX = floatingBallState.initialX + deltaX;
-  let newY = floatingBallState.initialY + deltaY;
-  const maxX = window.innerWidth - 30;
-  const maxY = window.innerHeight - 30;
-  newX = Math.min(Math.max(0, newX), maxX);
-  newY = Math.min(Math.max(0, newY), maxY);
-  floatingBallState.currentX = newX;
-  floatingBallState.currentY = newY;
-  ball.style.left = newX + 'px';
-  ball.style.top = newY + 'px';
-}
-
-// 悬浮球拖拽结束
-function onFloatingBallDragEnd(e) {
-  if (!floatingBallState.isDragging) return;
-  const ball = document.getElementById('novel-writer-floating-ball');
-  if (ball) ball.classList.remove('dragging');
-  floatingBallState.isDragging = false;
-  // 无移动判定为点击，切换悬浮窗
-  if (!floatingBallState.hasMoved) {
-    toggleFloatingWindow();
-  } else {
-    saveFloatingBallPosition();
-  }
-}
-
-// 切换悬浮窗显示/隐藏
-function toggleFloatingWindow() {
-  const windowEl = document.getElementById('novel-writer-floating-window');
-  if (!windowEl) {
-    createFloatingWindow();
-    return;
-  }
-  const isHidden = windowEl.classList.contains('hidden');
-  if (isHidden) {
-    windowEl.classList.remove('hidden');
-    restoreFloatingWindowPosition(windowEl);
-  } else {
-    windowEl.classList.add('hidden');
-  }
-  // 持久化状态
-  if (extension_settings[extensionName]) {
-    extension_settings[extensionName].floatingWindowVisible = !isHidden;
-    saveSettingsDebounced();
-  }
-}
-
-// 创建悬浮窗
-function createFloatingWindow() {
-  if (document.getElementById('novel-writer-floating-window')) return;
-  const windowEl = document.createElement('div');
-  windowEl.id = 'novel-writer-floating-window';
-  windowEl.className = 'novel-writer-floating-window';
-  windowEl.innerHTML = generateFloatingWindowHTML();
-  document.body.appendChild(windowEl);
-  restoreFloatingWindowPosition(windowEl);
-  bindFloatingWindowEvents(windowEl);
-  bindFloatingWindowFunctionEvents(windowEl);
-  // 同步数据到悬浮窗
-  renderFloatingChapterList(currentParsedChapters);
-  renderFloatingChapterSelect(currentParsedChapters);
-  $('#floating-chapter-regex-input').val(extension_settings[extensionName].chapterRegex);
-  $('#floating-send-template-input').val(extension_settings[extensionName].sendTemplate);
-  $('#floating-send-delay-input').val(extension_settings[extensionName].sendDelay);
-  $('#floating-merged-graph-preview').val(JSON.stringify(extension_settings[extensionName].mergedGraph, null, 2));
-  // 持久化状态
-  if (extension_settings[extensionName]) {
-    extension_settings[extensionName].floatingWindowVisible = true;
-    saveSettingsDebounced();
-  }
-  return windowEl;
-}
-
-// 恢复悬浮窗位置
-function restoreFloatingWindowPosition(windowEl) {
-  const savedPos = extension_settings[extensionName]?.floatingWindowPosition;
-  if (savedPos && savedPos.left !== undefined && savedPos.top !== undefined) {
-    const maxLeft = window.innerWidth - windowEl.offsetWidth;
-    const maxTop = window.innerHeight - windowEl.offsetHeight;
-    const left = Math.min(Math.max(0, savedPos.left), maxLeft);
-    const top = Math.min(Math.max(0, savedPos.top), maxTop);
-    windowEl.style.left = left + 'px';
-    windowEl.style.top = top + 'px';
-  } else {
-    centerFloatingWindow(windowEl);
-  }
-}
-
-// 悬浮窗居中
-function centerFloatingWindow(windowEl) {
-  const windowWidth = windowEl.offsetWidth || 420;
-  const windowHeight = windowEl.offsetHeight || 600;
-  const left = (window.innerWidth - windowWidth) / 2;
-  const top = (window.innerHeight - windowHeight) / 2;
-  windowEl.style.left = left + 'px';
-  windowEl.style.top = top + 'px';
-}
-
-// 保存悬浮窗位置
-function saveFloatingWindowPosition(windowEl) {
-  if (!extension_settings[extensionName]) return;
-  const rect = windowEl.getBoundingClientRect();
-  extension_settings[extensionName].floatingWindowPosition = {
-    left: rect.left,
-    top: rect.top
-  };
-  saveSettingsDebounced();
-}
-
-// 绑定悬浮窗基础事件
-function bindFloatingWindowEvents(windowEl) {
-  const header = windowEl.querySelector('.floating-window-header');
-  const minimizeBtn = windowEl.querySelector('#floating-window-minimize-btn');
-  const closeBtn = windowEl.querySelector('#floating-window-close-btn');
-  // 拖拽事件
-  header.addEventListener('mousedown', onFloatingWindowDragStart);
-  document.addEventListener('mousemove', onFloatingWindowDragMove);
-  document.addEventListener('mouseup', onFloatingWindowDragEnd);
-  header.addEventListener('touchstart', onFloatingWindowDragStart, { passive: false });
-  document.addEventListener('touchmove', onFloatingWindowDragMove, { passive: false });
-  document.addEventListener('touchend', onFloatingWindowDragEnd);
-  // 最小化按钮
-  minimizeBtn.addEventListener('click', () => {
-    windowEl.classList.add('hidden');
-    if (extension_settings[extensionName]) {
-      extension_settings[extensionName].floatingWindowVisible = false;
-      saveSettingsDebounced();
-    }
-  });
-  // 关闭按钮
-  closeBtn.addEventListener('click', () => {
-    windowEl.remove();
-    if (extension_settings[extensionName]) {
-      extension_settings[extensionName].floatingWindowVisible = false;
-      saveSettingsDebounced();
-    }
-  });
-  // 窗口大小变化时居中适配
-  window.addEventListener('resize', () => {
-    if (!windowEl.classList.contains('hidden')) {
-      centerFloatingWindow(windowEl);
-    }
-  });
-}
-
-// 悬浮窗拖拽开始
-function onFloatingWindowDragStart(e) {
-  const windowEl = document.getElementById('novel-writer-floating-window');
-  if (!windowEl || !e.target.closest('.floating-window-header')) return;
-  floatingWindowState.isDragging = true;
-  floatingWindowState.hasMoved = false;
-  const rect = windowEl.getBoundingClientRect();
-  if (e.type === 'touchstart') {
-    floatingWindowState.startX = e.touches[0].clientX;
-    floatingWindowState.startY = e.touches[0].clientY;
-    e.preventDefault();
-  } else {
-    floatingWindowState.startX = e.clientX;
-    floatingWindowState.startY = e.clientY;
-  }
-  floatingWindowState.initialLeft = rect.left;
-  floatingWindowState.initialTop = rect.top;
-  windowEl.classList.add('dragging');
-}
-
-// 悬浮窗拖拽移动
-function onFloatingWindowDragMove(e) {
-  if (!floatingWindowState.isDragging) return;
-  const windowEl = document.getElementById('novel-writer-floating-window');
-  if (!windowEl) return;
-  let clientX, clientY;
-  if (e.type === 'touchmove') {
-    clientX = e.touches[0].clientX;
-    clientY = e.touches[0].clientY;
-    e.preventDefault();
-  } else {
-    clientX = e.clientX;
-    clientY = e.clientY;
-  }
-  const deltaX = clientX - floatingWindowState.startX;
-  const deltaY = clientY - floatingWindowState.startY;
-  if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-    floatingWindowState.hasMoved = true;
-  }
-  // 边界限制
-  const maxLeft = window.innerWidth - windowEl.offsetWidth;
-  const maxTop = window.innerHeight - windowEl.offsetHeight;
-  let newLeft = floatingWindowState.initialLeft + deltaX;
-  let newTop = floatingWindowState.initialTop + deltaY;
-  newLeft = Math.min(Math.max(0, newLeft), maxLeft);
-  newTop = Math.min(Math.max(0, newTop), maxTop);
-  windowEl.style.left = newLeft + 'px';
-  windowEl.style.top = newTop + 'px';
-}
-
-// 悬浮窗拖拽结束
-function onFloatingWindowDragEnd(e) {
-  if (!floatingWindowState.isDragging) return;
-  const windowEl = document.getElementById('novel-writer-floating-window');
-  if (windowEl) windowEl.classList.remove('dragging');
-  floatingWindowState.isDragging = false;
-  if (floatingWindowState.hasMoved && windowEl) {
-    saveFloatingWindowPosition(windowEl);
-  }
-}
-
-// 渲染悬浮窗章节列表
-function renderFloatingChapterList(chapters) {
-  const $listContainer = $('#floating-novel-chapter-list');
-  const graphMap = extension_settings[extensionName].chapterGraphMap || {};
-  if (chapters.length === 0) {
-    $listContainer.html('<p class="text-muted text-center">请上传小说文件并点击「解析章节」</p>');
-    return;
-  }
-  chapters.forEach(chapter => chapter.hasGraph = !!graphMap[chapter.id]);
-  const listHtml = chapters.map((chapter) => `
-    <div class="chapter-item flex-container alignCenter justifySpaceBetween" data-chapter-id="${chapter.id}">
-      <label class="chapter-checkbox flex-container alignCenter gap5">
-        <input type="checkbox" class="floating-chapter-select" data-index="${chapter.id}" checked />
-        <span class="chapter-title fontBold">${chapter.title}</span>
-      </label>
-      <span class="text-sm ${chapter.hasGraph ? 'text-success' : 'text-muted'}">
-        ${chapter.hasGraph ? '已生成图谱' : '未生成图谱'}
-      </span>
-    </div>
-  `).join('');
-  $listContainer.html(listHtml);
-}
-
-// 渲染悬浮窗章节选择下拉框
-function renderFloatingChapterSelect(chapters) {
-  const $select = $('#floating-write-chapter-select');
-  if (chapters.length === 0) {
-    $select.html('<option value="">请先解析章节</option>');
-    $('#floating-write-chapter-content').val('').prop('readonly', true);
-    return;
-  }
-  const optionHtml = chapters.map(chapter => `<option value="${chapter.id}">${chapter.title}</option>`).join('');
-  $select.html(`<option value="">请选择基准章节</option>${optionHtml}`);
-  $('#floating-write-chapter-content').val('').prop('readonly', true);
-}
-
-// 获取悬浮窗选中章节
-function getFloatingSelectedChapters() {
-  const checkedInputs = document.querySelectorAll('.floating-chapter-select:checked');
-  const selectedIndexes = [...checkedInputs].map(input => parseInt(input.dataset.index));
-  return selectedIndexes.map(index => currentParsedChapters.find(item => item.id === index)).filter(Boolean);
-}
-
-// 绑定悬浮窗功能事件（和原有逻辑完全一致，保证功能100%同步）
-function bindFloatingWindowFunctionEvents(windowEl) {
-  const $window = $(windowEl);
-  // 抽屉开关事件（兼容ST原生样式）
-  $window.find(".inline-drawer-toggle").on("click", function() {
-    const $drawer = $(this).closest(".inline-drawer");
-    $drawer.toggleClass("open");
-    $drawer.find(".inline-drawer-content").slideToggle(200);
-    $drawer.find(".inline-drawer-icon").toggleClass("down up");
-  });
-  // 解析章节
-  $window.find("#floating-parse-chapter-btn").on("click", () => {
-    const file = $window.find("#floating-novel-file-upload")[0].files[0];
-    const regexSource = $window.find("#floating-chapter-regex-input").val().trim();
-    if (!file) {
-      toastr.warning('请先选择小说TXT文件', "小说续写器");
-      return;
-    }
-    extension_settings[extensionName].chapterRegex = regexSource;
-    saveSettingsDebounced();
-    $("#chapter-regex-input").val(regexSource);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const novelText = e.target.result;
-      currentParsedChapters = splitNovelIntoChapters(novelText, regexSource);
-      extension_settings[extensionName].chapterList = currentParsedChapters;
-      extension_settings[extensionName].chapterGraphMap = {};
-      extension_settings[extensionName].mergedGraph = {};
-      $('#merged-graph-preview').val('');
-      $('#floating-merged-graph-preview').val('');
-      saveSettingsDebounced();
-      renderChapterList(currentParsedChapters);
-      renderChapterSelect(currentParsedChapters);
-      renderFloatingChapterList(currentParsedChapters);
-      renderFloatingChapterSelect(currentParsedChapters);
-    };
-    reader.onerror = () => toastr.error('文件读取失败，请检查文件编码（仅支持UTF-8）', "小说续写器");
-    reader.readAsText(file, 'UTF-8');
-  });
-  // 全选/全不选
-  $window.find("#floating-select-all-btn").on("click", () => $window.find(".floating-chapter-select").prop("checked", true));
-  $window.find("#floating-unselect-all-btn").on("click", () => $window.find(".floating-chapter-select").prop("checked", false));
-  // 保存模板和间隔设置
-  $window.find("#floating-send-template-input").on("change", (e) => {
-    const value = $(e.target).val().trim();
-    extension_settings[extensionName].sendTemplate = value;
-    saveSettingsDebounced();
-    $("#send-template-input").val(value);
-  });
-  $window.find("#floating-send-delay-input").on("change", (e) => {
-    const value = parseInt($(e.target).val()) || 100;
-    extension_settings[extensionName].sendDelay = value;
-    saveSettingsDebounced();
-    $("#send-delay-input").val(value);
-  });
-  // 导入选中/全部章节
-  $window.find("#floating-import-selected-btn").on("click", () => sendChaptersBatch(getFloatingSelectedChapters()));
-  $window.find("#floating-import-all-btn").on("click", () => sendChaptersBatch(currentParsedChapters));
-  // 停止发送
-  $window.find("#floating-stop-send-btn").on("click", () => {
-    if (isSending) {
-      stopSending = true;
-      toastr.info('已停止发送', "小说续写器");
-    }
-  });
-  // 图谱生成
-  $window.find("#floating-graph-single-btn").on("click", () => generateChapterGraphBatch(getFloatingSelectedChapters()));
-  $window.find("#floating-graph-batch-btn").on("click", () => generateChapterGraphBatch(currentParsedChapters));
-  // 合并图谱
-  $window.find("#floating-graph-merge-btn").on("click", async () => {
-    const mergedGraph = await mergeAllGraphs();
-    if (mergedGraph) $('#floating-merged-graph-preview').val(JSON.stringify(mergedGraph, null, 2));
-  });
-  // 图谱复制/导出/清空
-  $window.find("#floating-graph-copy-btn").on("click", () => {
-    const graphText = $('#floating-merged-graph-preview').val();
-    if (!graphText) return toastr.warning('没有可复制的图谱内容', "小说续写器");
-    navigator.clipboard.writeText(graphText).then(() => toastr.success('图谱JSON已复制到剪贴板', "小说续写器")).catch(() => toastr.error('复制失败', "小说续写器"));
-  });
-  $window.find("#floating-graph-export-btn").on("click", () => {
-    const graphText = $('#floating-merged-graph-preview').val();
-    if (!graphText) return toastr.warning('没有可导出的图谱内容', "小说续写器");
-    const blob = new Blob([graphText], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = '小说知识图谱.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    toastr.success('图谱JSON已导出', "小说续写器");
-  });
-  $window.find("#floating-graph-clear-btn").on("click", () => {
-    extension_settings[extensionName].mergedGraph = {};
-    $('#merged-graph-preview').val('');
-    $('#floating-merged-graph-preview').val('');
-    saveSettingsDebounced();
-    toastr.success('已清空合并图谱', "小说续写器");
-  });
-  // 章节选择联动
-  $window.find("#floating-write-chapter-select").on("change", function() {
-    const selectedChapterId = $(this).val();
-    if (!selectedChapterId) {
-      $('#floating-write-chapter-content').val('').prop('readonly', true);
-      return;
-    }
-    const targetChapter = currentParsedChapters.find(item => item.id == selectedChapterId);
-    if (targetChapter) $('#floating-write-chapter-content').val(targetChapter.content).prop('readonly', false);
-  });
-  // 生成续写
-  $window.find("#floating-write-generate-btn").on("click", async () => {
-    const context = getContext();
-    const { generateRaw } = context;
-    const selectedChapterId = $('#floating-write-chapter-select').val();
-    const editedChapterContent = $('#floating-write-chapter-content').val().trim();
-    const wordCount = parseInt($('#floating-write-word-count').val()) || 2000;
-    const mergedGraph = extension_settings[extensionName].mergedGraph || {};
-    if (isGeneratingWrite) return toastr.warning('正在生成续写内容中，请等待完成', "小说续写器");
-    if (!selectedChapterId) return toastr.error('请先选择续写基准章节', "小说续写器");
-    if (!editedChapterContent) return toastr.error('基准章节内容不能为空', "小说续写器");
-    if (Object.keys(mergedGraph).length === 0) toastr.warning('未检测到合并后的知识图谱，建议先合并图谱以保证续写质量', "小说续写器");
-    const systemPrompt = `
-小说续写规则（100%遵守）：
-1. 人设锁定：续写内容必须完全贴合小说的核心人物设定，绝对不能出现人设崩塌（OOC）。
-2. 剧情衔接：续写内容必须和提供的基准章节内容完美衔接，逻辑自洽，没有矛盾，承接前文剧情，开启新的章节内容。
-3. 文风统一：续写内容必须完全贴合原小说的叙事风格、语言习惯、对话方式、节奏特点，和原文无缝衔接。
-4. 剧情合理：续写内容要符合原小说的世界观设定，推动主线剧情发展，有完整的情节起伏、生动的细节、符合人设的对话。
-5. 输出要求：只输出续写的正文内容，不要任何标题、章节名、解释、备注、说明、分割线。
-6. 字数要求：续写约${wordCount}字，误差不超过10%。
-`;
-    const userPrompt = `
-小说核心设定知识图谱：${JSON.stringify(mergedGraph)}
-基准章节内容：${editedChapterContent}
-请基于以上内容，按照规则续写后续的章节正文。
-`;
-    isGeneratingWrite = true;
-    stopGenerateFlag = false;
-    $('#floating-write-status').text('正在生成续写章节，请稍候...');
-    $('#write-status').text('正在生成续写章节，请稍候...');
-    try {
-      const result = await generateRaw({ systemPrompt, prompt: userPrompt });
-      if (!result.trim()) throw new Error('生成内容为空');
-      $('#write-content-preview').val(result.trim());
-      $('#floating-write-content-preview').val(result.trim());
-      $('#write-status').text('续写章节生成完成！');
-      $('#floating-write-status').text('续写章节生成完成！');
-      toastr.success('续写章节生成完成！', "小说续写器");
-    } catch (error) {
-      console.error('续写生成失败:', error);
-      $('#write-status').text(`生成失败: ${error.message}`);
-      $('#floating-write-status').text(`生成失败: ${error.message}`);
-      toastr.error(`续写生成失败: ${error.message}`, "小说续写器");
-    } finally {
-      isGeneratingWrite = false;
-      stopGenerateFlag = false;
-    }
-  });
-  // 停止生成
-  $window.find("#floating-write-stop-btn").on("click", () => {
-    if (isGeneratingWrite) {
-      stopGenerateFlag = true;
-      $('#write-status').text('已停止生成');
-      $('#floating-write-status').text('已停止生成');
-      toastr.info('已停止生成续写内容', "小说续写器");
-    }
-  });
-  // 续写内容复制/发送/清空
-  $window.find("#floating-write-copy-btn").on("click", () => {
-    const writeText = $('#floating-write-content-preview').val();
-    if (!writeText) return toastr.warning('没有可复制的续写内容', "小说续写器");
-    navigator.clipboard.writeText(writeText).then(() => toastr.success('续写内容已复制到剪贴板', "小说续写器")).catch(() => toastr.error('复制失败', "小说续写器"));
-  });
-  $window.find("#floating-write-send-btn").on("click", () => {
-    const context = getContext();
-    const writeText = $('#floating-write-content-preview').val();
-    const currentCharName = context.characters[context.characterId]?.name;
-    if (!writeText) return toastr.warning('没有可发送的续写内容', "小说续写器");
-    if (!currentCharName) return toastr.error('请先选择一个聊天角色', "小说续写器");
-    const command = renderCommandTemplate(extension_settings[extensionName].sendTemplate, currentCharName, writeText);
-    context.executeSlashCommandsWithOptions(command).then(() => toastr.success('续写内容已发送到对话框', "小说续写器")).catch((error) => toastr.error(`发送失败: ${error.message}`, "小说续写器"));
-  });
-  $window.find("#floating-write-clear-btn").on("click", () => {
-    $('#write-content-preview').val('');
-    $('#floating-write-content-preview').val('');
-    $('#write-status').text('');
-    $('#floating-write-status').text('');
-    toastr.success('已清空续写内容', "小说续写器");
-  });
-}
-// ====================== 原有核心逻辑完全保留，无任何修改 ======================
 
 // ==============================================
 // 基础工具函数（保留模板原有逻辑）
@@ -814,14 +60,6 @@ async function loadSettings() {
   // 渲染章节列表与续写下拉框
   renderChapterList(currentParsedChapters);
   renderChapterSelect(currentParsedChapters);
-
-  // 新增：初始化悬浮功能
-  if (extension_settings[extensionName].floatingBallEnabled !== false) {
-    createFloatingBall();
-  }
-  if (extension_settings[extensionName].floatingWindowVisible) {
-    createFloatingWindow();
-  }
 }
 
 // 模板示例功能保留
@@ -929,8 +167,6 @@ function renderChapterList(chapters) {
   `).join('');
 
   $listContainer.html(listHtml);
-  // 同步更新悬浮窗
-  renderFloatingChapterList(chapters);
 }
 
 // 新增：渲染续写模块的章节选择下拉框
@@ -950,8 +186,6 @@ function renderChapterSelect(chapters) {
   $select.html(`<option value="">请选择基准章节</option>${optionHtml}`);
   // 清空编辑框
   $('#write-chapter-content').val('').prop('readonly', true);
-  // 同步更新悬浮窗
-  renderFloatingChapterSelect(chapters);
 }
 
 // 批量发送章节到对话框
@@ -992,7 +226,6 @@ async function sendChaptersBatch(chapters) {
 
       // 更新进度
       updateProgress('novel-import-progress', 'novel-import-status', i + 1, chapters.length, "发送进度");
-      updateProgress('floating-novel-import-progress', 'floating-novel-import-status', i + 1, chapters.length, "发送进度");
       
       // 发送间隔（默认100ms）
       if (i < chapters.length - 1 && !stopSending) {
@@ -1008,7 +241,6 @@ async function sendChaptersBatch(chapters) {
     isSending = false;
     stopSending = false;
     updateProgress('novel-import-progress', 'novel-import-status', 0, 0);
-    updateProgress('floating-novel-import-progress', 'floating-novel-import-status', 0, 0);
   }
 }
 
@@ -1179,7 +411,6 @@ async function generateChapterGraphBatch(chapters) {
       if (stopGenerateFlag) break;
       const chapter = chapters[i];
       updateProgress('graph-progress', 'graph-generate-status', i + 1, chapters.length, "图谱生成进度");
-      updateProgress('floating-graph-progress', 'floating-graph-generate-status', i + 1, chapters.length, "图谱生成进度");
 
       if (graphMap[chapter.id]) {
         successCount++;
@@ -1211,7 +442,6 @@ async function generateChapterGraphBatch(chapters) {
     isGeneratingGraph = false;
     stopGenerateFlag = false;
     updateProgress('graph-progress', 'graph-generate-status', 0, 0);
-    updateProgress('floating-graph-progress', 'floating-graph-generate-status', 0, 0);
   }
 }
 
@@ -1308,7 +538,6 @@ async function generateNovelWrite() {
   isGeneratingWrite = true;
   stopGenerateFlag = false;
   $('#write-status').text('正在生成续写章节，请稍候...');
-  $('#floating-write-status').text('正在生成续写章节，请稍候...');
 
   try {
     const result = await generateRaw({ systemPrompt, prompt: userPrompt });
@@ -1318,14 +547,11 @@ async function generateNovelWrite() {
 
     // 更新预览
     $('#write-content-preview').val(result.trim());
-    $('#floating-write-content-preview').val(result.trim());
     $('#write-status').text('续写章节生成完成！');
-    $('#floating-write-status').text('续写章节生成完成！');
     toastr.success('续写章节生成完成！', "小说续写器");
   } catch (error) {
     console.error('续写生成失败:', error);
     $('#write-status').text(`生成失败: ${error.message}`);
-    $('#floating-write-status').text(`生成失败: ${error.message}`);
     toastr.error(`续写生成失败: ${error.message}`, "小说续写器");
   } finally {
     isGeneratingWrite = false;
@@ -1373,7 +599,6 @@ jQuery(async () => {
       extension_settings[extensionName].chapterGraphMap = {};
       extension_settings[extensionName].mergedGraph = {};
       $('#merged-graph-preview').val('');
-      $('#floating-merged-graph-preview').val('');
       saveSettingsDebounced();
       // 渲染列表与下拉框
       renderChapterList(currentParsedChapters);
@@ -1397,12 +622,10 @@ jQuery(async () => {
   $("#send-template-input").on("change", (e) => {
     extension_settings[extensionName].sendTemplate = $(e.target).val().trim();
     saveSettingsDebounced();
-    $('#floating-send-template-input').val(extension_settings[extensionName].sendTemplate);
   });
   $("#send-delay-input").on("change", (e) => {
     extension_settings[extensionName].sendDelay = parseInt($(e.target).val()) || 100;
     saveSettingsDebounced();
-    $('#floating-send-delay-input').val(extension_settings[extensionName].sendDelay);
   });
 
   // 导入选中章节
@@ -1470,7 +693,6 @@ jQuery(async () => {
   $("#graph-clear-btn").on("click", () => {
     extension_settings[extensionName].mergedGraph = {};
     $('#merged-graph-preview').val('');
-    $('#floating-merged-graph-preview').val('');
     saveSettingsDebounced();
     toastr.success('已清空合并图谱', "小说续写器");
   });
@@ -1502,7 +724,6 @@ jQuery(async () => {
     if (isGeneratingWrite) {
       stopGenerateFlag = true;
       $('#write-status').text('已停止生成');
-      $('#floating-write-status').text('已停止生成');
       toastr.info('已停止生成续写内容', "小说续写器");
     }
   });
@@ -1548,30 +769,10 @@ jQuery(async () => {
   // 清空续写内容
   $("#write-clear-btn").on("click", () => {
     $('#write-content-preview').val('');
-    $('#floating-write-content-preview').val('');
     $('#write-status').text('');
-    $('#floating-write-status').text('');
     toastr.success('已清空续写内容', "小说续写器");
-  });
-
-  // 抽屉开关事件（ST原生兼容）
-  $(".inline-drawer-toggle").on("click", function() {
-    const $drawer = $(this).closest(".inline-drawer");
-    $drawer.toggleClass("open");
-    $drawer.find(".inline-drawer-content").slideToggle(200);
-    $drawer.find(".inline-drawer-icon").toggleClass("down up");
   });
 
   // 与模板完全一致：初始化加载设置
   loadSettings();
-
-  // 新增：延迟初始化悬浮功能，确保DOM加载完成
-  setTimeout(() => {
-    if (extension_settings[extensionName].floatingBallEnabled !== false) {
-      createFloatingBall();
-    }
-    if (extension_settings[extensionName].floatingWindowVisible) {
-      createFloatingWindow();
-    }
-  }, 1000);
 });
