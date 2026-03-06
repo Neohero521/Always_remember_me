@@ -1,13 +1,12 @@
 {
-    "display_name": "Always Remember Me (小说章节导入)",
-    "loading_order": 10,
-    "js": "index.js",
-    "css": "style.css",
-    "author": "Neohero521",
-    "version": "1.0.0",
-    "homePage": "https://github.com/Neohero521/Always_remember_me",
-    "auto_update": true,
-    "minimum_client_version": "1.0.0",
-    "dependencies": [],
-    "generate_interceptor": ""
+  "id": "always-remember-me",
+  "name": "Always Remember Me",
+  "description": "Import novel, split chapters, generate /input & /sendas commands for SillyTavern",
+  "version": "1.0.0",
+  "author": "Neohero521",
+  "entry": "index.js",
+  "type": "extension",
+  "frontend": true,
+  "requires": [],
+  "tags": ["novel", "import", "chapter split", "command generator"]
 }
