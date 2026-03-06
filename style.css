@@ -1,6 +1,3 @@
-/* ==============================================
-   全局变量与通用样式（贴合ST原生主题）
-   ============================================== */
 :root {
   --novel-primary: var(--SmartTheme-EmphasisColor, #5b86e5);
   --novel-bg: var(--SmartTheme-BodyBgColor, #1a1a1a);
@@ -21,7 +18,7 @@
   --novel-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
-/* 通用样式重置 */
+/* 全局样式重置 */
 .novel-writer-inner * {
   box-sizing: border-box;
   margin: 0;
@@ -165,7 +162,7 @@
 }
 
 /* ==============================================
-   悬浮球样式（和Cola完全一致的初始位置+美化）
+   悬浮球核心样式（位置完全由JS控制，CSS不冲突）
    ============================================== */
 .novel-writer-ball {
   position: fixed;
@@ -176,14 +173,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 999999;
+  z-index: 999999; /* 超高层级，绝对不会被遮挡 */
   cursor: pointer;
   box-shadow: var(--novel-shadow-md);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
-  /* 和Cola一致的初始位置：左下角 */
-  left: 20px;
-  bottom: 180px;
 }
 
 .novel-writer-ball:hover {
@@ -214,7 +208,7 @@
 }
 
 /* ==============================================
-   功能面板美化（全量重写，精致圆角+毛玻璃）
+   全局面板核心样式
    ============================================== */
 .novel-writer-panel {
   position: fixed;
@@ -246,7 +240,7 @@
   -webkit-backdrop-filter: blur(4px);
 }
 
-/* 面板内容容器（右侧滑入，圆角设计） */
+/* 面板内容容器 */
 .panel-content {
   position: absolute;
   top: 20px;
@@ -320,14 +314,14 @@
   color: var(--novel-danger);
 }
 
-/* 面板主体（滚动区域） */
+/* 面板主体滚动区域 */
 .panel-body {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
 }
 
-/* 面板滚动条美化 */
+/* 滚动条美化 */
 .panel-body::-webkit-scrollbar {
   width: 6px;
 }
@@ -346,7 +340,7 @@
 }
 
 /* ==============================================
-   章节列表美化
+   章节列表美化样式
    ============================================== */
 .chapter-list-container {
   max-height: 280px;
@@ -427,7 +421,7 @@
 }
 
 /* ==============================================
-   进度条美化
+   进度条美化样式
    ============================================== */
 .progress-group {
   margin-bottom: 16px;
@@ -457,3 +451,65 @@
 }
 
 /* ==============================================
+   全端响应式适配
+   ============================================== */
+@media (max-width: 768px) {
+  .panel-content {
+    width: 100%;
+    max-width: 100vw;
+    top: 0;
+    right: 0;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .novel-writer-ball {
+    width: 50px;
+    height: 50px;
+  }
+
+  .novel-writer-ball i {
+    font-size: 20px;
+  }
+
+  .novel-writer-inner .form-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .novel-writer-inner .form-row .flex-1,
+  .novel-writer-inner .form-row .flex-2 {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .novel-writer-inner .action-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .novel-writer-inner .action-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* 超小屏手机适配 */
+@media (max-width: 375px) {
+  .panel-header {
+    padding: 12px 16px;
+  }
+
+  .panel-body {
+    padding: 12px;
+  }
+
+  .novel-writer-inner .inline-drawer-header {
+    padding: 10px 12px;
+  }
+
+  .novel-writer-inner .inline-drawer-content {
+    padding: 10px 12px;
+  }
+}
