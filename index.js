@@ -1,5 +1,4 @@
 // 【严格对齐官方模板】SillyTavern扩展入口文件
-// 官方模板规范：必须在jQuery(document).ready()内执行所有逻辑
 import {
   extension_settings,
   getContext,
@@ -11,23 +10,20 @@ import { saveSettingsDebounced } from "../../../../script.js";
 const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
-// 默认配置（和官方模板一致，初始化用）
+// 默认配置
 const defaultSettings = {
-  // 章节导入配置
   chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
   sendTemplate: "/sendas name={{char}} {{pipe}}",
   sendDelay: 100,
   example_setting: false,
-  // 数据持久化
   chapterList: [],
   chapterGraphMap: {},
   mergedGraph: {},
-  // 悬浮球配置（和Cola一致的左下角初始位置）
   ballPosition: { x: 20, y: window.innerHeight - 180 },
   panelOpen: false,
 };
 
-// 全局状态缓存（避免循环依赖）
+// 全局状态缓存
 let globalState = {
   currentParsedChapters: [],
   isGeneratingGraph: false,
@@ -37,11 +33,13 @@ let globalState = {
   isSending: false,
   stopSending: false,
   isDragging: false,
+  dragStartPos: { x: 0, y: 0 },
+  dragStartTime: 0,
   panelToggleCallback: null,
 };
 
 // ==============================================
-// 【官方模板规范】入口主函数，DOM就绪后执行
+// 入口主函数（DOM就绪后执行）
 // ==============================================
 jQuery(async () => {
   console.log(`[${extensionName}] 扩展开始加载...`);
@@ -49,12 +47,12 @@ jQuery(async () => {
   const { eventSource, event_types } = context;
 
   // ==============================================
-  // 第一步：加载设置面板UI（官方模板必须做的事）
+  // 第一步：加载设置面板UI（官方模板强制要求）
   // ==============================================
+  let exampleHtml = "";
   try {
-    // 加载example.html，追加到ST的扩展设置面板
-    const settingsHtml = await $.get(`${extensionFolderPath}/example.html`);
-    $("#extensions_settings").append(settingsHtml);
+    exampleHtml = await $.get(`${extensionFolderPath}/example.html`);
+    $("#extensions_settings").append(exampleHtml);
     console.log(`[${extensionName}] 设置面板UI加载成功`);
   } catch (error) {
     console.error(`[${extensionName}] 加载example.html失败:`, error);
@@ -63,26 +61,22 @@ jQuery(async () => {
   }
 
   // ==============================================
-  // 第二步：初始化设置（官方模板规范）
+  // 第二步：初始化设置
   // ==============================================
   const loadSettings = () => {
     try {
       extension_settings[extensionName] = extension_settings[extensionName] || {};
-      // 补全默认配置
       for (const key of Object.keys(defaultSettings)) {
         if (!Object.hasOwn(extension_settings[extensionName], key)) {
           extension_settings[extensionName][key] = structuredClone(defaultSettings[key]);
         }
       }
-      // 恢复缓存数据
       globalState.currentParsedChapters = extension_settings[extensionName].chapterList || [];
-      // 更新UI设置值
       $("#example_setting").prop("checked", extension_settings[extensionName].example_setting).trigger("input");
       $("#chapter-regex-input").val(extension_settings[extensionName].chapterRegex);
       $("#send-template-input").val(extension_settings[extensionName].sendTemplate);
       $("#send-delay-input").val(extension_settings[extensionName].sendDelay);
       $("#merged-graph-preview").val(JSON.stringify(extension_settings[extensionName].mergedGraph, null, 2));
-
       console.log(`[${extensionName}] 设置加载完成`);
       return extension_settings[extensionName];
     } catch (error) {
@@ -91,11 +85,10 @@ jQuery(async () => {
     }
   };
 
-  // 执行设置加载
   let settings = loadSettings();
 
   // ==============================================
-  // 第三步：工具函数（内置，避免外部文件依赖）
+  // 第三步：通用工具函数
   // ==============================================
   const saveExtensionSettings = () => {
     try {
@@ -139,106 +132,46 @@ jQuery(async () => {
   };
 
   // ==============================================
-  // 第四步：悬浮球+面板核心功能（Cola风格）
+  // 第四步：面板控制函数（【核心修复】先定义，再使用）
   // ==============================================
-  // 更新悬浮球位置
-  const updateBallPosition = () => {
-    try {
-      $('#novel-writer-ball').css({
-        left: `${settings.ballPosition.x}px`,
-        top: `${settings.ballPosition.y}px`,
-        right: 'auto',
-        bottom: 'auto',
-      });
-    } catch (error) {
-      console.error(`[${extensionName}] 更新悬浮球位置失败:`, error);
+  const openPanel = () => {
+    const $panel = $('#novel-writer-panel');
+    if ($panel.length === 0) {
+      showToast('面板未初始化，请刷新页面重试', "error");
+      return;
     }
+    $panel.addClass('open');
+    settings.panelOpen = true;
+    saveExtensionSettings();
+    console.log(`[${extensionName}] 面板已打开`);
   };
 
-  // 初始化悬浮球
-  const initFloatingBall = (togglePanelCallback) => {
-    try {
-      // 避免重复创建
-      if ($('#novel-writer-ball').length > 0) {
-        console.log(`[${extensionName}] 悬浮球已存在，跳过创建`);
-        return;
-      }
-      // 保存回调
-      globalState.panelToggleCallback = togglePanelCallback;
-      // 创建悬浮球DOM
-      const ballHtml = `
-        <div id="novel-writer-ball" class="novel-writer-ball" title="小说续写器">
-          <i class="fa-solid fa-book-open"></i>
-        </div>
-      `;
-      $('body').append(ballHtml);
-
-      // 绑定拖拽事件
-      const $ball = $('#novel-writer-ball');
-      let startX, startY, originX, originY;
-
-      $ball.on('mousedown touchstart', (e) => {
-        globalState.isDragging = true;
-        $ball.addClass('dragging');
-        const event = e.type === 'touchstart' ? e.touches[0] : e;
-        startX = event.clientX;
-        startY = event.clientY;
-        originX = settings.ballPosition.x;
-        originY = settings.ballPosition.y;
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      $(document).on('mousemove touchmove', (e) => {
-        if (!globalState.isDragging) return;
-        const event = e.type === 'touchmove' ? e.touches[0] : e;
-        const deltaX = event.clientX - startX;
-        const deltaY = event.clientY - startY;
-        // 边界限制
-        let newX = originX + deltaX;
-        let newY = originY + deltaY;
-        newX = Math.max(20, Math.min(window.innerWidth - 60, newX));
-        newY = Math.max(20, Math.min(window.innerHeight - 60, newY));
-        // 更新位置
-        settings.ballPosition.x = newX;
-        settings.ballPosition.y = newY;
-        updateBallPosition();
-      });
-
-      $(document).on('mouseup touchend', () => {
-        if (!globalState.isDragging) return;
-        globalState.isDragging = false;
-        $ball.removeClass('dragging');
-        saveExtensionSettings();
-      });
-
-      // 点击切换面板
-      $ball.on('click', (e) => {
-        if (globalState.isDragging) return;
-        if (globalState.panelToggleCallback) globalState.panelToggleCallback();
-        e.preventDefault();
-        e.stopPropagation();
-      });
-
-      // 初始化位置
-      updateBallPosition();
-      console.log(`[${extensionName}] 悬浮球初始化完成`);
-    } catch (error) {
-      console.error(`[${extensionName}] 初始化悬浮球失败:`, error);
-      showToast(`悬浮球初始化失败: ${error.message}`, "error");
-    }
+  const closePanel = () => {
+    const $panel = $('#novel-writer-panel');
+    $panel.removeClass('open');
+    settings.panelOpen = false;
+    saveExtensionSettings();
+    console.log(`[${extensionName}] 面板已关闭`);
   };
 
-  // 初始化功能面板
+  const togglePanel = () => {
+    const $panel = $('#novel-writer-panel');
+    if ($panel.length === 0) {
+      showToast('面板未初始化，请刷新页面重试', "error");
+      return;
+    }
+    settings.panelOpen ? closePanel() : openPanel();
+  };
+
+  // ==============================================
+  // 第五步：初始化功能面板
+  // ==============================================
   const initFunctionPanel = async () => {
     try {
-      // 避免重复创建
       if ($('#novel-writer-panel').length > 0) {
         console.log(`[${extensionName}] 面板已存在，跳过创建`);
-        return;
+        return true;
       }
-      // 加载面板内部UI
-      const panelInnerHtml = await $.get(`${extensionFolderPath}/example.html`);
       const fullPanelHtml = `
         <div id="novel-writer-panel" class="novel-writer-panel">
           <div class="panel-mask"></div>
@@ -253,7 +186,7 @@ jQuery(async () => {
               </button>
             </div>
             <div class="panel-body">
-              ${panelInnerHtml}
+              ${exampleHtml}
             </div>
           </div>
         </div>
@@ -261,43 +194,145 @@ jQuery(async () => {
       $('body').append(fullPanelHtml);
 
       // 绑定关闭事件
-      const $panel = $('#novel-writer-panel');
-      const $mask = $panel.find('.panel-mask');
-      const $closeBtn = $('#panel-close-btn');
-
-      $closeBtn.on('click', () => closePanel());
-      $mask.on('click', () => closePanel());
+      $('#panel-close-btn').on('click', closePanel);
+      $('.panel-mask').on('click', closePanel);
       $(document).on('keydown', (e) => {
         if (e.key === 'Escape' && settings.panelOpen) closePanel();
       });
       $('.panel-body').on('scroll wheel touchmove', (e) => e.stopPropagation());
 
       console.log(`[${extensionName}] 功能面板初始化完成`);
+      return true;
     } catch (error) {
       console.error(`[${extensionName}] 初始化面板失败:`, error);
       showToast(`面板初始化失败: ${error.message}`, "error");
+      return false;
     }
   };
 
-  // 面板控制函数
-  const openPanel = () => {
-    $('#novel-writer-panel').addClass('open');
-    settings.panelOpen = true;
-    saveExtensionSettings();
-  };
-  const closePanel = () => {
-    $('#novel-writer-panel').removeClass('open');
-    settings.panelOpen = false;
-    saveExtensionSettings();
-  };
-  const togglePanel = () => {
-    settings.panelOpen ? closePanel() : openPanel();
+  // ==============================================
+  // 第六步：初始化悬浮球（【核心修复】事件委托+拖拽点击区分）
+  // ==============================================
+  const initFloatingBall = () => {
+    try {
+      if ($('#novel-writer-ball').length > 0) {
+        console.log(`[${extensionName}] 悬浮球已存在，跳过创建`);
+        return;
+      }
+      // 创建悬浮球DOM
+      const ballHtml = `
+        <div id="novel-writer-ball" class="novel-writer-ball" title="小说续写器">
+          <i class="fa-solid fa-book-open"></i>
+        </div>
+      `;
+      $('body').append(ballHtml);
+
+      // 初始化位置
+      updateBallPosition();
+      console.log(`[${extensionName}] 悬浮球初始化完成`);
+    } catch (error) {
+      console.error(`[${extensionName}] 初始化悬浮球失败:`, error);
+      showToast(`悬浮球初始化失败: ${error.message}`, "error");
+    }
   };
 
+  // 更新悬浮球位置
+  const updateBallPosition = () => {
+    try {
+      $('#novel-writer-ball').css({
+        left: `${settings.ballPosition.x}px`,
+        top: `${settings.ballPosition.y}px`,
+        right: 'auto',
+        bottom: 'auto',
+      });
+    } catch (error) {
+      console.error(`[${extensionName}] 更新悬浮球位置失败:`, error);
+    }
+  };
+
+  // 【核心修复】全局事件委托，永久生效，不会因为DOM重绘失效
+  // 1. 鼠标按下/触摸开始
+  $(document).on('mousedown touchstart', '#novel-writer-ball', (e) => {
+    globalState.isDragging = false;
+    const event = e.type === 'touchstart' ? e.touches[0] : e;
+    globalState.dragStartPos = { x: event.clientX, y: event.clientY };
+    globalState.dragStartTime = Date.now();
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // 2. 鼠标移动/触摸移动
+  $(document).on('mousemove touchmove', '#novel-writer-ball', (e) => {
+    if (!globalState.dragStartPos) return;
+    const event = e.type === 'touchmove' ? e.touches[0] : e;
+    const deltaX = event.clientX - globalState.dragStartPos.x;
+    const deltaY = event.clientY - globalState.dragStartPos.y;
+
+    // 【核心修复】移动超过5px才算拖拽，避免轻微移动导致点击失效
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      globalState.isDragging = true;
+      $('#novel-writer-ball').addClass('dragging');
+    }
+
+    if (globalState.isDragging) {
+      let newX = settings.ballPosition.x + deltaX;
+      let newY = settings.ballPosition.y + deltaY;
+      // 边界限制，不超出屏幕
+      newX = Math.max(20, Math.min(window.innerWidth - 60, newX));
+      newY = Math.max(20, Math.min(window.innerHeight - 60, newY));
+      // 更新位置
+      $('#novel-writer-ball').css({
+        left: `${newX}px`,
+        top: `${newY}px`,
+        right: 'auto',
+        bottom: 'auto',
+      });
+    }
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // 3. 鼠标松开/触摸结束
+  $(document).on('mouseup touchend', '#novel-writer-ball', (e) => {
+    if (globalState.isDragging) {
+      // 拖拽结束，保存位置
+      const event = e.type === 'touchend' ? e.changedTouches[0] : e;
+      settings.ballPosition.x = parseFloat($('#novel-writer-ball').css('left'));
+      settings.ballPosition.y = parseFloat($('#novel-writer-ball').css('top'));
+      saveExtensionSettings();
+    }
+    // 重置状态
+    globalState.isDragging = false;
+    globalState.dragStartPos = null;
+    $('#novel-writer-ball').removeClass('dragging');
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // 4. 【核心修复】点击事件，单独绑定，排除拖拽情况
+  $(document).on('click', '#novel-writer-ball', (e) => {
+    // 拖拽状态不触发点击
+    if (globalState.isDragging) return;
+    // 点击时间超过200ms算长按，不触发点击
+    const clickDuration = Date.now() - globalState.dragStartTime;
+    if (clickDuration > 200) return;
+    // 执行面板切换
+    togglePanel();
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  // 窗口大小变化更新边界
+  window.addEventListener('resize', () => {
+    settings.ballPosition.x = Math.max(20, Math.min(window.innerWidth - 60, settings.ballPosition.x));
+    settings.ballPosition.y = Math.max(20, Math.min(window.innerHeight - 60, settings.ballPosition.y));
+    updateBallPosition();
+    saveExtensionSettings();
+  });
+
   // ==============================================
-  // 第五步：核心业务功能（章节导入/图谱/续写）
+  // 第七步：核心业务功能
   // ==============================================
-  // 章节拆分
   const splitNovelIntoChapters = (novelText, regexSource) => {
     try {
       const chapterRegex = new RegExp(regexSource, 'gm');
@@ -324,7 +359,6 @@ jQuery(async () => {
     }
   };
 
-  // 渲染章节列表
   const renderChapterList = (chapters) => {
     try {
       const $listContainer = $('#novel-chapter-list');
@@ -350,14 +384,12 @@ jQuery(async () => {
         </div>
       `).join('');
       $listContainer.html(listHtml);
-      // 同步更新续写下拉框
       renderChapterSelect(chapters);
     } catch (error) {
       console.error('渲染章节列表失败:', error);
     }
   };
 
-  // 渲染续写章节下拉框
   const renderChapterSelect = (chapters) => {
     try {
       const $select = $('#write-chapter-select');
@@ -376,7 +408,6 @@ jQuery(async () => {
     }
   };
 
-  // 批量发送章节
   const sendChaptersBatch = async (chapters) => {
     if (globalState.isSending) {
       showToast('正在发送中，请等待完成或停止发送', "warning");
@@ -420,7 +451,7 @@ jQuery(async () => {
   };
 
   // ==============================================
-  // 第六步：事件绑定（官方模板规范）
+  // 第八步：全局事件绑定
   // ==============================================
   const bindEvents = () => {
     // 模板示例事件
@@ -442,7 +473,6 @@ jQuery(async () => {
       }
       settings.chapterRegex = regexSource;
       saveExtensionSettings();
-      // 读取文件解析
       const reader = new FileReader();
       reader.onload = (e) => {
         const novelText = e.target.result;
@@ -460,11 +490,8 @@ jQuery(async () => {
       reader.readAsText(file, 'UTF-8');
     });
 
-    // 全选/全不选
     $("#select-all-btn").on("click", () => $(".chapter-select").prop("checked", true));
     $("#unselect-all-btn").on("click", () => $(".chapter-select").prop("checked", false));
-
-    // 保存设置
     $("#send-template-input").on("change", (e) => {
       settings.sendTemplate = $(e.target).val().trim();
       saveExtensionSettings();
@@ -473,8 +500,6 @@ jQuery(async () => {
       settings.sendDelay = parseInt($(e.target).val()) || 100;
       saveExtensionSettings();
     });
-
-    // 导入章节
     $("#import-selected-btn").on("click", () => sendChaptersBatch(getSelectedChapters()));
     $("#import-all-btn").on("click", () => sendChaptersBatch(globalState.currentParsedChapters));
     $("#stop-send-btn").on("click", () => {
@@ -498,26 +523,26 @@ jQuery(async () => {
     console.log(`[${extensionName}] 事件绑定完成`);
   };
 
-  // 执行事件绑定
   bindEvents();
 
   // ==============================================
-  // 第七步：ST就绪后初始化全局UI（Cola规范）
+  // 第九步：ST就绪后初始化全局UI（严格时序）
   // ==============================================
   const initExtension = async () => {
     try {
       console.log(`[${extensionName}] ST已就绪，开始初始化全局UI`);
-      // 初始化面板和悬浮球
-      await initFunctionPanel();
-      initFloatingBall(togglePanel);
-      // 恢复缓存的章节数据
+      // 【严格时序】先初始化面板，完成后再初始化悬浮球
+      const panelInitSuccess = await initFunctionPanel();
+      if (!panelInitSuccess) {
+        throw new Error("面板初始化失败");
+      }
+      initFloatingBall();
+      // 恢复缓存数据
       if (globalState.currentParsedChapters.length > 0) {
         renderChapterList(globalState.currentParsedChapters);
       }
       // 恢复面板状态
       if (settings.panelOpen) openPanel();
-      // 窗口大小变化更新悬浮球位置
-      window.addEventListener('resize', updateBallPosition);
       console.log(`[${extensionName}] 扩展初始化完成！`);
       showToast('小说续写器加载完成！', "success");
     } catch (error) {
@@ -526,7 +551,7 @@ jQuery(async () => {
     }
   };
 
-  // 【双重保障】确保ST就绪后执行初始化（Cola核心规范）
+  // 双重保障，确保ST就绪后执行
   if (context.APP_READY) {
     initExtension();
   } else {
