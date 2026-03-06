@@ -1,16 +1,42 @@
-#novel-chapter-importer-panel .modal-content {
-    max-width: 800px;
-    margin: 30px auto;
+/* 适配ST原生主题变量，兼容深色/浅色模式 */
+#always_remember_me_novel_importer_modal .modal-content {
+    background-color: var(--block-bg);
+    color: var(--color-text);
+    border: 1px solid var(--border-color);
 }
 
-#novel-chapter-importer-panel .form-group {
-    margin-bottom: 15px;
+#always_remember_me_novel_importer_modal .modal-header,
+#always_remember_me_novel_importer_modal .modal-footer {
+    border-color: var(--border-color);
 }
 
-#novel-chapter-importer-panel .form-check {
-    margin-bottom: 8px;
+#always_remember_me_novel_importer_modal .form-control {
+    background-color: var(--input-bg);
+    color: var(--input-text);
+    border-color: var(--border-color);
 }
 
-#novel-chapter-importer-panel .btn + .btn {
-    margin-left: 10px;
+#always_remember_me_novel_importer_modal .form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: none;
+}
+
+#always_remember_me_novel_importer_modal .text-muted {
+    color: var(--text-muted) !important;
+}
+
+#always_remember_me_novel_importer_modal .close {
+    color: var(--color-text);
+    opacity: 0.8;
+}
+
+#always_remember_me_novel_importer_modal .close:hover {
+    opacity: 1;
+}
+
+/* 侧边栏按钮图标适配 */
+#always_remember_me_novel_importer_sidebar_btn .fa-book {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
 }
