@@ -1,0 +1,72 @@
+<!-- 小说章节导入扩展UI，与ST原生样式完全兼容 -->
+<div class="novel-extension-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b>小说章节导入助手</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <!-- 文件上传区域 -->
+            <div class="novel-extension_block flex-container">
+                <label for="novel-file-upload" class="margin-r5">小说TXT文件</label>
+                <input id="novel-file-upload" type="file" accept=".txt" class="flex1" />
+            </div>
+
+            <!-- 章节拆分正则 -->
+            <div class="novel-extension_block flex-container">
+                <label for="chapter-regex-input" class="margin-r5">章节拆分正则</label>
+                <input id="chapter-regex-input" type="text" class="flex1" placeholder="^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$" />
+            </div>
+
+            <!-- 发送命令模板 -->
+            <div class="novel-extension_block flex-container">
+                <label for="send-template-input" class="margin-r5">发送命令模板</label>
+                <textarea id="send-template-input" rows="2" class="flex1" placeholder="/input 请输入{{char}}的动作或台词：| /sendas name={{char}} {{pipe}}"></textarea>
+            </div>
+
+            <!-- 发送间隔设置 -->
+            <div class="novel-extension_block flex-container">
+                <label for="send-delay-input" class="margin-r5">发送间隔(ms)</label>
+                <input id="send-delay-input" type="number" min="500" step="100" class="flex1" placeholder="1500" />
+            </div>
+
+            <!-- 解析按钮 -->
+            <div class="novel-extension_block flex-container">
+                <input id="parse-chapter-btn" class="menu_button menu_button--primary" type="submit" value="解析章节" />
+            </div>
+
+            <hr class="sysHR" />
+
+            <!-- 章节列表控制 -->
+            <div class="novel-extension_block flex-container justifySpaceBetween">
+                <b>章节列表</b>
+                <div class="flex-container gap5">
+                    <input id="select-all-btn" class="menu_button menu_button--sm" type="submit" value="全选" />
+                    <input id="unselect-all-btn" class="menu_button menu_button--sm" type="submit" value="全不选" />
+                </div>
+            </div>
+
+            <!-- 章节列表容器 -->
+            <div id="novel-chapter-list" class="novel-extension_block">
+                <p class="text-muted text-center">请上传小说文件并点击「解析章节」</p>
+            </div>
+
+            <!-- 发送进度 -->
+            <div class="novel-extension_block">
+                <p id="novel-import-status" class="text-sm margin0"></p>
+                <div class="progress-bar">
+                    <div id="novel-import-progress" class="progress-fill"></div>
+                </div>
+            </div>
+
+            <hr class="sysHR" />
+
+            <!-- 操作按钮组 -->
+            <div class="novel-extension_block flex-container gap5">
+                <input id="stop-send-btn" class="menu_button menu_button--danger" type="submit" value="停止发送" />
+                <input id="import-selected-btn" class="menu_button menu_button--primary" type="submit" value="导入选中章节" />
+                <input id="import-all-btn" class="menu_button menu_button--secondary" type="submit" value="导入全部章节" />
+            </div>
+        </div>
+    </div>
+</div>
