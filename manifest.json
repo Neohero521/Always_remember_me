@@ -1,14 +1,14 @@
 {
   "display_name": "小说续写器",
-  "loading_order": 10,
+  "loading_order": 9,
   "requires": [],
   "optional": [],
   "js": "index.js",
   "css": "style.css",
   "author": "Neohero521",
-  "version": "1.0.0",
+  "version": "2.2.0",
   "homePage": "https://github.com/Neohero521/Always_remember_me",
   "minimum_client_version": "1.12.0",
   "auto_update": true,
-  "description": "SillyTavern小说章节导入、智能续写扩展，带悬浮球全局面板"
+  "description": "小说章节导入、知识图谱构建、一键续写生成一体化SillyTavern扩展，新增Cola同款悬浮球与悬浮窗功能"
 }
