@@ -1,5 +1,5 @@
 {
-    "display_name": "Always Remember Me - 小说章节导入助手",
+    "display_name": "Always Remember Me - 小说章节导入",
     "loading_order": 10,
     "requires": [],
     "optional": [],
@@ -10,6 +10,5 @@
     "version": "1.0.0",
     "homePage": "https://github.com/Neohero521/Always_remember_me",
     "auto_update": true,
-    "minimum_client_version": "1.12.0",
-    "i18n": {}
+    "minimum_client_version": "1.12.0"
 }
