@@ -1,75 +1,50 @@
-<!-- 小说续写器扩展UI，完全适配SillyTavern原生样式规范 -->
+<!-- 小说续写器功能面板UI，完全适配ST原生样式 -->
 <div class="novel-writer-extension">
-    <!-- 模块1：章节导入与管理（保留原有核心功能，新增编辑能力） -->
+    <!-- 模块1：章节导入与管理 -->
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
             <b>1. 章节导入与管理</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <!-- 文件上传区域 -->
             <div class="novel-block flex-container">
                 <label for="novel-file-upload" class="margin-r5">小说TXT文件</label>
                 <input id="novel-file-upload" type="file" accept=".txt" class="flex1" />
             </div>
 
-            <!-- 章节拆分正则 -->
             <div class="novel-block flex-container">
                 <label for="chapter-regex-input" class="margin-r5">章节拆分正则</label>
                 <input id="chapter-regex-input" type="text" class="flex1" placeholder="^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$" />
             </div>
 
-            <!-- 发送命令模板（保留原有功能） -->
             <div class="novel-block flex-container">
                 <label for="send-template-input" class="margin-r5">发送命令模板</label>
-                <textarea id="send-template-input" rows="2" class="flex1" placeholder="/input 章节内容：| /sendas name={{char}} {{pipe}}"></textarea>
+                <input id="send-template-input" type="text" class="flex1" value="/sendas name={{char}} {{pipe}}" />
             </div>
 
-            <!-- 发送间隔设置 -->
             <div class="novel-block flex-container">
                 <label for="send-delay-input" class="margin-r5">发送间隔(ms)</label>
-                <input id="send-delay-input" type="number" min="500" step="100" class="flex1" placeholder="1500" />
+                <input id="send-delay-input" type="number" min="50" step="10" class="flex1" value="100" />
             </div>
 
-            <!-- 解析按钮 -->
             <div class="novel-block flex-container">
                 <input id="parse-chapter-btn" class="menu_button menu_button--primary" type="submit" value="解析章节" />
             </div>
 
             <hr class="sysHR" />
 
-            <!-- 章节列表控制 -->
             <div class="novel-block flex-container justifySpaceBetween">
-                <b>章节列表（点击可编辑内容）</b>
+                <b>章节列表</b>
                 <div class="flex-container gap5">
                     <input id="select-all-btn" class="menu_button menu_button--sm" type="submit" value="全选" />
                     <input id="unselect-all-btn" class="menu_button menu_button--sm" type="submit" value="全不选" />
                 </div>
             </div>
 
-            <!-- 章节列表容器 -->
             <div id="novel-chapter-list" class="novel-block chapter-list">
                 <p class="text-muted text-center">请上传小说文件并点击「解析章节」</p>
             </div>
 
-            <!-- 章节编辑弹窗 -->
-            <div id="chapter-edit-modal" class="modal-overlay">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3 id="edit-chapter-title">编辑章节</h3>
-                        <button id="edit-close-btn" class="modal-close">×</button>
-                    </div>
-                    <div class="modal-body">
-                        <textarea id="chapter-content-edit" rows="20" class="form-control w100"></textarea>
-                    </div>
-                    <div class="modal-footer">
-                        <input id="edit-save-btn" class="menu_button menu_button--primary" type="submit" value="保存修改" />
-                        <input id="edit-cancel-btn" class="menu_button" type="submit" value="取消" />
-                    </div>
-                </div>
-            </div>
-
-            <!-- 发送进度 -->
             <div class="novel-block">
                 <p id="novel-import-status" class="text-sm margin0"></p>
                 <div class="progress-bar">
@@ -79,14 +54,12 @@
 
             <hr class="sysHR" />
 
-            <!-- 操作按钮组 -->
             <div class="novel-block flex-container gap5">
                 <input id="stop-send-btn" class="menu_button menu_button--danger" type="submit" value="停止发送" />
                 <input id="import-selected-btn" class="menu_button menu_button--primary" type="submit" value="导入选中章节到对话框" />
                 <input id="import-all-btn" class="menu_button menu_button--secondary" type="submit" value="导入全部章节到对话框" />
             </div>
 
-            <!-- 模板示例元素（保留兼容原有结构） -->
             <hr class="sysHR" />
             <div class="example-extension_block flex-container">
                 <input id="my_button" class="menu_button" type="submit" value="示例按钮" />
@@ -105,16 +78,14 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <!-- 图谱生成控制 -->
             <div class="novel-block flex-container justifySpaceBetween">
-                <b>章节图谱生成</b>
+                <b>图谱生成</b>
                 <div class="flex-container gap5">
                     <input id="graph-single-btn" class="menu_button menu_button--primary" type="submit" value="生成选中章节图谱" />
                     <input id="graph-batch-btn" class="menu_button menu_button--secondary" type="submit" value="批量生成全章节图谱" />
                 </div>
             </div>
 
-            <!-- 生成状态 -->
             <div class="novel-block">
                 <p id="graph-generate-status" class="text-sm margin0"></p>
                 <div class="progress-bar">
@@ -124,16 +95,14 @@
 
             <hr class="sysHR" />
 
-            <!-- 图谱合并控制 -->
             <div class="novel-block flex-container justifySpaceBetween">
                 <b>全量图谱合并</b>
                 <input id="graph-merge-btn" class="menu_button menu_button--primary" type="submit" value="合并已生成的章节图谱" />
             </div>
 
-            <!-- 合并后图谱预览 -->
             <div class="novel-block">
                 <label class="form-label">合并后完整知识图谱</label>
-                <textarea id="merged-graph-preview" rows="8" class="form-control w100" readonly placeholder="合并后的图谱JSON将显示在这里..."></textarea>
+                <textarea id="merged-graph-preview" rows="6" class="form-control w100" readonly placeholder="合并后的图谱JSON将显示在这里..."></textarea>
                 <div class="flex-container gap5 margin-t5">
                     <input id="graph-copy-btn" class="menu_button menu_button--sm" type="submit" value="复制JSON" />
                     <input id="graph-export-btn" class="menu_button menu_button--sm" type="submit" value="导出JSON文件" />
@@ -150,22 +119,18 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <!-- 续写模式选择 -->
-            <div class="novel-block">
-                <label class="form-label">续写模式</label>
-                <div class="flex-container gap10">
-                    <label class="radio-label">
-                        <input type="radio" name="write-mode" value="modify" checked />
-                        <span>魔改续写（基于当前修改的单章节）</span>
-                    </label>
-                    <label class="radio-label">
-                        <input type="radio" name="write-mode" value="next" />
-                        <span>续写下一章（基于最近三章内容）</span>
-                    </label>
-                </div>
+            <div class="novel-block flex-container">
+                <label for="write-chapter-select" class="margin-r5">选择续写基准章节</label>
+                <select id="write-chapter-select" class="flex1">
+                    <option value="">请先解析章节</option>
+                </select>
             </div>
 
-            <!-- 续写字数设置 -->
+            <div class="novel-block">
+                <label class="form-label">基准章节内容（可直接编辑修改）</label>
+                <textarea id="write-chapter-content" rows="12" class="form-control w100" placeholder="请先选择上方的基准章节..." readonly></textarea>
+            </div>
+
             <div class="novel-block flex-container">
                 <label for="write-word-count" class="margin-r5">续写字数</label>
                 <input id="write-word-count" type="number" min="500" max="10000" step="100" class="flex1" value="2000" />
@@ -174,23 +139,20 @@
 
             <hr class="sysHR" />
 
-            <!-- 续写生成控制 -->
             <div class="novel-block flex-container gap5">
-                <input id="write-generate-btn" class="menu_button menu_button--primary" type="submit" value="生成续写内容" />
+                <input id="write-generate-btn" class="menu_button menu_button--primary" type="submit" value="生成续写章节" />
                 <input id="write-stop-btn" class="menu_button menu_button--danger" type="submit" value="停止生成" />
             </div>
 
-            <!-- 生成状态 -->
             <div class="novel-block">
                 <p id="write-status" class="text-sm margin0"></p>
             </div>
 
             <hr class="sysHR" />
 
-            <!-- 续写内容预览 -->
             <div class="novel-block">
-                <label class="form-label">续写内容预览</label>
-                <textarea id="write-content-preview" rows="15" class="form-control w100" placeholder="生成的续写内容将显示在这里..."></textarea>
+                <label class="form-label">续写生成结果</label>
+                <textarea id="write-content-preview" rows="15" class="form-control w100" placeholder="生成的续写章节内容将显示在这里..."></textarea>
                 <div class="flex-container gap5 margin-t5">
                     <input id="write-copy-btn" class="menu_button menu_button--sm" type="submit" value="复制内容" />
                     <input id="write-send-btn" class="menu_button menu_button--primary" type="submit" value="发送到对话框" />
