@@ -1,13 +1,13 @@
 {
-  "display_name": "Always Remember Me (小说章节导入)",
-  "loading_order": 10,
-  "js": "index.js",
-  "css": "style.css",
-  "author": "Neohero521",
-  "version": "1.0.0",
-  "homePage": "https://github.com/Neohero521/Always_remember_me",
-  "auto_update": true,
-  "minimum_client_version": "1.0.0",
-  "dependencies": [],
-  "generate_interceptor": ""
+    "display_name": "Always Remember Me (小说章节导入)",
+    "loading_order": 10,
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Neohero521",
+    "version": "1.0.0",
+    "homePage": "https://github.com/Neohero521/Always_remember_me",
+    "auto_update": true,
+    "minimum_client_version": "1.0.0",
+    "dependencies": [],
+    "generate_interceptor": ""
 }
