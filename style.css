@@ -1,11 +1,26 @@
-/* 扩展专属样式，完全适配ST深色/浅色主题 */
-.novel-extension_block {
+/* 原有样式保留，兼容原有功能 */
+.novel-block {
     margin-bottom: 12px;
 }
 
 .chapter-item {
     border: 1px solid var(--border);
     background: var(--input-bg);
+    border-radius: 5px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+.chapter-header {
+    margin-bottom: 4px;
+}
+
+.chapter-checkbox {
+    cursor: pointer;
+}
+
+.chapter-title {
+    font-size: 0.95rem;
 }
 
 .chapter-preview {
@@ -33,12 +48,17 @@
     transition: width 0.3s ease;
 }
 
+/* 新增通用样式 */
 .text-sm {
     font-size: 0.85rem;
 }
 
 .text-muted {
     color: var(--text-muted);
+}
+
+.text-success {
+    color: var(--success);
 }
 
 .text-center {
@@ -49,12 +69,20 @@
     margin: 0;
 }
 
+.margin-t5 {
+    margin-top: 5px;
+}
+
 .margin-b5 {
     margin-bottom: 5px;
 }
 
 .margin-r5 {
     margin-right: 5px;
+}
+
+.margin-l5 {
+    margin-left: 5px;
 }
 
 .padding5 {
@@ -73,6 +101,10 @@
     gap: 5px;
 }
 
+.gap10 {
+    gap: 10px;
+}
+
 .flex1 {
     flex: 1;
 }
@@ -81,10 +113,116 @@
     flex-direction: column;
 }
 
+.alignCenter {
+    align-items: center;
+}
+
 .justifySpaceBetween {
     justify-content: space-between;
 }
 
+.justifyCenter {
+    justify-content: center;
+}
+
 .fontBold {
     font-weight: 600;
+}
+
+.w100 {
+    width: 100%;
+}
+
+/* 单选框样式 */
+.radio-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* 章节编辑弹窗样式 */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--SmartTheme-BodyBgColor);
+    border: 1px solid var(--SmartTheme-BorderColor);
+    border-radius: 8px;
+    width: 90%;
+    max-width: 1000px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--SmartTheme-BorderColor);
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--SmartTheme-TextColor);
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--SmartTheme-BorderColor);
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+/* 章节列表滚动容器 */
+.chapter-list {
+    max-height: 350px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
 }
