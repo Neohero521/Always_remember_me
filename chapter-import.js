@@ -1,7 +1,5 @@
-import { getSTContext, getExtensionSettings, saveExtensionSettings, renderCommandTemplate, updateProgress, getSelectedChapters, showToast } from "./utils.js";
-
-// 全局状态
-export let currentParsedChapters = [];
+import { getSTContext, getExtensionSettings, saveExtensionSettings, renderCommandTemplate, updateProgress, showToast } from "./utils.js";
+import { globalState } from "./config.js";
 
 // 章节拆分核心逻辑
 export const splitNovelIntoChapters = (novelText, regexSource) => {
@@ -41,64 +39,67 @@ export const splitNovelIntoChapters = (novelText, regexSource) => {
 
 // 渲染章节列表
 export const renderChapterList = (chapters) => {
-  const $listContainer = $('#novel-chapter-list');
-  const settings = getExtensionSettings();
-  const graphMap = settings.chapterGraphMap || {};
+  try {
+    const $listContainer = $('#novel-chapter-list');
+    const settings = getExtensionSettings();
+    const graphMap = settings.chapterGraphMap || {};
 
-  if (chapters.length === 0) {
-    $listContainer.html('<p class="text-muted text-center">请上传小说文件并点击「解析章节」</p>');
-    return;
-  }
+    if (chapters.length === 0) {
+      $listContainer.html('<p class="empty-tip">请上传小说文件并点击「解析章节」</p>');
+      return;
+    }
 
-  // 更新章节图谱状态
-  chapters.forEach(chapter => {
-    chapter.hasGraph = !!graphMap[chapter.id];
-  });
+    chapters.forEach(chapter => {
+      chapter.hasGraph = !!graphMap[chapter.id];
+    });
 
-  // 美化后的章节列表结构
-  const listHtml = chapters.map((chapter) => `
-    <div class="chapter-item" data-chapter-id="${chapter.id}">
-      <div class="chapter-item-main">
-        <label class="chapter-checkbox">
-          <input type="checkbox" class="chapter-select" data-index="${chapter.id}" checked />
-          <span class="chapter-title">${chapter.title}</span>
-        </label>
-        <span class="chapter-tag ${chapter.hasGraph ? 'tag-success' : 'tag-muted'}">
-          ${chapter.hasGraph ? '已生成图谱' : '未生成图谱'}
-        </span>
+    const listHtml = chapters.map((chapter) => `
+      <div class="chapter-item" data-chapter-id="${chapter.id}">
+        <div class="chapter-item-main">
+          <label class="chapter-checkbox">
+            <input type="checkbox" class="chapter-select" data-index="${chapter.id}" checked />
+            <span class="chapter-title">${chapter.title}</span>
+          </label>
+          <span class="chapter-tag ${chapter.hasGraph ? 'tag-success' : 'tag-muted'}">
+            ${chapter.hasGraph ? '已生成图谱' : '未生成图谱'}
+          </span>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `).join('');
 
-  $listContainer.html(listHtml);
+    $listContainer.html(listHtml);
+  } catch (error) {
+    console.error('渲染章节列表失败:', error);
+  }
 };
 
 // 渲染续写章节下拉框
 export const renderChapterSelect = (chapters) => {
-  const $select = $('#write-chapter-select');
-  if (chapters.length === 0) {
-    $select.html('<option value="">请先解析章节</option>');
+  try {
+    const $select = $('#write-chapter-select');
+    if (chapters.length === 0) {
+      $select.html('<option value="">请先解析章节</option>');
+      $('#write-chapter-content').val('').prop('readonly', true);
+      return;
+    }
+
+    const optionHtml = chapters.map(chapter => `
+      <option value="${chapter.id}">${chapter.title}</option>
+    `).join('');
+
+    $select.html(`<option value="">请选择续写基准章节</option>${optionHtml}`);
     $('#write-chapter-content').val('').prop('readonly', true);
-    return;
+  } catch (error) {
+    console.error('渲染章节下拉框失败:', error);
   }
-
-  const optionHtml = chapters.map(chapter => `
-    <option value="${chapter.id}">${chapter.title}</option>
-  `).join('');
-
-  $select.html(`<option value="">请选择续写基准章节</option>${optionHtml}`);
-  $('#write-chapter-content').val('').prop('readonly', true);
 };
 
-// 批量发送章节到对话框
+// 批量发送章节
 export const sendChaptersBatch = async (chapters) => {
   const context = getSTContext();
   const settings = getExtensionSettings();
-  let isSending = false;
-  let stopSending = false;
   
-  // 前置校验
-  if (isSending) {
+  if (globalState.isSending) {
     showToast('正在发送中，请等待完成或停止发送', "warning");
     return;
   }
@@ -112,27 +113,23 @@ export const sendChaptersBatch = async (chapters) => {
     return;
   }
 
-  // 初始化发送状态
-  isSending = true;
-  stopSending = false;
+  globalState.isSending = true;
+  globalState.stopSending = false;
   let successCount = 0;
 
   try {
     for (let i = 0; i < chapters.length; i++) {
-      if (stopSending) break;
+      if (globalState.stopSending) break;
 
       const chapter = chapters[i];
       const command = renderCommandTemplate(settings.sendTemplate, currentCharName, chapter.content);
       
-      // 执行斜杠命令
       await context.executeSlashCommandsWithOptions(command);
       successCount++;
 
-      // 更新进度
       updateProgress('novel-import-progress', 'novel-import-status', i + 1, chapters.length, "发送进度");
       
-      // 发送间隔
-      if (i < chapters.length - 1 && !stopSending) {
+      if (i < chapters.length - 1 && !globalState.stopSending) {
         await new Promise(resolve => setTimeout(resolve, settings.sendDelay));
       }
     }
@@ -142,35 +139,29 @@ export const sendChaptersBatch = async (chapters) => {
     console.error('发送失败:', error);
     showToast(`发送失败: ${error.message}`, "error");
   } finally {
-    isSending = false;
-    stopSending = false;
+    globalState.isSending = false;
+    globalState.stopSending = false;
     updateProgress('novel-import-progress', 'novel-import-status', 0, 0);
   }
 };
 
-// 停止发送
-export const stopChapterSending = () => {
-  stopSending = true;
-  showToast('已停止发送', "info");
-};
-
-// 解析章节并保存
+// 解析并保存章节
 export const parseAndSaveChapters = (file, regexSource) => {
   const settings = getExtensionSettings();
   const reader = new FileReader();
 
   reader.onload = (e) => {
     const novelText = e.target.result;
-    currentParsedChapters = splitNovelIntoChapters(novelText, regexSource);
+    globalState.currentParsedChapters = splitNovelIntoChapters(novelText, regexSource);
     // 持久化保存
-    settings.chapterList = currentParsedChapters;
+    settings.chapterList = globalState.currentParsedChapters;
     settings.chapterGraphMap = {};
     settings.mergedGraph = {};
     $('#merged-graph-preview').val('');
     saveExtensionSettings();
     // 渲染UI
-    renderChapterList(currentParsedChapters);
-    renderChapterSelect(currentParsedChapters);
+    renderChapterList(globalState.currentParsedChapters);
+    renderChapterSelect(globalState.currentParsedChapters);
   };
 
   reader.onerror = () => {
