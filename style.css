@@ -1,0 +1,16 @@
+#novel-chapter-importer-panel .modal-content {
+    max-width: 800px;
+    margin: 30px auto;
+}
+
+#novel-chapter-importer-panel .form-group {
+    margin-bottom: 15px;
+}
+
+#novel-chapter-importer-panel .form-check {
+    margin-bottom: 8px;
+}
+
+#novel-chapter-importer-panel .btn + .btn {
+    margin-left: 10px;
+}
