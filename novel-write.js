@@ -1,9 +1,5 @@
-import { getSTContext, getExtensionSettings, showToast } from "./utils.js";
-import { currentParsedChapters } from "./chapter-import.js";
-
-// 全局状态
-let isGeneratingWrite = false;
-let stopGenerateWrite = false;
+import { getSTContext, getExtensionSettings, showToast, renderCommandTemplate } from "./utils.js";
+import { globalState } from "./config.js";
 
 // 生成续写内容
 export const generateNovelWrite = async () => {
@@ -11,14 +7,12 @@ export const generateNovelWrite = async () => {
   const { generateRaw } = context;
   const settings = getExtensionSettings();
   
-  // 获取表单数据
   const selectedChapterId = $('#write-chapter-select').val();
   const editedChapterContent = $('#write-chapter-content').val().trim();
   const wordCount = parseInt($('#write-word-count').val()) || 2000;
   const mergedGraph = settings.mergedGraph || {};
 
-  // 前置校验
-  if (isGeneratingWrite) {
+  if (globalState.isGeneratingWrite) {
     showToast('正在生成续写内容中，请等待完成', "warning");
     return;
   }
@@ -34,7 +28,6 @@ export const generateNovelWrite = async () => {
     showToast('未检测到合并后的知识图谱，建议先合并图谱以保证续写质量', "warning");
   }
 
-  // 构建续写prompt
   const systemPrompt = `
 小说续写规则（100%严格遵守）：
 1. 人设锁定：续写内容必须完全贴合小说的核心人物设定，绝对不能出现人设崩塌（OOC）
@@ -51,9 +44,8 @@ export const generateNovelWrite = async () => {
 请基于以上内容，严格按照规则续写后续的章节正文。
 `;
 
-  // 开始生成
-  isGeneratingWrite = true;
-  stopGenerateWrite = false;
+  globalState.isGeneratingWrite = true;
+  globalState.stopGenerateWrite = false;
   $('#write-status').text('正在生成续写章节，请稍候...');
 
   try {
@@ -62,7 +54,6 @@ export const generateNovelWrite = async () => {
       throw new Error('生成内容为空');
     }
 
-    // 更新预览
     $('#write-content-preview').val(result.trim());
     $('#write-status').text('续写章节生成完成！');
     showToast('续写章节生成完成！', "success");
@@ -71,17 +62,22 @@ export const generateNovelWrite = async () => {
     $('#write-status').text(`生成失败: ${error.message}`);
     showToast(`续写生成失败: ${error.message}`, "error");
   } finally {
-    isGeneratingWrite = false;
-    stopGenerateWrite = false;
+    globalState.isGeneratingWrite = false;
+    globalState.stopGenerateWrite = false;
   }
 };
 
-// 停止续写生成
-export const stopWriteGenerate = () => {
-  if (isGeneratingWrite) {
-    stopGenerateWrite = true;
-    $('#write-status').text('已停止生成');
-    showToast('已停止生成续写内容', "info");
+// 章节选择联动
+export const onChapterSelectChange = () => {
+  const selectedChapterId = $('#write-chapter-select').val();
+  if (!selectedChapterId) {
+    $('#write-chapter-content').val('').prop('readonly', true);
+    return;
+  }
+
+  const targetChapter = globalState.currentParsedChapters.find(item => item.id == selectedChapterId);
+  if (targetChapter) {
+    $('#write-chapter-content').val(targetChapter.content).prop('readonly', false);
   }
 };
 
@@ -102,28 +98,11 @@ export const sendWriteContentToChat = async () => {
   }
 
   try {
-    const { renderCommandTemplate } = await import("./utils.js");
     const command = renderCommandTemplate(settings.sendTemplate, currentCharName, writeText);
     await context.executeSlashCommandsWithOptions(command);
     showToast('续写内容已发送到对话框', "success");
   } catch (error) {
     console.error('发送失败:', error);
     showToast(`发送失败: ${error.message}`, "error");
-  }
-};
-
-// 章节选择联动
-export const onChapterSelectChange = () => {
-  const selectedChapterId = $('#write-chapter-select').val();
-  if (!selectedChapterId) {
-    $('#write-chapter-content').val('').prop('readonly', true);
-    return;
-  }
-
-  // 找到对应章节
-  const targetChapter = currentParsedChapters.find(item => item.id == selectedChapterId);
-  if (targetChapter) {
-    // 填充内容，取消只读
-    $('#write-chapter-content').val(targetChapter.content).prop('readonly', false);
   }
 };
