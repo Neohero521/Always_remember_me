@@ -6,9 +6,9 @@
   "js": "index.js",
   "css": "style.css",
   "author": "Neohero521",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "homePage": "https://github.com/Neohero521/Always_remember_me",
   "minimum_client_version": "1.12.0",
   "auto_update": true,
-  "description": "小说章节导入、知识图谱构建、一键续写生成一体化SillyTavern扩展"
+  "description": "小说章节导入、知识图谱构建/导入、一键续写生成一体化SillyTavern扩展"
 }
