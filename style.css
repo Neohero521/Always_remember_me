@@ -131,3 +131,24 @@ select.form-control:focus {
     outline: none;
     border-color: var(--primary);
 }
+
+/* 新增：无限续写链条样式 */
+.continue-chapter-item {
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    border-radius: 5px;
+    padding: 12px;
+    margin-bottom: 12px;
+}
+
+.chain-container {
+    max-height: 800px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+}
+
+.continue-chapter-content {
+    margin-top: 8px;
+}
