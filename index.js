@@ -631,6 +631,16 @@ function splitNovelIntoChapters(novelText, regexSource) {
     }
 }
 
+// 刷新图谱状态：根据graphMap重新设置每个章节的hasGraph并重新渲染
+function refreshGraphStatus() {
+    const graphMap = extension_settings[extensionName].chapterGraphMap || {};
+    currentParsedChapters.forEach(chapter => {
+        chapter.hasGraph = !!graphMap[chapter.id];
+    });
+    renderChapterList(currentParsedChapters);
+    toastr.success('图谱状态已刷新', "小说续写器");
+}
+
 // 章节列表渲染
 function renderChapterList(chapters) {
     const $listContainer = $('#novel-chapter-list');
@@ -646,7 +656,7 @@ function renderChapterList(chapters) {
         chapter.hasGraph = !!graphMap[chapter.id];
     });
 
-    // 仅显示标题、选择框、图谱状态
+    // 显示标题、选择框、图谱状态
     const listHtml = chapters.map((chapter) => `
         <div class="chapter-item flex-container alignCenter justifySpaceBetween" data-chapter-id="${chapter.id}">
             <label class="chapter-checkbox flex-container alignCenter gap5">
@@ -956,6 +966,16 @@ ${isSmallData ? `6. 小数据场景专项约束：深度挖掘有限文本中的
         const result = await generateRaw({ systemPrompt, prompt: userPrompt, jsonSchema: validationSchema });
         const validationReport = JSON.parse(result.trim());
 
+        // 检查并补全可能缺失的字段（确保UI不为空）
+        if (!validationReport.续写绝对红线) {
+            validationReport.续写绝对红线 = { 人设红线: "暂无", 设定禁区: "暂无", 剧情逻辑底线: "暂无" };
+            toastr.warning("模型返回的校验报告中缺少「续写绝对红线」，已自动填充为「暂无」", "小说续写器");
+        }
+        if (!validationReport.可呼应伏笔清单) {
+            validationReport.可呼应伏笔清单 = [];
+            toastr.warning("模型返回的校验报告中缺少「可呼应伏笔清单」，已自动填充为空数组", "小说续写器");
+        }
+
         // 保存校验报告与校验过的章节ID
         extension_settings[extensionName].lastValidationReport = validationReport;
         extension_settings[extensionName].lastValidatedChapterId = baseChapterId;
@@ -1248,6 +1268,7 @@ ${JSON.stringify(validationReport.可呼应伏笔清单 || [])}
         let retryCount = 0;
 
         // 规则强制：不合格内容必须重新生成，直到合格或用户停止
+        // 但每次生成后立即显示内容，让用户看到进度
         while (true) {
             if (stopGenerateFlag) break;
 
@@ -1273,6 +1294,10 @@ ${JSON.stringify(validationReport.可呼应伏笔清单 || [])}
                 throw new Error('质量评估失败');
             }
 
+            // 无论合格与否，都更新预览和报告（让用户看到当前生成的内容）
+            $('#write-content-preview').val(currentWriteContent);
+            $('#write-quality-report').val(JSON.stringify(qualityReport, null, 2));
+
             // 校验是否合格（规则强制：单项≥80，总分≥85）
             if (qualityReport.是否合格) {
                 finalWriteContent = currentWriteContent;
@@ -1283,6 +1308,7 @@ ${JSON.stringify(validationReport.可呼应伏笔清单 || [])}
                 toastr.info(`续写内容不合格，正在重新生成（第${retryCount}次），问题：${qualityReport.问题明细}`, "小说续写器");
                 // 优化prompt，加入修正建议，针对性修正
                 userPrompt += `\n上次生成不合格，问题明细：${qualityReport.问题明细}\n修正建议：${qualityReport.修正建议}\n请严格按照修正建议重新生成符合所有规则的续写内容。`;
+                // 继续循环
             }
         }
 
@@ -1292,39 +1318,46 @@ ${JSON.stringify(validationReport.可呼应伏笔清单 || [])}
             return;
         }
 
-        // 更新UI
-        $('#write-content-preview').val(finalWriteContent);
-        $('#write-quality-report').val(JSON.stringify(finalQualityReport, null, 2));
-        $('#write-status').text(`续写章节生成完成！质量总分：${finalQualityReport.总分}分，已合格`);
+        // 如果循环结束且合格，则已经显示最终内容；如果不合格但停止，也保留了最后生成的内容
+        // 保存质量报告（如果合格，finalQualityReport存在；如果不合格但停止了，可能没有finalQualityReport，但已经显示了）
+        if (finalQualityReport) {
+            extension_settings[extensionName].lastWriteQuality = finalQualityReport;
+            saveSettingsDebounced();
+        }
+
+        // 只有合格才自动添加到续写链条并同步图谱
+        if (finalQualityReport && finalQualityReport.是否合格) {
+            // 自动添加到无限续写链条
+            const newChapter = {
+                id: continueChapterIdCounter++,
+                title: `续写章节 ${continueWriteChain.length + 1}`,
+                content: finalWriteContent,
+                baseChapterId: selectedChapterId,
+                qualityReport: finalQualityReport,
+                createTime: new Date().toISOString()
+            };
+            continueWriteChain.push(newChapter);
+
+            // 持久化保存
+            extension_settings[extensionName].continueWriteChain = continueWriteChain;
+            extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
+            saveSettingsDebounced();
+
+            // 渲染续写链条
+            renderContinueWriteChain(continueWriteChain);
+
+            // 规则强制：评估通过的内容必须自动同步更新到知识图谱，实现闭环治理
+            await saveWriteContentToGraph(finalWriteContent, newChapter.id);
+
+            $('#write-status').text(`续写章节生成完成！质量总分：${finalQualityReport.总分}分，已合格并同步更新到知识图谱`);
+            toastr.success(`续写章节生成完成！质量总分：${finalQualityReport.总分}分，已合格并同步更新到知识图谱`, "小说续写器");
+        } else {
+            // 如果不合格但停止了，提示用户
+            $('#write-status').text('生成已停止，最后生成的内容为不合格，可手动修改或继续生成');
+            toastr.warning('续写内容不合格，已停止生成。您可查看报告并调整后重新生成。', "小说续写器");
+        }
+
         updateProgress('write-progress', 'write-status', 0, 0);
-
-        // 保存质量报告
-        extension_settings[extensionName].lastWriteQuality = finalQualityReport;
-        saveSettingsDebounced();
-
-        // 自动添加到无限续写链条
-        const newChapter = {
-            id: continueChapterIdCounter++,
-            title: `续写章节 ${continueWriteChain.length + 1}`,
-            content: finalWriteContent,
-            baseChapterId: selectedChapterId,
-            qualityReport: finalQualityReport,
-            createTime: new Date().toISOString()
-        };
-        continueWriteChain.push(newChapter);
-
-        // 持久化保存
-        extension_settings[extensionName].continueWriteChain = continueWriteChain;
-        extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
-        saveSettingsDebounced();
-
-        // 渲染续写链条
-        renderContinueWriteChain(continueWriteChain);
-
-        // 规则强制：评估通过的内容必须自动同步更新到知识图谱，实现闭环治理
-        await saveWriteContentToGraph(finalWriteContent, newChapter.id);
-
-        toastr.success(`续写章节生成完成！质量总分：${finalQualityReport.总分}分，已合格并同步更新到知识图谱`, "小说续写器");
     } catch (error) {
         console.error('续写生成失败:', error);
         $('#write-status').text(`生成失败: ${error.message}`);
@@ -1551,7 +1584,7 @@ ${fullContextContent}
         let finalQualityReport = null;
         let retryCount = 0;
 
-        // 规则强制：不合格必须重生成
+        // 规则强制：不合格必须重生成，但每次生成后显示内容
         while (true) {
             if (stopGenerateFlag) break;
 
@@ -1575,6 +1608,10 @@ ${fullContextContent}
                 throw new Error('质量评估失败');
             }
 
+            // 显示当前生成的内容和报告
+            $('#write-content-preview').val(currentWriteContent);
+            $('#write-quality-report').val(JSON.stringify(qualityReport, null, 2));
+
             if (qualityReport.是否合格) {
                 finalWriteContent = currentWriteContent;
                 finalQualityReport = qualityReport;
@@ -1591,29 +1628,34 @@ ${fullContextContent}
             return;
         }
 
-        // 新增到续写链条
-        const newChapter = {
-            id: continueChapterIdCounter++,
-            title: `续写章节 ${continueWriteChain.length + 1}`,
-            content: finalWriteContent,
-            baseChapterId: selectedBaseChapterId,
-            qualityReport: finalQualityReport,
-            createTime: new Date().toISOString()
-        };
-        continueWriteChain.push(newChapter);
+        // 只有合格才自动添加
+        if (finalQualityReport && finalQualityReport.是否合格) {
+            // 新增到续写链条
+            const newChapter = {
+                id: continueChapterIdCounter++,
+                title: `续写章节 ${continueWriteChain.length + 1}`,
+                content: finalWriteContent,
+                baseChapterId: selectedBaseChapterId,
+                qualityReport: finalQualityReport,
+                createTime: new Date().toISOString()
+            };
+            continueWriteChain.push(newChapter);
 
-        // 持久化保存
-        extension_settings[extensionName].continueWriteChain = continueWriteChain;
-        extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
-        saveSettingsDebounced();
+            // 持久化保存
+            extension_settings[extensionName].continueWriteChain = continueWriteChain;
+            extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
+            saveSettingsDebounced();
 
-        // 重新渲染链条
-        renderContinueWriteChain(continueWriteChain);
+            // 重新渲染链条
+            renderContinueWriteChain(continueWriteChain);
 
-        // 自动同步到知识图谱
-        await saveWriteContentToGraph(finalWriteContent, newChapter.id);
+            // 自动同步到知识图谱
+            await saveWriteContentToGraph(finalWriteContent, newChapter.id);
 
-        toastr.success(`续写章节生成完成！质量总分：${finalQualityReport.总分}分，已合格并同步更新到知识图谱`, "小说续写器");
+            toastr.success(`续写章节生成完成！质量总分：${finalQualityReport.总分}分，已合格并同步更新到知识图谱`, "小说续写器");
+        } else {
+            toastr.warning('续写内容不合格，已停止生成。您可查看报告并调整后重新生成。', "小说续写器");
+        }
     } catch (error) {
         console.error('继续续写生成失败:', error);
         toastr.error(`继续续写生成失败: ${error.message}`, "小说续写器");
@@ -1707,6 +1749,9 @@ jQuery(async () => {
     $("#unselect-all-btn").on("click", () => {
         $(".chapter-select").prop("checked", false);
     });
+
+    // 刷新图谱状态
+    $("#refresh-graph-status-btn").on("click", refreshGraphStatus);
 
     // 保存模板和间隔设置
     $("#send-template-input").on("change", (e) => {
