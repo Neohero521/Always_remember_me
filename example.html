@@ -36,13 +36,15 @@
             <hr class="sysHR" />
             <!-- 章节列表控制 -->
             <div class="novel-block flex-container justifySpaceBetween">
-                <b>章节列表（仅显示标题）</b>
+                <b>章节列表</b>
                 <div class="flex-container gap5">
                     <input id="select-all-btn" class="menu_button menu_button--sm" type="submit" value="全选" />
                     <input id="unselect-all-btn" class="menu_button menu_button--sm" type="submit" value="全不选" />
+                    <!-- 新增：刷新图谱状态按钮 -->
+                    <input id="refresh-graph-status-btn" class="menu_button menu_button--sm" type="submit" value="刷新图谱状态" />
                 </div>
             </div>
-            <!-- 章节列表容器（仅显示标题） -->
+            <!-- 章节列表容器 -->
             <div id="novel-chapter-list" class="novel-block chapter-list">
                 <p class="text-muted text-center">请上传小说文件并点击「解析章节」</p>
             </div>
