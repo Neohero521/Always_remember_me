@@ -2,6 +2,7 @@
 .novel-block {
     margin-bottom: 12px;
 }
+
 .chapter-item {
     border: 1px solid var(--border);
     background: var(--input-bg);
@@ -9,12 +10,15 @@
     padding: 10px 12px;
     margin-bottom: 6px;
 }
+
 .chapter-checkbox {
     cursor: pointer;
 }
+
 .chapter-title {
     font-size: 0.95rem;
 }
+
 .progress-bar {
     width: 100%;
     height: 8px;
@@ -23,6 +27,7 @@
     overflow: hidden;
     margin-top: 4px;
 }
+
 .progress-fill {
     height: 100%;
     width: 0%;
@@ -34,57 +39,71 @@
 .text-sm {
     font-size: 0.85rem;
 }
+
 .text-muted {
     color: var(--text-muted);
 }
+
 .text-success {
     color: var(--success);
 }
-.text-danger {
-    color: var(--danger);
-}
+
 .text-center {
     text-align: center;
 }
+
 .margin0 {
     margin: 0;
 }
+
 .margin-t5 {
     margin-top: 5px;
 }
+
 .margin-b5 {
     margin-bottom: 5px;
 }
+
 .margin-r5 {
     margin-right: 5px;
 }
+
 .margin-l5 {
     margin-left: 5px;
 }
+
 .padding5 {
     padding: 5px;
 }
+
 .borderR5 {
     border-radius: 5px;
 }
+
 .gap5 {
     gap: 5px;
 }
+
 .flex1 {
     flex: 1;
 }
+
 .flexColumn {
     flex-direction: column;
 }
+
 .alignCenter {
     align-items: center;
 }
+
 .justifySpaceBetween {
     justify-content: space-between;
 }
+
 .fontBold {
     font-weight: 600;
 }
+
 .w100 {
     width: 100%;
 }
@@ -107,18 +126,13 @@ select.form-control {
     color: var(--text-color);
     cursor: pointer;
 }
+
 select.form-control:focus {
     outline: none;
     border-color: var(--primary);
 }
 
-/* 按钮禁用样式 */
-.menu_button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* 无限续写链条样式 */
+/* 新增：无限续写链条样式 */
 .continue-chapter-item {
     border: 1px solid var(--border);
     background: var(--input-bg);
@@ -126,6 +140,7 @@ select.form-control:focus {
     padding: 12px;
     margin-bottom: 12px;
 }
+
 .chain-container {
     max-height: 800px;
     overflow-y: auto;
@@ -133,86 +148,7 @@ select.form-control:focus {
     border: 1px solid var(--border);
     border-radius: 5px;
 }
+
 .continue-chapter-content {
     margin-top: 8px;
-}
-
-/* 抽屉样式适配 */
-.inline-drawer {
-    margin-bottom: 16px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    overflow: hidden;
-}
-.inline-drawer-header {
-    padding: 10px 12px;
-    background: var(--secondary-bg);
-    cursor: pointer;
-    user-select: none;
-}
-.inline-drawer-content {
-    padding: 12px;
-    border-top: 1px solid var(--border);
-}
-.inline-drawer-icon {
-    transition: transform 0.3s ease;
-}
-.inline-drawer-icon.down {
-    transform: rotate(0deg);
-}
-.inline-drawer-icon.up {
-    transform: rotate(180deg);
-}
-
-/* 按钮样式适配 */
-.menu_button--sm {
-    padding: 4px 8px;
-    font-size: 0.85rem;
-}
-.menu_button--primary {
-    background: var(--primary);
-    color: white;
-    border: 1px solid var(--primary);
-}
-.menu_button--secondary {
-    background: var(--secondary);
-    color: var(--text-color);
-    border: 1px solid var(--border);
-}
-.menu_button--danger {
-    background: var(--danger);
-    color: white;
-    border: 1px solid var(--danger);
-}
-
-/* 文本框样式适配 */
-textarea.form-control {
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 8px 12px;
-    color: var(--text-color);
-    resize: vertical;
-    font-family: inherit;
-}
-textarea.form-control:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-textarea.form-control[readonly] {
-    opacity: 0.8;
-    cursor: not-allowed;
-}
-
-/* 分隔线样式 */
-hr.sysHR {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 12px 0;
-}
-
-/* 弹性布局适配 */
-.flex-container {
-    display: flex;
-    flex-wrap: wrap;
 }
