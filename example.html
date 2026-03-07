@@ -126,7 +126,7 @@
         </div>
     </div>
 
-    <!-- 模块3：小说续写生成（修复章节选择联动，强制可编辑） -->
+    <!-- 模块3：小说续写生成（修复章节选择联动，强制可编辑，新增无限续写入口） -->
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
             <b>3. 小说续写生成</b>
@@ -178,6 +178,21 @@
                     <input id="write-send-btn" class="menu_button menu_button--primary" type="submit" value="发送到对话框" />
                     <input id="write-clear-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空内容" />
                 </div>
+            </div>
+
+            <hr class="sysHR" />
+
+            <!-- 新增：无限续写链条模块 -->
+            <div class="novel-block flex-container justifySpaceBetween">
+                <b>续写章节链条（可无限叠加续写）</b>
+                <div class="flex-container gap5">
+                    <input id="clear-chain-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空所有续写章节" />
+                </div>
+            </div>
+
+            <!-- 续写章节链条容器 -->
+            <div id="continue-write-chain" class="novel-block chain-container">
+                <p class="text-muted text-center">暂无续写章节，生成续写内容后自动添加到此处</p>
             </div>
         </div>
     </div>
