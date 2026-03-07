@@ -19,6 +19,8 @@ const defaultSettings = {
   chapterList: [],
   chapterGraphMap: {},
   mergedGraph: {},
+  continueWriteChain: [],
+  continueChapterIdCounter: 1,
 };
 
 // 全局状态缓存
@@ -28,6 +30,8 @@ let isGeneratingWrite = false;
 let stopGenerateFlag = false;
 let isSending = false;
 let stopSending = false;
+let continueWriteChain = [];
+let continueChapterIdCounter = 1;
 
 // ==============================================
 // 基础工具函数（保留模板原有逻辑）
@@ -49,6 +53,8 @@ async function loadSettings() {
 
   // 恢复缓存数据
   currentParsedChapters = extension_settings[extensionName].chapterList || [];
+  continueWriteChain = extension_settings[extensionName].continueWriteChain || [];
+  continueChapterIdCounter = extension_settings[extensionName].continueChapterIdCounter || 1;
 
   // 更新UI中的设置值
   $("#example_setting").prop("checked", extension_settings[extensionName].example_setting).trigger("input");
@@ -60,6 +66,7 @@ async function loadSettings() {
   // 渲染章节列表与续写下拉框
   renderChapterList(currentParsedChapters);
   renderChapterSelect(currentParsedChapters);
+  renderContinueWriteChain(continueWriteChain);
 }
 
 // 模板示例功能保留
@@ -490,7 +497,217 @@ async function mergeAllGraphs() {
 }
 
 // ==============================================
-// 小说续写核心函数
+// 无限续写核心函数（新增）
+// ==============================================
+// 渲染无限续写链条
+function renderContinueWriteChain(chain) {
+  const $chainContainer = $('#continue-write-chain');
+  if (chain.length === 0) {
+    $chainContainer.html('<p class="text-muted text-center">暂无续写章节，生成续写内容后自动添加到此处</p>');
+    return;
+  }
+
+  // 生成所有续写章节的HTML
+  const chainHtml = chain.map((chapter, index) => `
+    <div class="continue-chapter-item" data-chain-id="${chapter.id}">
+      <div class="flex-container justifySpaceBetween alignCenter margin-b5">
+        <b class="continue-chapter-title">续写章节 ${index + 1}</b>
+        <div class="flex-container gap5">
+          <input class="menu_button menu_button--sm menu_button--primary continue-write-btn" data-chain-id="${chapter.id}" type="submit" value="基于此章继续续写" />
+          <input class="menu_button menu_button--sm continue-copy-btn" data-chain-id="${chapter.id}" type="submit" value="复制内容" />
+          <input class="menu_button menu_button--sm continue-send-btn" data-chain-id="${chapter.id}" type="submit" value="发送到对话框" />
+          <input class="menu_button menu_button--sm menu_button--danger continue-delete-btn" data-chain-id="${chapter.id}" type="submit" value="删除此章" />
+        </div>
+      </div>
+      <textarea class="form-control w100 continue-chapter-content" data-chain-id="${chapter.id}" rows="12" placeholder="续写章节内容...">${chapter.content}</textarea>
+    </div>
+  `).join('');
+
+  $chainContainer.html(chainHtml);
+
+  // 绑定章节内容编辑事件（自动保存）
+  $('.continue-chapter-content').on('input', function(e) {
+    const chainId = parseInt($(e.target).data('chain-id'));
+    const newContent = $(e.target).val();
+    const chapterIndex = continueWriteChain.findIndex(item => item.id === chainId);
+    if (chapterIndex !== -1) {
+      continueWriteChain[chapterIndex].content = newContent;
+      extension_settings[extensionName].continueWriteChain = continueWriteChain;
+      saveSettingsDebounced();
+    }
+  });
+
+  // 绑定继续续写按钮事件
+  $('.continue-write-btn').on('click', function(e) {
+    const chainId = parseInt($(e.target).data('chain-id'));
+    generateContinueWrite(chainId);
+  });
+
+  // 绑定复制按钮事件
+  $('.continue-copy-btn').on('click', function(e) {
+    const chainId = parseInt($(e.target).data('chain-id'));
+    const chapter = continueWriteChain.find(item => item.id === chainId);
+    if (!chapter || !chapter.content) {
+      toastr.warning('没有可复制的内容', "小说续写器");
+      return;
+    }
+    navigator.clipboard.writeText(chapter.content).then(() => {
+      toastr.success('续写内容已复制到剪贴板', "小说续写器");
+    }).catch(() => {
+      toastr.error('复制失败', "小说续写器");
+    });
+  });
+
+  // 绑定发送到对话框按钮事件
+  $('.continue-send-btn').on('click', function(e) {
+    const context = getContext();
+    const chainId = parseInt($(e.target).data('chain-id'));
+    const chapter = continueWriteChain.find(item => item.id === chainId);
+    const currentCharName = context.characters[context.characterId]?.name;
+
+    if (!chapter || !chapter.content) {
+      toastr.warning('没有可发送的续写内容', "小说续写器");
+      return;
+    }
+    if (!currentCharName) {
+      toastr.error('请先选择一个聊天角色', "小说续写器");
+      return;
+    }
+
+    const command = renderCommandTemplate(extension_settings[extensionName].sendTemplate, currentCharName, chapter.content);
+    context.executeSlashCommandsWithOptions(command).then(() => {
+      toastr.success('续写内容已发送到对话框', "小说续写器");
+    }).catch((error) => {
+      toastr.error(`发送失败: ${error.message}`, "小说续写器");
+    });
+  });
+
+  // 绑定删除此章按钮事件
+  $('.continue-delete-btn').on('click', function(e) {
+    const chainId = parseInt($(e.target).data('chain-id'));
+    const chapterIndex = continueWriteChain.findIndex(item => item.id === chainId);
+    if (chapterIndex === -1) {
+      toastr.warning('章节不存在', "小说续写器");
+      return;
+    }
+
+    continueWriteChain.splice(chapterIndex, 1);
+    extension_settings[extensionName].continueWriteChain = continueWriteChain;
+    saveSettingsDebounced();
+    renderContinueWriteChain(continueWriteChain);
+    toastr.success('已删除该续写章节', "小说续写器");
+  });
+}
+
+// 无限续写核心生成逻辑（严格遵循上下文叠加规则）
+async function generateContinueWrite(targetChainId) {
+  const context = getContext();
+  const { generateRaw } = context;
+  const selectedBaseChapterId = $('#write-chapter-select').val();
+  const editedBaseChapterContent = $('#write-chapter-content').val().trim();
+  const wordCount = parseInt($('#write-word-count').val()) || 2000;
+  const mergedGraph = extension_settings[extensionName].mergedGraph || {};
+
+  // 前置校验
+  if (isGeneratingWrite) {
+    toastr.warning('正在生成续写内容中，请等待完成', "小说续写器");
+    return;
+  }
+  if (!selectedBaseChapterId) {
+    toastr.error('请先选择初始续写基准章节', "小说续写器");
+    return;
+  }
+  if (!editedBaseChapterContent) {
+    toastr.error('初始基准章节内容不能为空', "小说续写器");
+    return;
+  }
+  const targetChapterIndex = continueWriteChain.findIndex(item => item.id === targetChainId);
+  if (targetChapterIndex === -1) {
+    toastr.error('目标续写章节不存在', "小说续写器");
+    return;
+  }
+  if (Object.keys(mergedGraph).length === 0) {
+    toastr.warning('未检测到合并后的知识图谱，建议先合并图谱以保证续写质量', "小说续写器");
+  }
+
+  // 【核心规则实现】拼接完整上下文：基准前所有章节 + 魔改基准章 + 链条中到目标章的所有内容
+  let fullContextContent = '';
+
+  // 1. 拼接基准章节之前的所有导入章节
+  const baseChapterId = parseInt(selectedBaseChapterId);
+  const preBaseChapters = currentParsedChapters.filter(chapter => chapter.id < baseChapterId);
+  preBaseChapters.forEach(chapter => {
+    fullContextContent += `${chapter.title}\n${chapter.content}\n\n`;
+  });
+
+  // 2. 拼接用户魔改后的基准章节内容
+  const baseChapterTitle = currentParsedChapters.find(c => c.id === baseChapterId)?.title || '基准章节';
+  fullContextContent += `${baseChapterTitle}\n${editedBaseChapterContent}\n\n`;
+
+  // 3. 拼接链条中到目标章节为止的所有续写内容（含目标章）
+  const targetBeforeChapters = continueWriteChain.slice(0, targetChapterIndex + 1);
+  targetBeforeChapters.forEach((chapter, index) => {
+    fullContextContent += `续写章节 ${index + 1}\n${chapter.content}\n\n`;
+  });
+
+  // 构建续写prompt
+  const systemPrompt = `
+小说续写规则（100%遵守）：
+1. 人设锁定：续写内容必须完全贴合小说的核心人物设定，绝对不能出现人设崩塌（OOC）。
+2. 剧情衔接：续写内容必须和提供的完整上下文的最后一段内容完美衔接，逻辑自洽，无矛盾，承接前文所有剧情，开启新章节，不得重复前文已有的情节。
+3. 文风统一：续写内容必须完全贴合原小说的叙事风格、语言习惯、对话方式、节奏特点，和原文无缝衔接。
+4. 剧情合理：续写内容要符合原小说的世界观设定，推动主线剧情发展，有完整的情节起伏、生动的细节、符合人设的对话。
+5. 输出要求：只输出续写的正文内容，不要任何标题、章节名、解释、备注、说明、分割线。
+6. 字数要求：续写约${wordCount}字，误差不超过10%。
+`;
+
+  const userPrompt = `
+小说核心设定知识图谱：${JSON.stringify(mergedGraph)}
+
+完整前文上下文：
+${fullContextContent}
+
+请基于以上完整的前文内容和知识图谱，按照规则续写后续的新章节正文，确保和前文最后一段内容完美衔接，不重复前文情节。
+`;
+
+  // 开始生成
+  isGeneratingWrite = true;
+  stopGenerateFlag = false;
+  toastr.info('正在生成续写章节，请稍候...', "小说续写器");
+
+  try {
+    const result = await generateRaw({ systemPrompt, prompt: userPrompt });
+    if (!result.trim()) {
+      throw new Error('生成内容为空');
+    }
+
+    // 新增到续写链条
+    const newChapter = {
+      id: continueChapterIdCounter++,
+      title: `续写章节 ${continueWriteChain.length + 1}`,
+      content: result.trim()
+    };
+    continueWriteChain.push(newChapter);
+
+    // 持久化保存
+    extension_settings[extensionName].continueWriteChain = continueWriteChain;
+    extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
+    saveSettingsDebounced();
+
+    // 重新渲染链条
+    renderContinueWriteChain(continueWriteChain);
+    toastr.success('续写章节生成完成！已添加到续写链条', "小说续写器");
+  } catch (error) {
+    console.error('继续续写生成失败:', error);
+    toastr.error(`继续续写生成失败: ${error.message}`, "小说续写器");
+  } finally {
+    isGeneratingWrite = false;
+    stopGenerateFlag = false;
+  }
+}
+
+// ==============================================
+// 小说续写核心函数（原有逻辑保留，新增链条自动添加）
 // ==============================================
 async function generateNovelWrite() {
   const context = getContext();
@@ -530,7 +747,9 @@ async function generateNovelWrite() {
 
   const userPrompt = `
 小说核心设定知识图谱：${JSON.stringify(mergedGraph)}
+
 基准章节内容：${editedChapterContent}
+
 请基于以上内容，按照规则续写后续的章节正文。
 `;
 
@@ -548,7 +767,23 @@ async function generateNovelWrite() {
     // 更新预览
     $('#write-content-preview').val(result.trim());
     $('#write-status').text('续写章节生成完成！');
-    toastr.success('续写章节生成完成！', "小说续写器");
+
+    // 【新增】自动添加到无限续写链条
+    const newChapter = {
+      id: continueChapterIdCounter++,
+      title: `续写章节 ${continueWriteChain.length + 1}`,
+      content: result.trim()
+    };
+    continueWriteChain.push(newChapter);
+
+    // 持久化保存
+    extension_settings[extensionName].continueWriteChain = continueWriteChain;
+    extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
+    saveSettingsDebounced();
+
+    // 渲染续写链条
+    renderContinueWriteChain(continueWriteChain);
+    toastr.success('续写章节生成完成！已添加到续写链条', "小说续写器");
   } catch (error) {
     console.error('续写生成失败:', error);
     $('#write-status').text(`生成失败: ${error.message}`);
@@ -560,7 +795,7 @@ async function generateNovelWrite() {
 }
 
 // ==============================================
-// 扩展入口（完全对齐官方模板结构）
+// 扩展入口（完全对齐官方模板结构，新增事件绑定）
 // ==============================================
 jQuery(async () => {
   // 加载外部HTML文件，追加到ST扩展设置面板
@@ -599,6 +834,13 @@ jQuery(async () => {
       extension_settings[extensionName].chapterGraphMap = {};
       extension_settings[extensionName].mergedGraph = {};
       $('#merged-graph-preview').val('');
+      // 清空旧续写链条
+      continueWriteChain = [];
+      continueChapterIdCounter = 1;
+      extension_settings[extensionName].continueWriteChain = continueWriteChain;
+      extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
+      renderContinueWriteChain(continueWriteChain);
+
       saveSettingsDebounced();
       // 渲染列表与下拉框
       renderChapterList(currentParsedChapters);
@@ -745,7 +987,7 @@ jQuery(async () => {
   });
 
   // ==============================================
-  // 续写模块事件绑定（修复章节选择联动bug）
+  // 续写模块事件绑定（修复章节选择联动bug，新增无限续写事件）
   // ==============================================
   // 修复：章节选择联动，选中后自动填充内容并强制可编辑
   $("#write-chapter-select").on("change", function(e) {
@@ -818,6 +1060,17 @@ jQuery(async () => {
     $('#write-content-preview').val('');
     $('#write-status').text('');
     toastr.success('已清空续写内容', "小说续写器");
+  });
+
+  // 新增：清空所有续写章节
+  $("#clear-chain-btn").on("click", () => {
+    continueWriteChain = [];
+    continueChapterIdCounter = 1;
+    extension_settings[extensionName].continueWriteChain = continueWriteChain;
+    extension_settings[extensionName].continueChapterIdCounter = continueChapterIdCounter;
+    saveSettingsDebounced();
+    renderContinueWriteChain(continueWriteChain);
+    toastr.success('已清空所有续写章节', "小说续写器");
   });
 
   // 初始化加载设置
