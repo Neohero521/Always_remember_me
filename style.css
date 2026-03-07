@@ -48,6 +48,10 @@
     color: var(--success);
 }
 
+.text-danger {
+    color: var(--danger);
+}
+
 .text-center {
     text-align: center;
 }
@@ -132,7 +136,13 @@ select.form-control:focus {
     border-color: var(--primary);
 }
 
-/* 新增：无限续写链条样式 */
+/* 按钮禁用样式 */
+.menu_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 无限续写链条样式 */
 .continue-chapter-item {
     border: 1px solid var(--border);
     background: var(--input-bg);
@@ -151,4 +161,94 @@ select.form-control:focus {
 
 .continue-chapter-content {
     margin-top: 8px;
+}
+
+/* 抽屉样式适配 */
+.inline-drawer {
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.inline-drawer-header {
+    padding: 10px 12px;
+    background: var(--secondary-bg);
+    cursor: pointer;
+    user-select: none;
+}
+
+.inline-drawer-content {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.inline-drawer-icon {
+    transition: transform 0.3s ease;
+}
+
+.inline-drawer-icon.down {
+    transform: rotate(0deg);
+}
+
+.inline-drawer-icon.up {
+    transform: rotate(180deg);
+}
+
+/* 按钮样式适配 */
+.menu_button--sm {
+    padding: 4px 8px;
+    font-size: 0.85rem;
+}
+
+.menu_button--primary {
+    background: var(--primary);
+    color: white;
+    border: 1px solid var(--primary);
+}
+
+.menu_button--secondary {
+    background: var(--secondary);
+    color: var(--text-color);
+    border: 1px solid var(--border);
+}
+
+.menu_button--danger {
+    background: var(--danger);
+    color: white;
+    border: 1px solid var(--danger);
+}
+
+/* 文本框样式适配 */
+textarea.form-control {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: var(--text-color);
+    resize: vertical;
+    font-family: inherit;
+}
+
+textarea.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+textarea.form-control[readonly] {
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+/* 分隔线样式 */
+hr.sysHR {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0;
+}
+
+/* 弹性布局适配 */
+.flex-container {
+    display: flex;
+    flex-wrap: wrap;
 }
