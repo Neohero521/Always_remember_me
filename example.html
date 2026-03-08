@@ -1,188 +1,363 @@
-<!-- 小说续写器扩展UI，完全适配SillyTavern原生样式，修复所有返回显示bug，全功能兼容 -->
-<div class="novel-writer-extension" id="novel-writer-root">
-    <!-- 模块1：章节导入与管理（新增唯一ID，支持状态持久化） -->
-    <div class="inline-drawer" id="drawer-chapter-import">
-        <div class="inline-drawer-toggle inline-drawer-header">
-            <b>1. 章节导入与管理</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小说续写插件（阅读器翻页修复）</title>
+    <!-- 引入Font Awesome图标库（与原环境一致） -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- 注意：实际使用时，样式会通过extensions机制加载，此处仅为结构示例 -->
+</head>
+<body>
+    <!-- 可移动悬浮球核心元素 -->
+    <div id="novel-writer-float-ball" class="float-ball">
+        <i class="fa-solid fa-book-open ball-icon"></i>
+        <span class="ball-tip">小说续写</span>
+    </div>
+
+    <!-- 悬浮球展开功能面板 -->
+    <div id="novel-writer-panel" class="novel-writer-extension writer-panel">
+        <!-- 面板头部 -->
+        <div class="panel-header">
+            <div class="panel-title">
+                <i class="fa-solid fa-feather-pointed"></i>
+                <span>小说智能续写系统</span>
+            </div>
+            <button class="panel-close-btn" id="panel-close-btn" title="关闭面板">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
         </div>
-        <div class="inline-drawer-content">
-            <div class="novel-block flex-container">
-                <label for="novel-file-upload" class="margin-r5">小说TXT文件</label>
-                <input id="novel-file-upload" type="file" accept=".txt" class="flex1" />
-            </div>
-            <div class="novel-block flex-container">
-                <label for="chapter-regex-input" class="margin-r5">章节拆分正则</label>
-                <input id="chapter-regex-input" type="text" class="flex1" placeholder="^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$" />
-            </div>
-            <div class="novel-block flex-container">
-                <label for="send-template-input" class="margin-r5">发送命令模板</label>
-                <input id="send-template-input" type="text" class="flex1" value="/sendas name={{char}} {{pipe}}" />
-            </div>
-            <div class="novel-block flex-container">
-                <label for="send-delay-input" class="margin-r5">发送间隔(ms)</label>
-                <input id="send-delay-input" type="number" min="50" step="10" class="flex1" value="100" />
-            </div>
-            <div class="novel-block flex-container">
-                <input id="parse-chapter-btn" class="menu_button menu_button--primary" type="submit" value="解析章节" />
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container justifySpaceBetween">
-                <b>章节列表（仅显示标题）</b>
-                <div class="flex-container gap5">
-                    <input id="select-all-btn" class="menu_button menu_button--sm" type="submit" value="全选" />
-                    <input id="unselect-all-btn" class="menu_button menu_button--sm" type="submit" value="全不选" />
+
+        <!-- 多选项卡导航栏 -->
+        <div class="panel-tab-nav">
+            <button class="panel-tab-item active" data-tab="tab-chapter">
+                <i class="fa-solid fa-list-ul"></i>
+                <span>章节管理</span>
+            </button>
+            <button class="panel-tab-item" data-tab="tab-graph">
+                <i class="fa-solid fa-brain"></i>
+                <span>知识图谱</span>
+            </button>
+            <button class="panel-tab-item" data-tab="tab-write">
+                <i class="fa-solid fa-pen-nib"></i>
+                <span>内容续写</span>
+            </button>
+            <!-- 小说阅读器选项卡 -->
+            <button class="panel-tab-item" data-tab="tab-reader">
+                <i class="fa-solid fa-book-reader"></i>
+                <span>小说阅读</span>
+            </button>
+        </div>
+
+        <!-- 选项卡内容容器 -->
+        <div class="panel-tab-content">
+            <!-- 选项卡1：章节导入与管理（原模块1完整保留） -->
+            <div class="panel-tab-panel active" id="tab-chapter">
+                <!-- 核心配置卡片 -->
+                <div class="content-card card-main">
+                    <div class="card-header">
+                        <h4><i class="fa-solid fa-file-import"></i> 小说文件解析</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="file-select-group">
+                            <input id="novel-file-upload" type="file" accept=".txt" style="display: none;">
+                            <button class="btn btn-secondary" id="select-file-btn">
+                                <i class="fa-solid fa-folder-open"></i> 选择小说TXT文件
+                            </button>
+                            <span id="file-name-text" class="file-name">未选择文件</span>
+                        </div>
+
+                        <div class="grid-row grid-2">
+                            <div class="form-group">
+                                <label class="form-label">章节拆分正则</label>
+                                <input id="chapter-regex-input" class="form-input" type="text"
+                                    value="^\s*第\s*[0-9零一二三四五六七八九十百千]+\s*章.*$"
+                                    placeholder="请输入章节匹配正则">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">发送命令模板</label>
+                                <input id="send-template-input" class="form-input" type="text" value="/sendas name={{char}} {{pipe}}" placeholder="请输入发送命令模板">
+                            </div>
+                        </div>
+
+                        <div class="grid-row grid-2">
+                            <div class="form-group">
+                                <label class="form-label">发送间隔(ms)</label>
+                                <input id="send-delay-input" class="form-input" type="number" min="100"
+                                    max="5000" step="100" value="100">
+                            </div>
+                            <div class="form-group btn-group-fixed">
+                                <input id="parse-chapter-btn" class="btn btn-primary" type="submit" value="解析章节">
+                                <div class="btn-group-row">
+                                    <input id="select-all-btn" class="btn btn-outline" type="submit" value="全选">
+                                    <input id="unselect-all-btn" class="btn btn-outline" type="submit" value="反选">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 章节列表卡片 -->
+                <div class="content-card">
+                    <div class="card-header card-header-inline">
+                        <h4><i class="fa-solid fa-book"></i> 章节列表</h4>
+                        <div class="btn-group-row">
+                            <input id="import-selected-btn" class="btn btn-sm btn-primary" type="submit" value="导入选中章节">
+                            <input id="import-all-btn" class="btn btn-sm btn-outline" type="submit" value="导入全部章节">
+                            <input id="stop-send-btn" class="btn btn-sm btn-danger" type="submit" value="停止发送" disabled>
+                        </div>
+                    </div>
+                    <div class="progress-wrap">
+                        <p id="novel-import-status" class="progress-text"></p>
+                        <div class="progress-bar">
+                            <div id="novel-import-progress" class="progress-fill"></div>
+                        </div>
+                    </div>
+                    <div id="novel-chapter-list" class="chapter-list">
+                        <p class="empty-tip">请上传小说文件并点击「解析章节」</p>
+                    </div>
+                </div>
+
+                <!-- 示例配置卡片 -->
+                <div class="content-card card-mini">
+                    <div class="form-group form-group-inline">
+                        <input type="checkbox" id="example_setting" />
+                        <label for="example_setting">启用示例配置</label>
+                        <input id="my_button" class="btn btn-sm btn-outline" type="submit" value="测试配置">
+                    </div>
                 </div>
             </div>
-            <div id="novel-chapter-list" class="novel-block chapter-list">
-                <p class="text-muted text-center">请上传小说文件并点击「解析章节」</p>
-            </div>
-            <div class="novel-block">
-                <p id="novel-import-status" class="text-sm margin0"></p>
-                <div class="progress-bar">
-                    <div id="novel-import-progress" class="progress-fill"></div>
+
+            <!-- 选项卡2：知识图谱构建与合并（原模块2完整保留） -->
+            <div class="panel-tab-panel" id="tab-graph">
+                <!-- 图谱生成卡片 -->
+                <div class="content-card card-main">
+                    <div class="card-header card-header-inline">
+                        <h4><i class="fa-solid fa-diagram-project"></i> 图谱生成</h4>
+                        <div class="btn-group-row">
+                            <input id="graph-single-btn" class="btn btn-primary" type="submit" value="生成选中章节图谱">
+                            <input id="graph-batch-btn" class="btn btn-outline" type="submit" value="批量生成全章节图谱">
+                        </div>
+                    </div>
+                    <div class="progress-wrap">
+                        <p id="graph-generate-status" class="progress-text"></p>
+                        <div class="progress-bar">
+                            <div id="graph-progress" class="progress-fill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider-line"></div>
+
+                <!-- 图谱合并卡片 -->
+                <div class="content-card">
+                    <div class="card-header card-header-inline">
+                        <h4><i class="fa-solid fa-layer-group"></i> 全量图谱合并</h4>
+                        <input id="graph-merge-btn" class="btn btn-primary" type="submit" value="合并已生成的章节图谱">
+                    </div>
+                </div>
+
+                <!-- 图谱预览卡片 -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h4><i class="fa-solid fa-code"></i> 合并后完整知识图谱</h4>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="merged-graph-preview" rows="8" class="form-textarea" readonly
+                            placeholder="合并后的图谱JSON将显示在这里..." wrap="soft" resize="vertical"></textarea>
+                        <div class="btn-group-row btn-group-wrap">
+                            <input id="graph-validate-btn" class="btn btn-sm btn-outline" type="submit" value="校验图谱合规性">
+                            <input id="graph-import-btn" class="btn btn-sm btn-outline" type="submit" value="导入JSON">
+                            <input id="graph-copy-btn" class="btn btn-sm btn-secondary" type="submit" value="复制JSON">
+                            <input id="graph-export-btn" class="btn btn-sm btn-secondary" type="submit" value="导出JSON文件">
+                            <input id="graph-clear-btn" class="btn btn-sm btn-danger" type="submit" value="清空图谱">
+                        </div>
+                        <input id="graph-file-upload" type="file" accept=".json" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- 校验结果卡片 -->
+                <div class="content-card" id="graph-validate-result" style="display: none;">
+                    <div class="card-header">
+                        <h4><i class="fa-solid fa-shield-halved"></i> 图谱合规性校验结果</h4>
+                    </div>
+                    <textarea id="graph-validate-content" rows="3" class="form-textarea" readonly
+                        placeholder="校验结果将显示在这里..." wrap="soft"></textarea>
                 </div>
             </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container gap5">
-                <input id="stop-send-btn" class="menu_button menu_button--danger" type="submit" value="停止发送" />
-                <input id="import-selected-btn" class="menu_button menu_button--primary" type="submit" value="导入选中章节到对话框" />
-                <input id="import-all-btn" class="menu_button menu_button--secondary" type="submit" value="导入全部章节到对话框" />
+
+            <!-- 选项卡3：小说续写生成（原模块3完整保留） -->
+            <div class="panel-tab-panel" id="tab-write">
+                <!-- 基准章节选择卡片 -->
+                <div class="content-card card-main">
+                    <div class="card-header">
+                        <h4><i class="fa-solid fa-bookmark"></i> 续写基准设置</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label">选择续写基准章节</label>
+                            <select id="write-chapter-select" class="form-select">
+                                <option value="">请先解析章节</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="form-label-inline">
+                                <label class="form-label">基准章节内容（可直接编辑修改）</label>
+                                <input id="graph-update-modified-btn" class="btn btn-sm btn-outline" type="submit"
+                                    value="更新魔改章节图谱">
+                            </div>
+                            <textarea id="write-chapter-content" rows="7" class="form-textarea"
+                                placeholder="请先选择上方的基准章节..." readonly wrap="soft" resize="vertical"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 前置校验抽屉（原模块完整保留） -->
+                <div class="inline-drawer" id="drawer-precheck">
+                    <div class="inline-drawer-toggle inline-drawer-header">
+                        <b><i class="fa-solid fa-crosshairs"></i> 续写前置校验与合规边界</b>
+                        <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <div class="drawer-top-row">
+                            <span>前置校验状态：<span id="precheck-status" class="status-text status-default">未执行</span></span>
+                            <input id="precheck-run-btn" class="btn btn-sm btn-primary" type="submit" value="执行前置校验">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">合规边界与校验报告</label>
+                            <textarea id="precheck-report" rows="6" class="form-textarea" readonly
+                                placeholder="执行前置校验后，将显示人设红线、设定禁区、可呼应伏笔、矛盾预警等内容..." wrap="soft"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 续写配置卡片 -->
+                <div class="content-card card-mini">
+                    <div class="grid-row grid-2">
+                        <div class="form-group">
+                            <label class="form-label">续写字数</label>
+                            <div class="input-with-tip">
+                                <input id="write-word-count" type="number" min="500" max="10000" step="100"
+                                    class="form-input" value="2000">
+                                <span class="input-tip">范围：500-10000</span>
+                            </div>
+                        </div>
+                        <div class="form-group form-group-inline">
+                            <label for="quality-check-switch" class="form-label">开启续写质量自动校验</label>
+                            <input id="quality-check-switch" type="checkbox" checked />
+                            <span class="input-tip">不合格自动重写</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider-line"></div>
+
+                <!-- 生成控制卡片 -->
+                <div class="content-card card-mini">
+                    <div class="btn-group-row btn-center">
+                        <input id="write-generate-btn" class="btn btn-primary btn-lg" type="submit" value="生成续写章节">
+                        <input id="write-stop-btn" class="btn btn-danger btn-lg" type="submit" value="停止生成" disabled>
+                    </div>
+                    <div class="progress-wrap">
+                        <p id="write-status" class="progress-text"></p>
+                        <div id="quality-result-block" style="display: none;">
+                            <p class="quality-score">质量评估得分：<span id="quality-score">0</span>/100</p>
+                            <textarea id="quality-report" rows="3" class="form-textarea" readonly
+                                placeholder="质量评估详细报告将显示在这里..." wrap="soft"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider-line"></div>
+
+                <!-- 续写结果卡片 -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h4><i class="fa-solid fa-file-pen"></i> 续写生成结果</h4>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="write-content-preview" rows="10" class="form-textarea"
+                            placeholder="生成的续写章节内容将显示在这里..." wrap="soft" resize="vertical"></textarea>
+                        <div class="btn-group-row btn-group-wrap">
+                            <input id="write-copy-btn" class="btn btn-sm btn-secondary" type="submit" value="复制内容">
+                            <input id="write-send-btn" class="btn btn-sm btn-primary" type="submit" value="发送到对话框">
+                            <input id="write-clear-btn" class="btn btn-sm btn-danger" type="submit" value="清空内容">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider-line"></div>
+
+                <!-- 续写链条卡片 -->
+                <div class="content-card">
+                    <div class="card-header card-header-inline">
+                        <h4><i class="fa-solid fa-link"></i> 续写章节链条（可无限叠加续写）</h4>
+                        <input id="clear-chain-btn" class="btn btn-sm btn-danger" type="submit" value="清空所有续写章节">
+                    </div>
+                    <div id="continue-write-chain" class="chain-container">
+                        <p class="empty-tip">暂无续写章节，生成续写内容后自动添加到此处</p>
+                    </div>
+                </div>
             </div>
-            <hr class="sysHR" />
-            <div class="example-extension_block flex-container">
-                <input id="my_button" class="menu_button" type="submit" value="示例按钮" />
-            </div>
-            <div class="example-extension_block flex-container">
-                <input id="example_setting" type="checkbox" />
-                <label for="example_setting">模板示例复选框</label>
+
+            <!-- 选项卡4 小说阅读器（结构不变，BUG修复在JS/CSS） -->
+            <div class="panel-tab-panel" id="tab-reader">
+                <!-- 阅读器顶部控制栏 -->
+                <div class="reader-header">
+                    <div class="reader-title">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span id="reader-current-chapter-title">未选择章节</span>
+                    </div>
+                    <div class="reader-controls">
+                        <button class="btn btn-sm btn-outline reader-font-btn" id="reader-font-minus" title="缩小字体">
+                            <i class="fa-solid fa-font"></i><i class="fa-solid fa-minus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline reader-font-btn" id="reader-font-plus" title="放大字体">
+                            <i class="fa-solid fa-font"></i><i class="fa-solid fa-plus"></i>
+                        </button>
+                        <button class="btn btn-sm btn-primary" id="reader-chapter-select-btn">
+                            <i class="fa-solid fa-list"></i> 章节列表
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 阅读器核心内容区域 -->
+                <div class="reader-content-wrap">
+                    <div class="reader-content" id="reader-content">
+                        <p class="reader-empty-tip">请先在「章节管理」中解析小说文件，然后选择章节开始阅读</p>
+                    </div>
+                    <!-- 透明遮罩（仅响应点击，不拦截滚动） -->
+                    <div class="reader-click-mask" id="reader-click-mask"></div>
+                </div>
+
+                <!-- 阅读器底部进度条 + 翻章按钮（新增） -->
+                <div class="reader-footer">
+                    <button class="btn btn-sm btn-outline" id="reader-prev-chapter" title="上一章"><i class="fa-solid fa-chevron-left"></i> 上一章</button>
+                    <span id="reader-progress-text">0%</span>
+                    <div class="reader-progress-bar">
+                        <div class="reader-progress-fill" id="reader-progress-fill"></div>
+                    </div>
+                    <span id="reader-chapter-count">0/0</span>
+                    <button class="btn btn-sm btn-outline" id="reader-next-chapter" title="下一章">下一章 <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+
+                <!-- 章节选择侧边抽屉 -->
+                <div class="reader-chapter-drawer" id="reader-chapter-drawer">
+                    <div class="reader-drawer-header">
+                        <h3><i class="fa-solid fa-list-ul"></i> 章节列表</h3>
+                        <button class="btn btn-sm btn-outline" id="reader-drawer-close">
+                            <i class="fa-solid fa-xmark"></i> 关闭
+                        </button>
+                    </div>
+                    <div class="reader-chapter-list" id="reader-chapter-list">
+                        <p class="empty-tip">暂无解析的章节，请先在「章节管理」中解析小说</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 模块2：知识图谱构建与合并（新增唯一ID，支持状态持久化） -->
-    <div class="inline-drawer" id="drawer-graph">
-        <div class="inline-drawer-toggle inline-drawer-header">
-            <b>2. 知识图谱构建与合并</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-        </div>
-        <div class="inline-drawer-content">
-            <div class="novel-block flex-container justifySpaceBetween">
-                <b>图谱生成</b>
-                <div class="flex-container gap5">
-                    <input id="graph-single-btn" class="menu_button menu_button--primary" type="submit" value="生成选中章节图谱" />
-                    <input id="graph-batch-btn" class="menu_button menu_button--secondary" type="submit" value="批量生成全章节图谱" />
-                </div>
-            </div>
-            <div class="novel-block">
-                <p id="graph-generate-status" class="text-sm margin0"></p>
-                <div class="progress-bar">
-                    <div id="graph-progress" class="progress-fill"></div>
-                </div>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container justifySpaceBetween">
-                <b>全量图谱合并</b>
-                <input id="graph-merge-btn" class="menu_button menu_button--primary" type="submit" value="合并已生成的章节图谱" />
-            </div>
-            <div class="novel-block">
-                <label class="form-label">合并后完整知识图谱</label>
-                <textarea id="merged-graph-preview" rows="6" class="form-control w100" readonly placeholder="合并后的图谱JSON将显示在这里..." wrap="soft" resize="vertical"></textarea>
-                <div class="flex-container gap5 margin-t5 flex-wrap">
-                    <input id="graph-validate-btn" class="menu_button menu_button--sm" type="submit" value="校验图谱合规性" />
-                    <input id="graph-import-btn" class="menu_button menu_button--sm" type="submit" value="导入JSON" />
-                    <input id="graph-copy-btn" class="menu_button menu_button--sm" type="submit" value="复制JSON" />
-                    <input id="graph-export-btn" class="menu_button menu_button--sm" type="submit" value="导出JSON文件" />
-                    <input id="graph-clear-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空图谱" />
-                </div>
-                <input id="graph-file-upload" type="file" accept=".json" style="display: none;" />
-            </div>
-            <div class="novel-block" id="graph-validate-result" style="display: none;">
-                <label class="form-label">图谱合规性校验结果</label>
-                <textarea id="graph-validate-content" rows="3" class="form-control w100" readonly placeholder="校验结果将显示在这里..." wrap="soft"></textarea>
-            </div>
-        </div>
-    </div>
-
-    <!-- 模块3：小说续写生成（新增唯一ID，支持状态持久化，修复返回显示bug） -->
-    <div class="inline-drawer" id="drawer-write">
-        <div class="inline-drawer-toggle inline-drawer-header">
-            <b>3. 小说续写生成</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-        </div>
-        <div class="inline-drawer-content">
-            <div class="novel-block flex-container">
-                <label for="write-chapter-select" class="margin-r5">选择续写基准章节</label>
-                <select id="write-chapter-select" class="flex1">
-                    <option value="">请先解析章节</option>
-                </select>
-            </div>
-            <div class="novel-block">
-                <div class="flex-container justifySpaceBetween alignCenter flex-wrap">
-                    <label class="form-label">基准章节内容（可直接编辑修改）</label>
-                    <input id="graph-update-modified-btn" class="menu_button menu_button--sm menu_button--secondary" type="submit" value="更新魔改章节图谱" />
-                </div>
-                <textarea id="write-chapter-content" rows="10" class="form-control w100" placeholder="请先选择上方的基准章节..." readonly wrap="soft" resize="vertical"></textarea>
-            </div>
-            <!-- 续写前置校验模块（新增状态持久化） -->
-            <div class="inline-drawer" id="drawer-precheck">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>续写前置校验与合规边界</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <div class="novel-block flex-container justifySpaceBetween">
-                        <span>前置校验状态：<span id="precheck-status" class="text-muted">未执行</span></span>
-                        <input id="precheck-run-btn" class="menu_button menu_button--sm menu_button--primary" type="submit" value="执行前置校验" />
-                    </div>
-                    <div class="novel-block">
-                        <label class="form-label">合规边界与校验报告</label>
-                        <textarea id="precheck-report" rows="8" class="form-control w100" readonly placeholder="执行前置校验后，将显示人设红线、设定禁区、可呼应伏笔、矛盾预警等内容..." wrap="soft"></textarea>
-                    </div>
-                </div>
-            </div>
-            <div class="novel-block flex-container">
-                <label for="write-word-count" class="margin-r5">续写字数</label>
-                <input id="write-word-count" type="number" min="500" max="10000" step="100" class="flex1" value="2000" />
-                <span class="margin-l5 text-muted">范围：500-10000</span>
-            </div>
-            <div class="novel-block flex-container">
-                <label for="quality-check-switch" class="margin-r5">开启续写质量自动校验</label>
-                <input id="quality-check-switch" type="checkbox" checked />
-                <span class="margin-l5 text-muted">开启后将严格遵循规则校验续写质量，不合格自动重写</span>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container gap5 flex-wrap">
-                <input id="write-generate-btn" class="menu_button menu_button--primary" type="submit" value="生成续写章节" />
-                <input id="write-stop-btn" class="menu_button menu_button--danger" type="submit" value="停止生成" />
-            </div>
-            <div class="novel-block">
-                <p id="write-status" class="text-sm margin0"></p>
-                <div id="quality-result-block" style="display: none;">
-                    <p class="text-sm margin0">质量评估得分：<span id="quality-score" class="fontBold">0</span>/100</p>
-                    <textarea id="quality-report" rows="3" class="form-control w100 margin-t5" readonly placeholder="质量评估详细报告将显示在这里..." wrap="soft"></textarea>
-                </div>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block">
-                <label class="form-label">续写生成结果</label>
-                <textarea id="write-content-preview" rows="12" class="form-control w100" placeholder="生成的续写章节内容将显示在这里..." wrap="soft" resize="vertical"></textarea>
-                <div class="flex-container gap5 margin-t5 flex-wrap">
-                    <input id="write-copy-btn" class="menu_button menu_button--sm" type="submit" value="复制内容" />
-                    <input id="write-send-btn" class="menu_button menu_button--primary" type="submit" value="发送到对话框" />
-                    <input id="write-clear-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空内容" />
-                </div>
-            </div>
-            <hr class="sysHR" />
-            <div class="novel-block flex-container justifySpaceBetween">
-                <b>续写章节链条（可无限叠加续写）</b>
-                <div class="flex-container gap5">
-                    <input id="clear-chain-btn" class="menu_button menu_button--sm menu_button--danger" type="submit" value="清空所有续写章节" />
-                </div>
-            </div>
-            <div id="continue-write-chain" class="novel-block chain-container">
-                <p class="text-muted text-center">暂无续写章节，生成续写内容后自动添加到此处</p>
-            </div>
-        </div>
-    </div>
-</div>
+    <!-- 注意：实际环境中，JS会通过extensions机制注入，此处仅为结构示例 -->
+</body>
+</html>
