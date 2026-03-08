@@ -1,221 +1,1156 @@
-/* 顶级命名空间，强化样式优先级，避免ST原生样式覆盖，修复返回样式错乱bug */
-.novel-writer-extension * {
-  box-sizing: border-box;
+/* ==============================================
+全局变量与重置（赛博极光暗黑风）
+============================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* 基础通用样式（原有样式保留，强化优先级） */
-.novel-writer-extension .novel-block {
-    margin-bottom: 12px;
+:root {
+    /* 主背景色（100%不透明） */
+    --bg-main: #0c0c18;
+    --bg-card: #151528;
+    --bg-card-hover: #1e1e3a;
+    --bg-input: #121224;
+    --bg-drawer: #101020;
+    --bg-overlay: rgba(0, 0, 0, 0.7);
+
+    /* 主色调：极光紫蓝渐变 */
+    --primary: #7c3aed;
+    --primary-light: #a78bfa;
+    --primary-dark: #6d28d9;
+    --primary-glow: rgba(124, 58, 237, 0.6);
+
+    /* 辅助色 */
+    --secondary: #06b6d4;
+    --success: #10b981;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+
+    /* 文字颜色 */
+    --text-white: #f8fafc;
+    --text-primary: #e2e8f0;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+
+    /* 边框与阴影 */
+    --border-color: #334155;
+    --border-light: #475569;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+    --shadow-glow: 0 0 20px var(--primary-glow);
+    --shadow-ball: 0 0 25px rgba(124, 58, 237, 0.7);
+
+    /* 圆角 */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-full: 999px;
+
+    /* 动画 */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+
+    /* 阅读器专属变量 */
+    --reader-bg: #0f0f1a;
+    --reader-text: #e2e8f0;
+    --reader-font-size: 16px;
+    --reader-line-height: 1.8;
 }
-.novel-writer-extension .chapter-item {
-    border: 1px solid var(--border);
-    background: var(--input-bg);
-    border-radius: 5px;
-    padding: 10px 12px;
-    margin-bottom: 6px;
+
+/* 滚动条全局美化 */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
-.novel-writer-extension .chapter-checkbox {
-    cursor: pointer;
+::-webkit-scrollbar-track {
+    background: var(--bg-input);
+    border-radius: var(--radius-full);
 }
-.novel-writer-extension .chapter-title {
-    font-size: 0.95rem;
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--radius-full);
+    transition: background var(--transition-fast);
 }
-.novel-writer-extension .progress-bar {
-    width: 100%;
-    height: 8px;
-    background: var(--input-bg);
-    border-radius: 4px;
-    overflow: hidden;
-    margin-top: 4px;
-}
-.novel-writer-extension .progress-fill {
-    height: 100%;
-    width: 0%;
+::-webkit-scrollbar-thumb:hover {
     background: var(--primary);
-    transition: width 0.3s ease;
 }
 
-/* 通用工具样式（原有样式保留，强化优先级） */
-.novel-writer-extension .text-sm {
-    font-size: 0.85rem;
+/* ==============================================
+可移动悬浮球核心样式（修复版）
+============================================== */
+.float-ball {
+    position: fixed;
+    left: calc(100vw - 90px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 70px;
+    height: 70px;
+    border-radius: var(--radius-full);
+    background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 50%, var(--secondary) 100%);
+    box-shadow: var(--shadow-ball), 0 4px 15px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 99999;
+    transition: all var(--transition-normal);
+    user-select: none;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
 }
-.novel-writer-extension .text-muted {
-    color: var(--text-muted);
+
+/* 悬浮球拖动状态 */
+.float-ball.dragging {
+    opacity: 0.85;
+    transform: scale(1.05);
+    transition: none;
+    z-index: 100000;
 }
-.novel-writer-extension .text-success {
-    color: var(--success);
+
+/* 悬浮球hover效果 */
+.float-ball:hover {
+    transform: translateY(-50%) scale(1.1);
+    box-shadow: var(--shadow-ball), 0 6px 20px rgba(0, 0, 0, 0.6);
 }
-.novel-writer-extension .text-danger {
-    color: var(--danger);
+
+/* 悬浮球图标 */
+.ball-icon {
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 2px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
-.novel-writer-extension .text-center {
+
+/* 悬浮球文字 */
+.ball-tip {
+    font-size: 0.7rem;
+    color: white;
+    font-weight: 600;
     text-align: center;
 }
-.novel-writer-extension .margin0 {
-    margin: 0;
-}
-.novel-writer-extension .margin-t5 {
-    margin-top: 5px;
-}
-.novel-writer-extension .margin-b5 {
-    margin-bottom: 5px;
-}
-.novel-writer-extension .margin-r5 {
-    margin-right: 5px;
-}
-.novel-writer-extension .margin-l5 {
-    margin-left: 5px;
-}
-.novel-writer-extension .padding5 {
-    padding: 5px;
-}
-.novel-writer-extension .borderR5 {
-    border-radius: 5px;
-}
-.novel-writer-extension .gap5 {
-    gap: 5px;
-}
-.novel-writer-extension .flex1 {
-    flex: 1;
-    min-width: 120px;
-}
-.novel-writer-extension .flexColumn {
+
+/* ==============================================
+功能面板核心样式
+============================================== */
+.writer-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    width: 900px;
+    height: 850px;
+    max-width: 95vw;
+    max-height: 95vh;
+    background: linear-gradient(135deg, var(--bg-main) 0%, #101022 100%);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg), 0 0 60px rgba(0, 0, 0, 0.8);
+    display: none;
     flex-direction: column;
-}
-.novel-writer-extension .alignCenter {
-    align-items: center;
-}
-.novel-writer-extension .justifySpaceBetween {
-    justify-content: space-between;
-}
-.novel-writer-extension .fontBold {
-    font-weight: 600;
-}
-.novel-writer-extension .w100 {
-    width: 100%;
-}
-
-/* 章节列表滚动容器（原有样式保留，修复滚动条异常） */
-.novel-writer-extension .chapter-list {
-    max-height: 300px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-}
-
-/* 下拉框样式适配（原有样式保留，强化优先级） */
-.novel-writer-extension select.form-control {
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 8px 12px;
-    color: var(--text-color);
-    cursor: pointer;
-}
-.novel-writer-extension select.form-control:focus {
-    outline: none;
-    border-color: var(--primary);
-}
-
-/* 无限续写链条样式（原有样式保留，修复滚动条异常） */
-.novel-writer-extension .continue-chapter-item {
-    border: 1px solid var(--border);
-    background: var(--input-bg);
-    border-radius: 5px;
-    padding: 12px;
-    margin-bottom: 12px;
-}
-.novel-writer-extension .chain-container {
-    max-height: 800px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 5px;
-}
-.novel-writer-extension .continue-chapter-content {
-    margin-top: 8px;
-    min-height: 100px;
-}
-
-/* 【修复】抽屉核心样式，与ST原生样式完全对齐，修复展开/收起动画bug */
-.novel-writer-extension .inline-drawer {
-    margin-bottom: 12px;
-    border: 1px solid var(--border);
-    border-radius: 5px;
     overflow: hidden;
-    background: var(--secondary-bg);
+    z-index: 99998;
+    opacity: 0;
+    transition: all var(--transition-normal);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-.novel-writer-extension .inline-drawer-header {
+
+/* 面板展开状态 */
+.writer-panel.show {
+    display: flex;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+/* ==============================================
+面板头部样式
+============================================== */
+.panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 12px;
+    padding: 16px 24px;
+    background: linear-gradient(90deg, var(--bg-card) 0%, var(--bg-main) 100%);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.panel-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: var(--text-white);
+    letter-spacing: 0.5px;
+}
+.panel-title i {
+    color: var(--primary);
+    font-size: 1.3rem;
+    text-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* 关闭按钮 */
+.panel-close-btn {
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    color: var(--text-secondary);
     cursor: pointer;
-    user-select: none;
-    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all var(--transition-fast);
 }
-.novel-writer-extension .inline-drawer-content {
-    padding: 12px;
-    border-top: 1px solid var(--border);
-    background: var(--bg);
+.panel-close-btn:hover {
+    background: var(--danger);
+    color: white;
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.5);
+}
+
+/* ==============================================
+选项卡导航样式
+============================================== */
+.panel-tab-nav {
+    display: flex;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+    padding: 0 16px;
+    gap: 4px;
+}
+.panel-tab-item {
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: all var(--transition-fast);
+    font-weight: 600;
+    font-size: 0.9rem;
+    position: relative;
+}
+.panel-tab-item i {
+    font-size: 1rem;
+}
+.panel-tab-item:hover {
+    color: var(--text-primary);
+    background: var(--bg-input);
+}
+.panel-tab-item.active {
+    color: var(--text-white);
+    background: linear-gradient(180deg, var(--primary-dark) 0%, var(--primary) 100%);
+    box-shadow: 0 -2px 12px var(--primary-glow);
+}
+
+/* ==============================================
+选项卡内容容器
+============================================== */
+.panel-tab-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 20px 24px;
+    background: var(--bg-main);
+}
+.panel-tab-panel {
     display: none;
+    animation: fadeInUp var(--transition-normal);
+    height: 100%;
 }
-.novel-writer-extension .inline-drawer.open .inline-drawer-content {
+.panel-tab-panel.active {
     display: block;
 }
-.novel-writer-extension .inline-drawer-icon {
-    transition: transform 0.3s ease;
-}
-.novel-writer-extension .inline-drawer.open .inline-drawer-icon.down {
-    transform: rotate(180deg);
+
+/* 动画 */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-/* 【修复】内嵌抽屉层级样式，避免样式冲突 */
-.novel-writer-extension .inline-drawer .inline-drawer {
-    margin: 8px 0;
-    border: 1px solid var(--border);
-    background: var(--secondary-bg);
+/* ==============================================
+内容卡片样式（核心布局单元）
+============================================== */
+.content-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: all var(--transition-fast);
+}
+.content-card:hover {
+    border-color: var(--border-light);
+    box-shadow: var(--shadow-md);
+}
+.card-main {
+    border-left: 3px solid var(--primary);
+}
+.card-mini {
+    padding: 16px 20px;
 }
 
-/* 【修复】textarea样式，修复返回时高度异常 */
-.novel-writer-extension textarea.form-control {
-    min-height: 60px;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 8px 12px;
-    color: var(--text-color);
-    line-height: 1.5;
+/* 卡片头部 */
+.card-header {
+    padding: 14px 20px;
+    background: linear-gradient(90deg, var(--bg-input) 0%, transparent 100%);
+    border-bottom: 1px solid var(--border-color);
 }
-.novel-writer-extension textarea.form-control[readonly] {
-    background: var(--secondary-bg);
-    cursor: not-allowed;
+.card-header-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
 }
-.novel-writer-extension textarea.form-control:focus {
+.card-header h4 {
+    color: var(--text-white);
+    font-size: 1.05rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+.card-header h4 i {
+    color: var(--primary);
+}
+
+/* 卡片内容 */
+.card-body {
+    padding: 20px;
+}
+
+/* 网格布局 */
+.grid-row {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+.grid-row:last-child {
+    margin-bottom: 0;
+}
+.grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+/* 分割线 */
+.divider-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--border-color) 50%, transparent 100%);
+    margin: 20px 0;
+}
+
+/* ==============================================
+表单元素美化
+============================================== */
+.form-group {
+    width: 100%;
+}
+.form-group-inline {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.form-label-inline {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.form-label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+/* 输入框 */
+.form-input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all var(--transition-fast);
     outline: none;
+}
+.form-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+.form-input::placeholder {
+    color: var(--text-muted);
+}
+
+/* 下拉选择框 */
+.form-select {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    transition: all var(--transition-fast);
+    outline: none;
+    cursor: pointer;
+}
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+
+/* 文本域 */
+.form-textarea {
+    width: 100%;
+    min-height: 60px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    transition: all var(--transition-fast);
+    outline: none;
+    resize: vertical;
+}
+.form-textarea:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+}
+.form-textarea::placeholder {
+    color: var(--text-muted);
+}
+.form-textarea[readonly] {
+    background: var(--bg-main);
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+/* 输入框附带提示 */
+.input-with-tip {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.input-with-tip .form-input {
+    flex: 1;
+}
+.input-tip {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+/* 复选框美化 */
+input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+/* ==============================================
+按钮组件美化
+============================================== */
+.btn {
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 10px 18px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+.btn-sm {
+    padding: 7px 14px;
+    font-size: 0.85rem;
+}
+.btn-lg {
+    padding: 12px 32px;
+    font-size: 1rem;
+}
+
+/* 主按钮 */
+.btn-primary {
+    background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 100%);
+    color: white;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px var(--primary-glow);
+}
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+/* 次要按钮 */
+.btn-secondary {
+    background: linear-gradient(90deg, #0891b2 0%, var(--secondary) 100%);
+    color: var(--bg-main);
+    box-shadow: 0 2px 8px rgba(6, 182, 212, 0.3);
+}
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(6, 182, 212, 0.5);
+}
+
+/* 描边按钮 */
+.btn-outline {
+    background: transparent;
+    border: 1px solid var(--border-light);
+    color: var(--text-secondary);
+}
+.btn-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: rgba(124, 58, 237, 0.1);
+}
+
+/* 危险按钮 */
+.btn-danger {
+    background: var(--danger);
+    color: white;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+}
+.btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5);
+}
+
+/* 禁用状态 */
+.btn:disabled,
+.menu_button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    transform: none !important;
+}
+
+/* 按钮组 */
+.btn-group-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.btn-group-wrap {
+    margin-top: 12px;
+}
+.btn-group-fixed {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+.btn-center {
+    justify-content: center;
+}
+
+/* 文件选择组 */
+.file-select-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+.file-name {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    word-break: break-all;
+}
+
+/* ==============================================
+进度条美化
+============================================== */
+.progress-wrap {
+    padding: 0 20px 12px;
+}
+.progress-text {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-bottom: 6px;
+}
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-input);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 100%);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-normal);
+    box-shadow: 0 0 8px var(--primary-glow);
+}
+
+/* 质量评分 */
+.quality-score {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+.quality-score span {
+    color: var(--primary);
+    font-size: 1.1rem;
+}
+
+/* 状态文本 */
+.status-text {
+    font-weight: 600;
+}
+.status-default {
+    color: var(--text-muted);
+}
+.status-success {
+    color: var(--success);
+}
+.status-danger {
+    color: var(--danger);
+}
+
+/* 空状态提示 */
+.empty-tip {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 40px 20px;
+    font-size: 0.95rem;
+}
+
+/* ==============================================
+章节列表美化
+============================================== */
+.chapter-list {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.chapter-item {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all var(--transition-fast);
+}
+.chapter-item:hover {
+    border-color: var(--primary);
+    background: var(--bg-card-hover);
+}
+.chapter-checkbox {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.chapter-title {
+    font-size: 0.95rem;
+}
+.chapter-item .text-sm {
+    font-size: 0.8rem;
+}
+.chapter-item .text-success {
+    color: var(--success);
+}
+.chapter-item .text-muted {
+    color: var(--text-muted);
+}
+
+/* ==============================================
+抽屉组件美化（原功能完全保留）
+============================================== */
+.inline-drawer {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-bottom: 16px;
+    transition: all var(--transition-fast);
+}
+.inline-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: linear-gradient(90deg, var(--bg-input) 0%, transparent 100%);
+    cursor: pointer;
+    user-select: none;
+    transition: all var(--transition-fast);
+}
+.inline-drawer-header:hover {
+    background: var(--bg-card-hover);
+}
+.inline-drawer-header b {
+    color: var(--text-white);
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.inline-drawer-header b i {
+    color: var(--secondary);
+}
+.inline-drawer-icon {
+    color: var(--text-secondary);
+    transition: transform var(--transition-fast);
+}
+.inline-drawer-content {
+    padding: 20px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-main);
+    display: none;
+    animation: slideDown var(--transition-normal);
+}
+.inline-drawer.open .inline-drawer-content {
+    display: block;
+}
+.inline-drawer.open .inline-drawer-icon.down {
+    transform: rotate(180deg);
+    color: var(--primary);
+}
+
+/* 抽屉动画 */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+    to {
+        opacity: 1;
+        max-height: 1000px;
+    }
+}
+
+.drawer-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+/* ==============================================
+续写链条美化
+============================================== */
+.chain-container {
+    max-height: 650px;
+    overflow-y: auto;
+    padding: 0 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.continue-chapter-item {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    transition: all var(--transition-fast);
+}
+.continue-chapter-item:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+}
+.continue-chapter-title {
+    color: var(--text-white);
+    font-size: 1rem;
+    font-weight: 600;
+}
+.continue-chapter-content {
+    margin-top: 12px;
+    min-height: 100px;
+    background: var(--bg-main);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+    resize: vertical;
+    width: 100%;
+    outline: none;
+    transition: all var(--transition-fast);
+}
+.continue-chapter-content:focus {
     border-color: var(--primary);
 }
 
-/* 【修复】按钮禁用状态样式，与ST原生对齐 */
-.novel-writer-extension .menu_button--disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+/* ==============================================
+小说阅读器完整样式（无限循环滚动根源修复）
+============================================== */
+/* 阅读器整体容器 */
+#tab-reader {
+    display: none;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+#tab-reader.active {
+    display: flex;
+}
+
+/* 阅读器顶部控制栏 */
+.reader-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.reader-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-white);
+}
+.reader-title i {
+    color: var(--primary);
+}
+.reader-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.reader-font-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    gap: 2px;
+}
+
+/* 阅读器内容区域（核心循环BUG根源修复） */
+.reader-content-wrap {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    border-radius: var(--radius-md);
+    background: var(--reader-bg);
+    border: 1px solid var(--border-color);
+    /* 核心修复：彻底阻断滚动链，禁止弹性滚动冒泡到父元素 */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}
+.reader-content {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    padding: 30px 40px;
+    font-size: var(--reader-font-size);
+    line-height: var(--reader-line-height);
+    color: var(--reader-text);
+    word-break: break-word;
+    white-space: pre-wrap;
+    /* 核心修复：彻底根治弹性滚动、循环触发问题 */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+    /* 核心修复：禁用平滑滚动，避免滚动过程中持续触发事件 */
+    scroll-behavior: auto;
+    /* 核心修复：阻止滚动锚定，避免内容变化时自动调整滚动位置 */
+    overflow-anchor: none;
+}
+.reader-empty-tip {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 60px 20px;
+    font-size: 1rem;
+}
+
+/* 透明遮罩（核心修复：完全不拦截滚动，仅响应点击） */
+.reader-click-mask {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    z-index: 1;
+    /* 关键修复：完全不拦截滚动、滑动事件 */
     pointer-events: none;
 }
 
-/* 【修复】flex容器兼容性，小屏幕下自动换行 */
-.novel-writer-extension .flex-container {
+/* 阅读器底部进度条 + 翻章按钮（新增样式） */
+.reader-footer {
     display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    margin-top: 12px;
+    flex-shrink: 0;
+}
+.reader-footer span {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    min-width: 35px;
+}
+.reader-progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--bg-input);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+.reader-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--primary-dark) 0%, var(--primary) 100%);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-fast);
+    box-shadow: 0 0 6px var(--primary-glow);
+}
+/* 翻章按钮样式微调 */
+.reader-footer .btn {
+    white-space: nowrap;
+    min-width: 80px;
 }
 
-/* 【修复】hr样式，与ST原生对齐 */
-.novel-writer-extension hr.sysHR {
-    border: none;
-    border-top: 1px solid var(--border);
-    margin: 12px 0;
+/* 章节选择侧边抽屉 */
+.reader-chapter-drawer {
+    position: absolute;
+    top: 0;
+    left: -320px;
+    width: 320px;
+    height: 100%;
+    background: var(--bg-card);
+    border-right: 1px solid var(--border-color);
+    box-shadow: var(--shadow-lg);
+    transition: left var(--transition-normal);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    /* 修复：阻止滚动冒泡 */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+}
+.reader-chapter-drawer.show {
+    left: 0;
+}
+
+/* 抽屉头部 */
+.reader-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+.reader-drawer-header h3 {
+    color: var(--text-white);
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+.reader-drawer-header h3 i {
+    color: var(--primary);
+}
+
+/* 章节列表 */
+.reader-chapter-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px 0;
+    /* 修复：阻止滚动冒泡 */
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+}
+.reader-chapter-item {
+    padding: 12px 20px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-left: 3px solid transparent;
+    /* 修复：阻止事件冒泡 */
+    user-select: none;
+}
+.reader-chapter-item:hover {
+    background: var(--bg-input);
+    color: var(--text-white);
+    border-left-color: var(--primary-light);
+}
+.reader-chapter-item.active {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--primary-light);
+    border-left-color: var(--primary);
+    font-weight: 600;
+}
+
+/* 续写章节竖向分支样式 */
+.reader-chapter-branch {
+    margin-left: 20px;
+    padding-left: 15px;
+    border-left: 2px solid var(--border-color);
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+.reader-continue-chapter-item {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    /* 修复：阻止事件冒泡 */
+    user-select: none;
+}
+.reader-continue-chapter-item::before {
+    content: "└─";
+    color: var(--border-color);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+.reader-continue-chapter-item:hover {
+    background: var(--bg-input);
+    color: var(--primary-light);
+}
+.reader-continue-chapter-item.active {
+    background: rgba(124, 58, 237, 0.1);
+    color: var(--primary-light);
+    font-weight: 600;
+}
+.reader-continue-chapter-item i {
+    font-size: 0.75rem;
+    color: var(--secondary);
+    flex-shrink: 0;
+}
+
+/* ==============================================
+响应式适配
+============================================== */
+@media (max-width: 768px) {
+    .float-ball {
+        width: 60px;
+        height: 60px;
+        left: calc(100vw - 75px);
+    }
+    .ball-icon {
+        font-size: 1.3rem;
+    }
+    .ball-tip {
+        font-size: 0.6rem;
+    }
+
+    .writer-panel {
+        width: 100vw !important;
+        height: 100vh !important;
+        max-width: 100vw;
+        max-height: 100vh;
+        border-radius: 0;
+        top: 0 !important;
+        left: 0 !important;
+        transform: none !important;
+    }
+
+    .panel-tab-item span {
+        display: none;
+    }
+    .panel-tab-item {
+        padding: 14px;
+        flex: 1;
+        justify-content: center;
+    }
+    .panel-tab-content {
+        padding: 12px 16px;
+    }
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
+    .card-header-inline {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .btn-group-row {
+        width: 100%;
+    }
+    .btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    /* 阅读器移动端适配 */
+    .reader-content {
+        padding: 20px 16px;
+        --reader-font-size: 15px;
+    }
+    .reader-chapter-drawer {
+        width: 80vw;
+        left: -80vw;
+    }
+    .reader-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .reader-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+    .reader-chapter-branch {
+        margin-left: 12px;
+        padding-left: 10px;
+    }
+    /* 移动端按钮适应 */
+    .reader-footer .btn {
+        min-width: 60px;
+        padding: 7px 10px;
+    }
 }
