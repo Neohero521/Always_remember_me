@@ -1,25 +1,26 @@
-/* 基础通用样式 */
-.novel-block {
-    margin-bottom: 12px;
+/* 顶级命名空间，强化样式优先级，避免ST原生样式覆盖，修复返回样式错乱bug */
+.novel-writer-extension * {
+  box-sizing: border-box;
 }
 
-.chapter-item {
+/* 基础通用样式（原有样式保留，强化优先级） */
+.novel-writer-extension .novel-block {
+    margin-bottom: 12px;
+}
+.novel-writer-extension .chapter-item {
     border: 1px solid var(--border);
     background: var(--input-bg);
     border-radius: 5px;
     padding: 10px 12px;
     margin-bottom: 6px;
 }
-
-.chapter-checkbox {
+.novel-writer-extension .chapter-checkbox {
     cursor: pointer;
 }
-
-.chapter-title {
+.novel-writer-extension .chapter-title {
     font-size: 0.95rem;
 }
-
-.progress-bar {
+.novel-writer-extension .progress-bar {
     width: 100%;
     height: 8px;
     background: var(--input-bg);
@@ -27,98 +28,85 @@
     overflow: hidden;
     margin-top: 4px;
 }
-
-.progress-fill {
+.novel-writer-extension .progress-fill {
     height: 100%;
     width: 0%;
     background: var(--primary);
     transition: width 0.3s ease;
 }
 
-/* 通用工具样式 */
-.text-sm {
+/* 通用工具样式（原有样式保留，强化优先级） */
+.novel-writer-extension .text-sm {
     font-size: 0.85rem;
 }
-
-.text-muted {
+.novel-writer-extension .text-muted {
     color: var(--text-muted);
 }
-
-.text-success {
+.novel-writer-extension .text-success {
     color: var(--success);
 }
-
-.text-center {
+.novel-writer-extension .text-danger {
+    color: var(--danger);
+}
+.novel-writer-extension .text-center {
     text-align: center;
 }
-
-.margin0 {
+.novel-writer-extension .margin0 {
     margin: 0;
 }
-
-.margin-t5 {
+.novel-writer-extension .margin-t5 {
     margin-top: 5px;
 }
-
-.margin-b5 {
+.novel-writer-extension .margin-b5 {
     margin-bottom: 5px;
 }
-
-.margin-r5 {
+.novel-writer-extension .margin-r5 {
     margin-right: 5px;
 }
-
-.margin-l5 {
+.novel-writer-extension .margin-l5 {
     margin-left: 5px;
 }
-
-.padding5 {
+.novel-writer-extension .padding5 {
     padding: 5px;
 }
-
-.borderR5 {
+.novel-writer-extension .borderR5 {
     border-radius: 5px;
 }
-
-.gap5 {
+.novel-writer-extension .gap5 {
     gap: 5px;
 }
-
-.flex1 {
+.novel-writer-extension .flex1 {
     flex: 1;
+    min-width: 120px;
 }
-
-.flexColumn {
+.novel-writer-extension .flexColumn {
     flex-direction: column;
 }
-
-.alignCenter {
+.novel-writer-extension .alignCenter {
     align-items: center;
 }
-
-.justifySpaceBetween {
+.novel-writer-extension .justifySpaceBetween {
     justify-content: space-between;
 }
-
-.fontBold {
+.novel-writer-extension .fontBold {
     font-weight: 600;
 }
-
-.w100 {
+.novel-writer-extension .w100 {
     width: 100%;
 }
 
-/* 章节列表滚动容器 */
-.chapter-list {
+/* 章节列表滚动容器（原有样式保留，修复滚动条异常） */
+.novel-writer-extension .chapter-list {
     max-height: 300px;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 8px;
     border: 1px solid var(--border);
     border-radius: 5px;
 }
 
-/* 下拉框样式适配 */
-select.form-control {
+/* 下拉框样式适配（原有样式保留，强化优先级） */
+.novel-writer-extension select.form-control {
     background: var(--input-bg);
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -126,29 +114,108 @@ select.form-control {
     color: var(--text-color);
     cursor: pointer;
 }
-
-select.form-control:focus {
+.novel-writer-extension select.form-control:focus {
     outline: none;
     border-color: var(--primary);
 }
 
-/* 新增：无限续写链条样式 */
-.continue-chapter-item {
+/* 无限续写链条样式（原有样式保留，修复滚动条异常） */
+.novel-writer-extension .continue-chapter-item {
     border: 1px solid var(--border);
     background: var(--input-bg);
     border-radius: 5px;
     padding: 12px;
     margin-bottom: 12px;
 }
-
-.chain-container {
+.novel-writer-extension .chain-container {
     max-height: 800px;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 8px;
     border: 1px solid var(--border);
     border-radius: 5px;
 }
-
-.continue-chapter-content {
+.novel-writer-extension .continue-chapter-content {
     margin-top: 8px;
+    min-height: 100px;
+}
+
+/* 【修复】抽屉核心样式，与ST原生样式完全对齐，修复展开/收起动画bug */
+.novel-writer-extension .inline-drawer {
+    margin-bottom: 12px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    overflow: hidden;
+    background: var(--secondary-bg);
+}
+.novel-writer-extension .inline-drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    cursor: pointer;
+    user-select: none;
+    margin: 0;
+}
+.novel-writer-extension .inline-drawer-content {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+    display: none;
+}
+.novel-writer-extension .inline-drawer.open .inline-drawer-content {
+    display: block;
+}
+.novel-writer-extension .inline-drawer-icon {
+    transition: transform 0.3s ease;
+}
+.novel-writer-extension .inline-drawer.open .inline-drawer-icon.down {
+    transform: rotate(180deg);
+}
+
+/* 【修复】内嵌抽屉层级样式，避免样式冲突 */
+.novel-writer-extension .inline-drawer .inline-drawer {
+    margin: 8px 0;
+    border: 1px solid var(--border);
+    background: var(--secondary-bg);
+}
+
+/* 【修复】textarea样式，修复返回时高度异常 */
+.novel-writer-extension textarea.form-control {
+    min-height: 60px;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+.novel-writer-extension textarea.form-control[readonly] {
+    background: var(--secondary-bg);
+    cursor: not-allowed;
+}
+.novel-writer-extension textarea.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* 【修复】按钮禁用状态样式，与ST原生对齐 */
+.novel-writer-extension .menu_button--disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+/* 【修复】flex容器兼容性，小屏幕下自动换行 */
+.novel-writer-extension .flex-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+/* 【修复】hr样式，与ST原生对齐 */
+.novel-writer-extension hr.sysHR {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 12px 0;
 }
