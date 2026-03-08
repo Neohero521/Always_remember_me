@@ -40,7 +40,8 @@
     font-size: 0.85rem;
 }
 .novel-writer-extension .text-muted {
-    color: var(--text-muted);
+    color: var(--SmartThemeBodyColor, #c9d2dc);
+    opacity: 0.82;
 }
 .novel-writer-extension .text-success {
     color: var(--success);
@@ -94,6 +95,11 @@
 .novel-writer-extension .w100 {
     width: 100%;
 }
+.novel-writer-extension label,
+.novel-writer-extension .form-label,
+.novel-writer-extension b {
+    color: var(--SmartThemeBodyColor, #f5f7fa);
+}
 
 /* 章节列表滚动容器（原有样式保留，修复滚动条异常） */
 .novel-writer-extension .chapter-list {
@@ -105,18 +111,46 @@
     border-radius: 5px;
 }
 
-/* 下拉框样式适配（原有样式保留，强化优先级） */
-.novel-writer-extension select.form-control {
-    background: var(--input-bg);
-    border: 1px solid var(--border);
+/* 输入控件高对比样式，避免不同主题下文字不可读 */
+.novel-writer-extension input[type='text'],
+.novel-writer-extension input[type='number'],
+.novel-writer-extension select,
+.novel-writer-extension textarea.form-control {
+    background: var(--SmartThemeBlurTintColor, rgba(20, 24, 32, 0.92));
+    border: 1px solid var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.28));
     border-radius: 4px;
     padding: 8px 12px;
-    color: var(--text-color);
+    color: var(--SmartThemeBodyColor, #f5f7fa);
+    line-height: 1.5;
+}
+.novel-writer-extension input[type='text']::placeholder,
+.novel-writer-extension input[type='number']::placeholder,
+.novel-writer-extension textarea.form-control::placeholder {
+    color: var(--SmartThemeEmColor, #9ac7ff);
+    opacity: 0.88;
+}
+.novel-writer-extension input[type='text']:focus,
+.novel-writer-extension input[type='number']:focus,
+.novel-writer-extension select:focus,
+.novel-writer-extension textarea.form-control:focus {
+    outline: none;
+    border-color: var(--SmartThemeEmColor, #9ac7ff);
+    box-shadow: 0 0 0 2px rgba(154, 199, 255, 0.22);
+}
+.novel-writer-extension input[type='text']:disabled,
+.novel-writer-extension input[type='number']:disabled,
+.novel-writer-extension select:disabled,
+.novel-writer-extension textarea.form-control[readonly] {
+    background: rgba(20, 24, 32, 0.68);
+    color: var(--SmartThemeBodyColor, #d5dde6);
+    border-color: rgba(255, 255, 255, 0.18);
+    cursor: not-allowed;
+}
+.novel-writer-extension select {
     cursor: pointer;
 }
-.novel-writer-extension select.form-control:focus {
-    outline: none;
-    border-color: var(--primary);
+.novel-writer-extension .chapter-split-hint {
+    line-height: 1.5;
 }
 
 /* 无限续写链条样式（原有样式保留，修复滚动条异常） */
@@ -183,20 +217,6 @@
 /* 【修复】textarea样式，修复返回时高度异常 */
 .novel-writer-extension textarea.form-control {
     min-height: 60px;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 8px 12px;
-    color: var(--text-color);
-    line-height: 1.5;
-}
-.novel-writer-extension textarea.form-control[readonly] {
-    background: var(--secondary-bg);
-    cursor: not-allowed;
-}
-.novel-writer-extension textarea.form-control:focus {
-    outline: none;
-    border-color: var(--primary);
 }
 
 /* 【修复】按钮禁用状态样式，与ST原生对齐 */

@@ -12,8 +12,23 @@
                 <input id="novel-file-upload" type="file" accept=".txt" class="flex1" />
             </div>
             <div class="novel-block flex-container">
+                <label for="chapter-split-mode" class="margin-r5">章节拆分模式</label>
+                <select id="chapter-split-mode" class="flex1 form-control">
+                    <option value="regex">按章节标题正则拆分</option>
+                    <option value="wordCount">按自定义字数拆分</option>
+                </select>
+            </div>
+            <div class="novel-block flex-container">
                 <label for="chapter-regex-input" class="margin-r5">章节拆分正则</label>
                 <input id="chapter-regex-input" type="text" class="flex1" placeholder="^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$" />
+            </div>
+            <div class="novel-block flex-container">
+                <label for="chapter-word-count-input" class="margin-r5">每段目标字数</label>
+                <input id="chapter-word-count-input" type="number" min="200" step="100" class="flex1" value="3000" />
+                <span class="margin-l5 text-muted">按去空白字符计数</span>
+            </div>
+            <div class="novel-block">
+                <p class="text-muted margin0 chapter-split-hint">按字数拆分时会优先保持段落完整，其次按句末断开，最多允许超出目标字数 15%。</p>
             </div>
             <div class="novel-block flex-container">
                 <label for="send-template-input" class="margin-r5">发送命令模板</label>
