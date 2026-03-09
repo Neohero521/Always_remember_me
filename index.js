@@ -1,7 +1,7 @@
 // 严格遵循官方模板导入规范，路径完全对齐原版本
 import { extension_settings, getContext, loadExtensionSettings } from "../../../extensions.js";
 import { saveSettingsDebounced } from "../../../../script.js";
-const extensionName = "Verification";
+const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 // 预设章节拆分正则列表（覆盖全场景，含括号序号格式）
 const presetChapterRegexList = [
