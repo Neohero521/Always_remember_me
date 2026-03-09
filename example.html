@@ -1,47 +1,43 @@
-<!-- 插件根容器（零布局影响，完全隔离原生页面） -->
 <div class="novel-writer-extension-root">
-    <!-- 可移动悬浮球核心元素 -->
-    <div id="novel-writer-float-ball" class="float-ball">
-        <span class="ball-icon">📖</span>
-        <span class="ball-tip">小说续写</span>
+    <!-- 可移动悬浮球 -->
+    <div id="novel-writer-float-ball" class="float-ball" style="visibility: hidden; opacity: 0;">
+        <div class="ball-icon">📖</div>
+        <div class="ball-tip">小说续写</div>
     </div>
-    <!-- 悬浮球展开功能面板 -->
-    <div id="novel-writer-panel" class="novel-writer-extension writer-panel">
+    <!-- 主功能面板 -->
+    <div id="novel-writer-panel" class="writer-panel">
         <!-- 面板头部 -->
         <div class="panel-header">
             <div class="panel-title">
-                <span>✍️</span>
+                <span>📖</span>
                 <span>小说智能续写系统</span>
             </div>
-            <button class="panel-close-btn" id="panel-close-btn" title="关闭面板">
-                <span>✕</span>
-            </button>
+            <button id="panel-close-btn" class="panel-close-btn">✕</button>
         </div>
-        <!-- 多选项卡导航栏 -->
+        <!-- 选项卡导航 -->
         <div class="panel-tab-nav">
-            <button class="panel-tab-item active" data-tab="tab-chapter">
+            <div class="panel-tab-item active" data-tab="tab-chapter">
                 <span>📋</span>
                 <span>章节管理</span>
-            </button>
-            <button class="panel-tab-item" data-tab="tab-graph">
+            </div>
+            <div class="panel-tab-item" data-tab="tab-graph">
                 <span>🧠</span>
                 <span>知识图谱</span>
-            </button>
-            <button class="panel-tab-item" data-tab="tab-write">
+            </div>
+            <div class="panel-tab-item" data-tab="tab-write">
                 <span>✒️</span>
                 <span>内容续写</span>
-            </button>
-            <!-- 小说阅读器选项卡 -->
-            <button class="panel-tab-item" data-tab="tab-reader">
+            </div>
+            <div class="panel-tab-item" data-tab="tab-reader">
                 <span>📚</span>
                 <span>小说阅读</span>
-            </button>
+            </div>
         </div>
         <!-- 选项卡内容容器 -->
         <div class="panel-tab-content">
-            <!-- 选项卡1：章节导入与管理（原模块完整保留，新增功能兼容） -->
+            <!-- 选项卡1：章节管理 -->
             <div class="panel-tab-panel active" id="tab-chapter">
-                <!-- 核心配置卡片 -->
+                <!-- 小说文件解析卡片 -->
                 <div class="content-card card-main">
                     <div class="card-header">
                         <h4><span>📥</span>小说文件解析</h4>
@@ -49,23 +45,15 @@
                     <div class="card-body">
                         <div class="file-select-group">
                             <input id="novel-file-upload" type="file" accept=".txt" style="display: none;">
-                            <button class="btn btn-secondary" id="select-file-btn">
-                                <span>📂</span>选择小说TXT文件
-                            </button>
+                            <button class="btn btn-primary" id="select-file-btn"><span>📂</span>选择小说TXT文件</button>
                             <span id="file-name-text" class="file-name">未选择文件</span>
                         </div>
                         <div class="grid-row grid-2">
                             <div class="form-group">
                                 <label class="form-label">章节拆分正则（自定义优先）</label>
-                                <input id="chapter-regex-input" class="form-input" type="text" value="^\s*第\s*[0-9零一二三四五六七八九十百千]+\s*章.*$" placeholder="请输入章节匹配正则">
+                                <input id="chapter-regex-input" type="text" class="form-input" placeholder="请输入章节拆分正则表达式" value="^\s*第\s*[0-9零一二三四五六七八九十百千]+\s*章.*$">
+                                <span class="input-tip">预设支持的章节格式：标准章节、括号序号(01)、第X节、卷X第X章、Chapter X、第X话、数字序号、中英文序号等</span>
                             </div>
-                            <div class="form-group">
-                                <label class="form-label">发送命令模板</label>
-                                <input id="send-template-input" class="form-input" type="text" value="/sendas name={{char}} {{pipe}}" placeholder="请输入发送命令模板">
-                            </div>
-                        </div>
-                        <!-- 新增：按字数拆分配置 -->
-                        <div class="grid-row grid-2">
                             <div class="form-group">
                                 <label class="form-label">按字数拆分（单章字数1000-10000）</label>
                                 <div class="input-with-tip">
@@ -73,27 +61,33 @@
                                     <span class="input-tip">范围：1000-10000</span>
                                 </div>
                             </div>
-                            <div class="form-group btn-group-fixed">
-                                <input id="split-by-word-btn" class="btn btn-secondary" type="submit" value="按字数拆分章节">
-                            </div>
                         </div>
                         <div class="grid-row grid-2">
                             <div class="form-group">
-                                <label class="form-label">发送间隔(ms)</label>
-                                <input id="send-delay-input" class="form-input" type="number" min="100" max="5000" step="100" value="100">
+                                <label class="form-label">发送命令模板</label>
+                                <input id="send-template-input" type="text" class="form-input" placeholder="请输入发送命令模板" value="/sendas name={{char}} {{pipe}}">
                             </div>
-                            <div class="form-group btn-group-fixed">
-                                <input id="parse-chapter-btn" class="btn btn-primary" type="submit" value="解析章节">
-                                <div class="btn-group-row">
-                                    <input id="select-all-btn" class="btn btn-outline" type="submit" value="全选">
-                                    <input id="unselect-all-btn" class="btn btn-outline" type="submit" value="反选">
-                                </div>
+                            <div class="form-group">
+                                <label class="form-label">发送间隔(ms)</label>
+                                <input id="send-delay-input" type="number" min="0" max="5000" step="10" class="form-input" value="100">
                             </div>
                         </div>
-                        <!-- 新增：预设正则说明 -->
-                        <div class="form-group">
-                            <label class="form-label">预设支持的章节格式（自动匹配最优）</label>
-                            <p class="input-tip">标准章节、括号序号(01)、第X节、卷X第X章、Chapter X、第X话、数字序号、中英文序号等</p>
+                        <div class="btn-group-row btn-center">
+                            <input id="parse-chapter-btn" class="btn btn-primary btn-lg" type="submit" value="解析章节">
+                            <input id="split-by-word-btn" class="btn btn-secondary btn-lg" type="submit" value="按字数拆分">
+                        </div>
+                    </div>
+                </div>
+                <!-- 对话补全预设配置卡片 -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h4><span>⚙️</span>对话补全预设配置</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group form-group-inline">
+                            <label for="auto-parent-preset-switch" class="form-label">自动使用父级对话预设</label>
+                            <input id="auto-parent-preset-switch" type="checkbox" checked />
+                            <span class="input-tip">开启后，续写将使用当前对话的生成预设参数</span>
                         </div>
                     </div>
                 </div>
@@ -102,6 +96,8 @@
                     <div class="card-header card-header-inline">
                         <h4><span>📖</span>章节列表</h4>
                         <div class="btn-group-row">
+                            <button class="btn btn-sm btn-outline" id="select-all-btn">全选</button>
+                            <button class="btn btn-sm btn-outline" id="unselect-all-btn">取消全选</button>
                             <input id="import-selected-btn" class="btn btn-sm btn-primary" type="submit" value="导入选中章节">
                             <input id="import-all-btn" class="btn btn-sm btn-outline" type="submit" value="导入全部章节">
                             <input id="validate-chapter-graph-btn" class="btn btn-sm btn-secondary" type="submit" value="检验图谱状态">
@@ -127,7 +123,7 @@
                     </div>
                 </div>
             </div>
-            <!-- 选项卡2：知识图谱构建与合并（原模块完整保留，新增单章图谱导入导出） -->
+            <!-- 选项卡2：知识图谱构建与合并 -->
             <div class="panel-tab-panel" id="tab-graph">
                 <!-- 图谱生成卡片 -->
                 <div class="content-card card-main">
@@ -144,7 +140,6 @@
                             <div id="graph-progress" class="progress-fill"></div>
                         </div>
                     </div>
-                    <!-- 新增：未合并单章节图谱导入导出 -->
                     <div class="card-body">
                         <div class="btn-group-row btn-group-wrap">
                             <input id="chapter-graph-import-btn" class="btn btn-sm btn-outline" type="submit" value="导入单章节图谱">
@@ -186,7 +181,7 @@
                     <textarea id="graph-validate-content" rows="3" class="form-textarea" readonly placeholder="校验结果将显示在这里..." wrap="soft"></textarea>
                 </div>
             </div>
-            <!-- 选项卡3：小说续写生成（原模块完整保留） -->
+            <!-- 选项卡3：小说续写生成 -->
             <div class="panel-tab-panel" id="tab-write">
                 <!-- 基准章节选择卡片 -->
                 <div class="content-card card-main">
@@ -209,7 +204,7 @@
                         </div>
                     </div>
                 </div>
-                <!-- 前置校验抽屉（原模块完整保留） -->
+                <!-- 前置校验抽屉 -->
                 <div class="inline-drawer" id="drawer-precheck">
                     <div class="inline-drawer-toggle inline-drawer-header">
                         <b><span>🎯</span>续写前置校验与合规边界</b>
@@ -285,7 +280,7 @@
                     </div>
                 </div>
             </div>
-            <!-- 选项卡4 小说阅读器（结构不变，BUG修复保留） -->
+            <!-- 选项卡4 小说阅读器 -->
             <div class="panel-tab-panel" id="tab-reader">
                 <!-- 阅读器顶部控制栏 -->
                 <div class="reader-header">
@@ -295,12 +290,10 @@
                     </div>
                     <div class="reader-controls">
                         <button class="btn btn-sm btn-outline reader-font-btn" id="reader-font-minus" title="缩小字体">
-                            <span>A</span>
-                            <span>-</span>
+                            <span>A</span><span>-</span>
                         </button>
                         <button class="btn btn-sm btn-outline reader-font-btn" id="reader-font-plus" title="放大字体">
-                            <span>A</span>
-                            <span>+</span>
+                            <span>A</span><span>+</span>
                         </button>
                         <button class="btn btn-sm btn-primary" id="reader-chapter-select-btn">
                             <span>📋</span>章节列表
@@ -312,7 +305,6 @@
                     <div class="reader-content" id="reader-content">
                         <p class="reader-empty-tip">请先在「章节管理」中解析小说文件，然后选择章节开始阅读</p>
                     </div>
-                    <!-- 透明遮罩（仅响应点击，不拦截滚动） -->
                     <div class="reader-click-mask" id="reader-click-mask"></div>
                 </div>
                 <!-- 阅读器底部进度条 + 翻章按钮 -->
