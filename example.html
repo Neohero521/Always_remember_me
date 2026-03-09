@@ -39,7 +39,7 @@
         </div>
         <!-- 选项卡内容容器 -->
         <div class="panel-tab-content">
-            <!-- 选项卡1：章节导入与管理（原模块完整保留） -->
+            <!-- 选项卡1：章节导入与管理（原模块完整保留，新增功能兼容） -->
             <div class="panel-tab-panel active" id="tab-chapter">
                 <!-- 核心配置卡片 -->
                 <div class="content-card card-main">
@@ -56,12 +56,25 @@
                         </div>
                         <div class="grid-row grid-2">
                             <div class="form-group">
-                                <label class="form-label">章节拆分正则</label>
+                                <label class="form-label">章节拆分正则（自定义优先）</label>
                                 <input id="chapter-regex-input" class="form-input" type="text" value="^\s*第\s*[0-9零一二三四五六七八九十百千]+\s*章.*$" placeholder="请输入章节匹配正则">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">发送命令模板</label>
                                 <input id="send-template-input" class="form-input" type="text" value="/sendas name={{char}} {{pipe}}" placeholder="请输入发送命令模板">
+                            </div>
+                        </div>
+                        <!-- 新增：按字数拆分配置 -->
+                        <div class="grid-row grid-2">
+                            <div class="form-group">
+                                <label class="form-label">按字数拆分（单章字数1000-10000）</label>
+                                <div class="input-with-tip">
+                                    <input id="split-word-count" type="number" min="1000" max="10000" step="100" class="form-input" value="3000">
+                                    <span class="input-tip">范围：1000-10000</span>
+                                </div>
+                            </div>
+                            <div class="form-group btn-group-fixed">
+                                <input id="split-by-word-btn" class="btn btn-secondary" type="submit" value="按字数拆分章节">
                             </div>
                         </div>
                         <div class="grid-row grid-2">
@@ -76,6 +89,11 @@
                                     <input id="unselect-all-btn" class="btn btn-outline" type="submit" value="反选">
                                 </div>
                             </div>
+                        </div>
+                        <!-- 新增：预设正则说明 -->
+                        <div class="form-group">
+                            <label class="form-label">预设支持的章节格式（自动匹配最优）</label>
+                            <p class="input-tip">标准章节、括号序号(01)、第X节、卷X第X章、Chapter X、第X话、数字序号、中英文序号等</p>
                         </div>
                     </div>
                 </div>
@@ -109,7 +127,7 @@
                     </div>
                 </div>
             </div>
-            <!-- 选项卡2：知识图谱构建与合并（原模块完整保留） -->
+            <!-- 选项卡2：知识图谱构建与合并（原模块完整保留，新增单章图谱导入导出） -->
             <div class="panel-tab-panel" id="tab-graph">
                 <!-- 图谱生成卡片 -->
                 <div class="content-card card-main">
@@ -125,6 +143,14 @@
                         <div class="progress-bar">
                             <div id="graph-progress" class="progress-fill"></div>
                         </div>
+                    </div>
+                    <!-- 新增：未合并单章节图谱导入导出 -->
+                    <div class="card-body">
+                        <div class="btn-group-row btn-group-wrap">
+                            <input id="chapter-graph-import-btn" class="btn btn-sm btn-outline" type="submit" value="导入单章节图谱">
+                            <input id="chapter-graph-export-btn" class="btn btn-sm btn-secondary" type="submit" value="导出单章节图谱">
+                        </div>
+                        <input id="chapter-graph-file-upload" type="file" accept=".json" style="display: none;">
                     </div>
                 </div>
                 <div class="divider-line"></div>
