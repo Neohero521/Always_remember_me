@@ -21,7 +21,7 @@ const presetChapterRegexList = [
 let currentRegexIndex = 0;
 let sortedRegexList = [...presetChapterRegexList];
 let lastParsedText = "";
-// 默认配置（原有字段完全不变，100%兼容旧数据，仅移除自定义预设相关配置）
+// 默认配置（原有字段完全不变，100%兼容旧数据，仅移除自定义预设相关配置，新增分批合并状态）
 const defaultSettings = {
     chapterRegex: "^\\s*第\\s*[0-9零一二三四五六七八九十百千]+\\s*章.*$",
     sendTemplate: "/sendas name={{char}} {{pipe}}",
@@ -58,9 +58,11 @@ const defaultSettings = {
         readProgress: {}
     },
     // 仅保留父级预设开关
-    enableAutoParentPreset: true
+    enableAutoParentPreset: true,
+    // 新增：分批合并中间结果存储
+    batchMergedGraphs: []
 };
-// 全局状态缓存（原有字段完全不变）
+// 全局状态缓存（原有字段完全不变，新增分批合并状态）
 let currentParsedChapters = [];
 let isGeneratingGraph = false;
 let isGeneratingWrite = false;
@@ -71,6 +73,8 @@ let continueWriteChain = [];
 let continueChapterIdCounter = 1;
 let currentPrecheckResult = null;
 let isInitialized = false;
+// 新增：分批合并全局状态
+let batchMergedGraphs = [];
 // 防抖工具函数（新增，修复resize频繁触发问题）
 function debounce(func, delay) {
     let timer = null;
@@ -778,6 +782,112 @@ async function importChapterGraphs(file) {
     reader.readAsText(file, 'UTF-8');
 }
 // ==============================================
+// 新增：分批合并图谱核心功能
+// ==============================================
+async function batchMergeGraphs() {
+    const context = getContext();
+    const { generateRaw } = context;
+    const graphMap = extension_settings[extensionName].chapterGraphMap || {};
+    // 按章节ID升序排序，保证剧情时序正确
+    const sortedChapters = [...currentParsedChapters].sort((a, b) => a.id - b.id);
+    const graphList = sortedChapters.map(chapter => graphMap[chapter.id]).filter(Boolean);
+    
+    if (graphList.length === 0) {
+        toastr.warning('没有可合并的章节图谱，请先生成图谱', "小说续写器");
+        return;
+    }
+    
+    // 获取并校验每批合并数量
+    const batchCount = parseInt($('#batch-merge-count').val()) || 50;
+    if (batchCount < 10 || batchCount > 100) {
+        toastr.error('每批合并章节数必须在10-100之间', "小说续写器");
+        return;
+    }
+    
+    // 清空历史批次结果
+    batchMergedGraphs = [];
+    extension_settings[extensionName].batchMergedGraphs = batchMergedGraphs;
+    saveSettingsDebounced();
+    
+    // 拆分合并批次
+    const batches = [];
+    for (let i = 0; i < graphList.length; i += batchCount) {
+        batches.push(graphList.slice(i, i + batchCount));
+    }
+    
+    isGeneratingGraph = true;
+    stopGenerateFlag = false;
+    let successCount = 0;
+    setButtonDisabled('#graph-batch-merge-btn, #graph-merge-btn, #graph-batch-clear-btn', true);
+    
+    try {
+        toastr.info(`开始分批合并，共${batches.length}个批次，每批最多${batchCount}章`, "小说续写器");
+        for (let i = 0; i < batches.length; i++) {
+            if (stopGenerateFlag) break;
+            
+            const batch = batches[i];
+            const batchNum = i + 1;
+            updateProgress('batch-merge-progress', 'batch-merge-status', batchNum, batches.length, "分批合并进度");
+            
+            // 合并当前批次图谱
+            const systemPrompt = `触发词：合并批次知识图谱JSON、小说批次图谱构建 强制约束（100%遵守）： 输出必须为纯JSON格式，无任何前置/后置内容、注释、markdown 必须以{开头，以}结尾，无其他字符 仅基于提供的当前批次的多组章节图谱合并，不引入任何外部内容 严格去重，同一人物/设定/事件不能重复，不同别名合并为同一条目 同一设定以当前批次内最新章节的生效内容为准，同时保留历史变更记录 严格包含所有要求的字段，不修改字段名 无对应内容设为"暂无"，数组设为[]，不得留空 必须构建完整的反向依赖图谱，支持后续合并与续写 必填字段：全局基础信息、人物信息库、世界观设定库、全剧情时间线、全局文风标准、全量实体关系网络、反向依赖图谱、逆向分析与质量评估`;
+            const userPrompt = `待合并的批次${batchNum}章节图谱列表：\n${JSON.stringify(batch, null, 2)}`;
+            
+            const result = await generateRaw({
+                systemPrompt,
+                prompt: userPrompt,
+                jsonSchema: mergeGraphJsonSchema,
+                ...getActivePresetParams()
+            });
+            
+            const batchMergedGraph = JSON.parse(result.trim());
+            // 追加批次标识信息
+            batchMergedGraph.batchInfo = {
+                batchNumber: batchNum,
+                totalBatches: batches.length,
+                startChapterId: sortedChapters[i * batchCount].id,
+                endChapterId: sortedChapters[Math.min((i + 1) * batchCount - 1, sortedChapters.length - 1)].id,
+                chapterCount: batch.length
+            };
+            batchMergedGraphs.push(batchMergedGraph);
+            successCount++;
+            
+            // 实时保存批次结果
+            extension_settings[extensionName].batchMergedGraphs = batchMergedGraphs;
+            saveSettingsDebounced();
+            
+            // 批次间延迟，避免请求频率过高
+            if (i < batches.length - 1 && !stopGenerateFlag) {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+            }
+        }
+        
+        if (stopGenerateFlag) {
+            toastr.info(`已停止分批合并，成功完成${successCount}/${batches.length}个批次`, "小说续写器");
+        } else {
+            toastr.success(`分批合并完成！共成功合并${successCount}个批次，可点击「整体合并全量图谱」生成最终全量图谱`, "小说续写器");
+        }
+        
+    } catch (error) {
+        console.error('分批合并图谱失败:', error);
+        toastr.error(`分批合并失败：${error.message}，已完成${successCount}个批次`, "小说续写器");
+    } finally {
+        isGeneratingGraph = false;
+        stopGenerateFlag = false;
+        updateProgress('batch-merge-progress', 'batch-merge-status', 0, 0);
+        setButtonDisabled('#graph-batch-merge-btn, #graph-merge-btn, #graph-batch-clear-btn', false);
+    }
+}
+
+// 新增：清空批次合并结果
+function clearBatchMergedGraphs() {
+    batchMergedGraphs = [];
+    extension_settings[extensionName].batchMergedGraphs = batchMergedGraphs;
+    updateProgress('batch-merge-progress', 'batch-merge-status', 0, 0);
+    saveSettingsDebounced();
+    toastr.success('已清空所有批次合并结果', "小说续写器");
+}
+// ==============================================
 // 原有核心工具函数（100%完整保留，复制功能兼容性修复）
 // ==============================================
 async function loadSettings() {
@@ -792,6 +902,8 @@ async function loadSettings() {
     continueWriteChain = extension_settings[extensionName].continueWriteChain || [];
     continueChapterIdCounter = extension_settings[extensionName].continueChapterIdCounter || 1;
     currentPrecheckResult = extension_settings[extensionName].precheckReport || null;
+    // 加载分批合并状态
+    batchMergedGraphs = extension_settings[extensionName].batchMergedGraphs || [];
     const settings = extension_settings[extensionName];
     $("#example_setting").prop("checked", settings.example_setting).trigger("input");
     $("#chapter-regex-input").val(settings.chapterRegex);
@@ -888,7 +1000,7 @@ function initVisibilityListener() {
                 $('#graph-generate-status').text('图谱生成状态异常，请重新点击生成');
                 isGeneratingGraph = false;
                 stopGenerateFlag = false;
-                setButtonDisabled('#graph-single-btn, #graph-batch-btn, #graph-merge-btn', false);
+                setButtonDisabled('#graph-single-btn, #graph-batch-btn, #graph-merge-btn, #graph-batch-merge-btn', false);
             }
             if (isSending) {
                 $('#novel-import-status').text('发送状态异常，请重新点击导入');
@@ -1589,7 +1701,7 @@ function getSelectedChapters() {
     return selectedIndexes.map(index => currentParsedChapters.find(item => item.id === index)).filter(Boolean);
 }
 // ==============================================
-// 原有知识图谱核心函数（100%完整保留，状态重置优化）
+// 原有知识图谱核心函数（100%完整保留，状态重置优化，升级支持分批合并）
 // ==============================================
 async function generateSingleChapterGraph(chapter) {
     const context = getContext();
@@ -1624,7 +1736,7 @@ async function generateChapterGraphBatch(chapters) {
     stopGenerateFlag = false;
     let successCount = 0;
     const graphMap = extension_settings[extensionName].chapterGraphMap || {};
-    setButtonDisabled('#graph-single-btn, #graph-batch-btn, #graph-merge-btn', true);
+    setButtonDisabled('#graph-single-btn, #graph-batch-btn, #graph-merge-btn, #graph-batch-merge-btn', true);
     try {
         for (let i = 0; i < chapters.length; i++) {
             if (stopGenerateFlag) break;
@@ -1656,23 +1768,39 @@ async function generateChapterGraphBatch(chapters) {
         isGeneratingGraph = false;
         stopGenerateFlag = false;
         updateProgress('graph-progress', 'graph-generate-status', 0, 0);
-        setButtonDisabled('#graph-single-btn, #graph-batch-btn, #graph-merge-btn', false);
+        setButtonDisabled('#graph-single-btn, #graph-batch-btn, #graph-merge-btn, #graph-batch-merge-btn', false);
     }
 }
+// 升级：全量图谱合并，支持分批结果合并，原有功能完全保留
 async function mergeAllGraphs() {
     const context = getContext();
     const { generateRaw } = context;
-    const graphMap = extension_settings[extensionName].chapterGraphMap || {};
-    const graphList = Object.values(graphMap);
+    // 优先使用分批合并的结果，无批次结果则使用原有单章节图谱逻辑
+    const batchGraphs = extension_settings[extensionName].batchMergedGraphs || [];
+    let graphList = [];
+    let mergeType = "全量章节";
+    
+    if (batchGraphs.length > 0) {
+        graphList = batchGraphs;
+        mergeType = "批次合并结果";
+    } else {
+        // 原有逻辑完全保留，兼容旧版本使用习惯
+        const graphMap = extension_settings[extensionName].chapterGraphMap || {};
+        graphList = Object.values(graphMap);
+        mergeType = "全量章节";
+    }
+    
     if (graphList.length === 0) {
-        toastr.warning('没有可合并的章节图谱，请先生成图谱', "小说续写器");
+        toastr.warning('没有可合并的图谱，请先生成章节图谱或完成分批合并', "小说续写器");
         return;
     }
-    setButtonDisabled('#graph-merge-btn', true);
+    
+    setButtonDisabled('#graph-merge-btn, #graph-batch-merge-btn', true);
     const systemPrompt = `触发词：合并全量知识图谱JSON、小说全局图谱构建 强制约束（100%遵守）： 输出必须为纯JSON格式，无任何前置/后置内容、注释、markdown 必须以{开头，以}结尾，无其他字符 仅基于提供的多组图谱合并，不引入任何外部内容 严格去重，同一人物/设定/事件不能重复，不同别名合并为同一条目 同一设定以最新章节的生效内容为准，同时保留历史变更记录 严格包含所有要求的字段，不修改字段名 无对应内容设为"暂无"，数组设为[]，不得留空 必须构建完整的反向依赖图谱，支持任意章节续写的前置信息提取 必填字段：全局基础信息、人物信息库、世界观设定库、全剧情时间线、全局文风标准、全量实体关系网络、反向依赖图谱、逆向分析与质量评估`;
-    const userPrompt = `待合并的多组知识图谱：\n${JSON.stringify(graphList, null, 2)}`;
+    const userPrompt = `待合并的${mergeType}图谱列表：\n${JSON.stringify(graphList, null, 2)}`;
+    
     try {
-        toastr.info('开始合并知识图谱，请稍候...', "小说续写器");
+        toastr.info(`开始合并${mergeType}，生成最终全量知识图谱，请稍候...`, "小说续写器");
         const result = await generateRaw({
             systemPrompt,
             prompt: userPrompt,
@@ -1683,14 +1811,14 @@ async function mergeAllGraphs() {
         extension_settings[extensionName].mergedGraph = mergedGraph;
         saveSettingsDebounced();
         $('#merged-graph-preview').val(JSON.stringify(mergedGraph, null, 2));
-        toastr.success('知识图谱合并完成！', "小说续写器");
+        toastr.success(`全量知识图谱合并完成！基于${mergeType}生成`, "小说续写器");
         return mergedGraph;
     } catch (error) {
         console.error('图谱合并失败:', error);
         toastr.error(`图谱合并失败: ${error.message}`, "小说续写器");
         return null;
     } finally {
-        setButtonDisabled('#graph-merge-btn', false);
+        setButtonDisabled('#graph-merge-btn, #graph-batch-merge-btn', false);
     }
 }
 // ==============================================
@@ -1997,7 +2125,7 @@ async function generateNovelWrite() {
     }
 }
 // ==============================================
-// 扩展入口（功能100%完整保留，初始化时序优化，新增事件绑定）
+// 扩展入口（功能100%完整保留，初始化时序优化，新增分批合并事件绑定）
 // ==============================================
 jQuery(async () => {
     try {
@@ -2081,6 +2209,9 @@ jQuery(async () => {
             extension_settings[extensionName].selectedBaseChapterId = "";
             extension_settings[extensionName].writeContentPreview = "";
             extension_settings[extensionName].readerState = structuredClone(defaultSettings.readerState);
+            // 新增：重置分批合并状态
+            extension_settings[extensionName].batchMergedGraphs = [];
+            batchMergedGraphs = [];
             $('#merged-graph-preview').val('');
             $('#write-content-preview').val('');
             continueWriteChain = [];
@@ -2122,6 +2253,9 @@ jQuery(async () => {
             extension_settings[extensionName].selectedBaseChapterId = "";
             extension_settings[extensionName].writeContentPreview = "";
             extension_settings[extensionName].readerState = structuredClone(defaultSettings.readerState);
+            // 新增：重置分批合并状态
+            extension_settings[extensionName].batchMergedGraphs = [];
+            batchMergedGraphs = [];
             $('#merged-graph-preview').val('');
             $('#write-content-preview').val('');
             continueWriteChain = [];
@@ -2270,6 +2404,9 @@ jQuery(async () => {
         saveSettingsDebounced();
         toastr.success('已清空合并图谱', "小说续写器");
     });
+    // 新增：分批合并相关事件绑定
+    $("#graph-batch-merge-btn").off("click").on("click", batchMergeGraphs);
+    $("#graph-batch-clear-btn").off("click").on("click", clearBatchMergedGraphs);
     // 原有续写模块事件
     $("#write-chapter-select").off("change").on("change", function(e) {
         const selectedChapterId = $(e.target).val();
