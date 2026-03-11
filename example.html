@@ -149,11 +149,35 @@
                     </div>
                 </div>
                 <div class="divider-line"></div>
-                <!-- 图谱合并卡片 -->
+                <!-- 图谱合并卡片（新增分批合并功能） -->
                 <div class="content-card">
                     <div class="card-header card-header-inline">
                         <h4><span>📦</span>全量图谱合并</h4>
-                        <input id="graph-merge-btn" class="btn btn-primary" type="submit" value="合并已生成的章节图谱">
+                    </div>
+                    <div class="card-body">
+                        <div class="grid-row grid-2">
+                            <div class="form-group">
+                                <label class="form-label">每批合并章节数（10-100）</label>
+                                <div class="input-with-tip">
+                                    <input id="batch-merge-count" type="number" min="10" max="100" step="10" class="form-input" value="50">
+                                    <span class="input-tip">范围：10-100</span>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">合并进度</label>
+                                <div class="progress-wrap" style="padding: 0; margin: 0;">
+                                    <p id="batch-merge-status" class="progress-text"></p>
+                                    <div class="progress-bar">
+                                        <div id="batch-merge-progress" class="progress-fill"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="btn-group-row btn-center">
+                            <input id="graph-batch-merge-btn" class="btn btn-primary" type="submit" value="分批合并章节图谱">
+                            <input id="graph-merge-btn" class="btn btn-outline" type="submit" value="整体合并全量图谱">
+                            <input id="graph-batch-clear-btn" class="btn btn-danger" type="submit" value="清空批次合并结果">
+                        </div>
                     </div>
                 </div>
                 <!-- 图谱预览卡片 -->
