@@ -5,7 +5,7 @@ import { saveSettingsDebounced, eventSource, event_types } from "../../../../scr
 import * as PromptConstants from './prompt-constants.js';
 
 // ====================== 新增：破限与防空回核心配置 ======================
-const extensionName = "Verification";
+const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 // 破限强制规则（小说创作专属，不影响原有逻辑，仅追加约束）
