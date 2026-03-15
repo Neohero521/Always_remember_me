@@ -4,7 +4,7 @@ import { saveSettingsDebounced, eventSource, event_types } from "../../../../scr
 // 导入抽离的提示词模块
 import * as PromptConstants from './prompt-constants.js';
 // ====================== 新增：破限与防空回核心配置 ======================
-const extensionName = "Always_remember_me";
+const extensionName = "Verification";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 // 破限强制规则（小说创作专属，不影响原有逻辑，仅追加约束）
 const BREAK_LIMIT_PROMPT = `\n\n【全局强制创作规则（必须100%遵守）】
@@ -582,7 +582,7 @@ const FloatBall = {
     }
 };
 // ==============================================
-// 小说阅读器核心模块（原有功能完全保留，死锁BUG修复）
+// 小说阅读器核心模块（点击章节加载BUG完整修复）
 // ==============================================
 const NovelReader = {
     currentChapterId: null,
@@ -616,6 +616,7 @@ const NovelReader = {
         this.bindEvents();
         this.restoreState();
     },
+    // 核心修复：事件绑定改为委托模式，彻底解决重复绑定/点击失效问题
     bindEvents() {
         const fontMinus = document.getElementById("reader-font-minus");
         const fontPlus = document.getElementById("reader-font-plus");
@@ -626,43 +627,64 @@ const NovelReader = {
         const contentWrap = document.querySelector(".reader-content-wrap");
         const contentEl = document.getElementById("reader-content");
         const drawerEl = document.getElementById("reader-chapter-drawer");
-        fontMinus.removeEventListener("click", this.setFontSize.bind(this, this.fontSize - 1));
-        fontPlus.removeEventListener("click", this.setFontSize.bind(this, this.fontSize + 1));
-        chapterSelectBtn.removeEventListener("click", this.showChapterDrawer.bind(this));
-        drawerClose.removeEventListener("click", this.hideChapterDrawer.bind(this));
-        prevChapter.removeEventListener("click", this.loadPrevChapter.bind(this));
-        nextChapter.removeEventListener("click", this.loadNextChapter.bind(this));
-        fontMinus.addEventListener("click", (e) => {
+        const chapterListEl = document.getElementById("reader-chapter-list");
+
+        // 清空原有事件
+        fontMinus.replaceWith(fontMinus.cloneNode(true));
+        fontPlus.replaceWith(fontPlus.cloneNode(true));
+        chapterSelectBtn.replaceWith(chapterSelectBtn.cloneNode(true));
+        drawerClose.replaceWith(drawerClose.cloneNode(true));
+        prevChapter.replaceWith(prevChapter.cloneNode(true));
+        nextChapter.replaceWith(nextChapter.cloneNode(true));
+        contentWrap.replaceWith(contentWrap.cloneNode(true));
+        contentEl.replaceWith(contentEl.cloneNode(true));
+        drawerEl.replaceWith(drawerEl.cloneNode(true));
+        chapterListEl.replaceWith(chapterListEl.cloneNode(true));
+
+        // 重新获取元素
+        const newFontMinus = document.getElementById("reader-font-minus");
+        const newFontPlus = document.getElementById("reader-font-plus");
+        const newChapterSelectBtn = document.getElementById("reader-chapter-select-btn");
+        const newDrawerClose = document.getElementById("reader-drawer-close");
+        const newPrevChapter = document.getElementById("reader-prev-chapter");
+        const newNextChapter = document.getElementById("reader-next-chapter");
+        const newContentWrap = document.querySelector(".reader-content-wrap");
+        const newContentEl = document.getElementById("reader-content");
+        const newDrawerEl = document.getElementById("reader-chapter-drawer");
+        const newChapterListEl = document.getElementById("reader-chapter-list");
+
+        // 基础控制事件
+        newFontMinus.addEventListener("click", (e) => {
             e.stopPropagation();
             this.setFontSize(this.fontSize - 1);
         });
-        fontPlus.addEventListener("click", (e) => {
+        newFontPlus.addEventListener("click", (e) => {
             e.stopPropagation();
             this.setFontSize(this.fontSize + 1);
         });
-        chapterSelectBtn.addEventListener("click", (e) => {
+        newChapterSelectBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             this.showChapterDrawer();
         });
-        drawerClose.addEventListener("click", (e) => {
+        newDrawerClose.addEventListener("click", (e) => {
             e.stopPropagation();
             this.hideChapterDrawer();
         });
-        prevChapter.addEventListener("click", (e) => {
+        newPrevChapter.addEventListener("click", (e) => {
             e.stopPropagation();
             this.loadPrevChapter();
         });
-        nextChapter.addEventListener("click", (e) => {
+        newNextChapter.addEventListener("click", (e) => {
             e.stopPropagation();
             this.loadNextChapter();
         });
-        contentWrap.addEventListener("click", (e) => {
+        newContentWrap.addEventListener("click", (e) => {
             if (e.target.closest(".reader-content") || e.target.closest(".reader-controls") || e.target.closest(".reader-footer") || e.target.closest(".reader-chapter-drawer") || e.target.closest(".btn")) {
                 return;
             }
             this.toggleChapterDrawer();
         });
-        contentEl.addEventListener("scroll", (e) => {
+        newContentEl.addEventListener("scroll", (e) => {
             if (this.isProgrammaticScroll) {
                 e.stopPropagation();
                 return;
@@ -670,18 +692,40 @@ const NovelReader = {
             e.stopPropagation();
             this.updateProgressOnly();
         }, { passive: true });
-        contentEl.addEventListener("wheel", (e) => {
+        newContentEl.addEventListener("wheel", (e) => {
             e.stopPropagation();
         }, { passive: true });
-        contentEl.addEventListener("touchmove", (e) => {
+        newContentEl.addEventListener("touchmove", (e) => {
             e.stopPropagation();
         }, { passive: true });
-        drawerEl.addEventListener("click", (e) => {
+        newDrawerEl.addEventListener("click", (e) => {
             e.stopPropagation();
             e.stopImmediatePropagation();
         });
-        drawerEl.addEventListener("scroll", (e) => {
+        newDrawerEl.addEventListener("scroll", (e) => {
             e.stopPropagation();
+        });
+
+        // 核心修复：章节点击事件委托，绑定到父容器，永久生效，无需重复绑定
+        newChapterListEl.addEventListener("click", (e) => {
+            const chapterItem = e.target.closest(".reader-chapter-item, .reader-continue-chapter-item");
+            if (!chapterItem) return;
+            
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+
+            const chapterId = parseInt(chapterItem.dataset.chapterId);
+            const chapterType = chapterItem.dataset.chapterType;
+            
+            // 校验ID有效性
+            if (isNaN(chapterId)) {
+                toastr.error("章节ID无效，无法加载", "小说阅读器");
+                return;
+            }
+
+            this.loadChapter(chapterId, chapterType);
+            this.hideChapterDrawer();
         });
     },
     updateProgressOnly() {
@@ -706,15 +750,28 @@ const NovelReader = {
         extension_settings[extensionName].readerState.readProgress[progressKey] = validScrollTop;
         saveSettingsDebounced();
     },
+    // 修复：章节列表渲染，移除重复事件绑定，修复章节计数显示
     renderChapterList() {
         const listContainer = document.getElementById("reader-chapter-list");
         const chapterCountEl = document.getElementById("reader-chapter-count");
         const totalChapterCount = currentParsedChapters.length + continueWriteChain.length;
-        chapterCountEl.textContent = `0/${totalChapterCount}`;
+        
+        // 修复：初始化章节计数
+        let currentChapterIndex = 0;
+        if (this.currentChapterId !== null) {
+            if (this.currentChapterType === "original") {
+                currentChapterIndex = currentParsedChapters.findIndex(item => item.id === this.currentChapterId) + 1;
+            } else {
+                currentChapterIndex = currentParsedChapters.length + continueWriteChain.findIndex(item => item.id === this.currentChapterId) + 1;
+            }
+        }
+        chapterCountEl.textContent = `${currentChapterIndex}/${totalChapterCount}`;
+
         if (currentParsedChapters.length === 0) {
             listContainer.innerHTML = '<p class="empty-tip">暂无解析的章节，请先在「章节管理」中解析小说</p>';
             return;
         }
+
         let listHtml = "";
         currentParsedChapters.forEach(chapter => {
             const continueChapters = continueWriteChain.filter(item => item.baseChapterId === chapter.id);
@@ -730,34 +787,30 @@ const NovelReader = {
             }
         });
         listContainer.innerHTML = listHtml;
-        document.querySelectorAll(".reader-chapter-item, .reader-continue-chapter-item").forEach(item => {
-            item.removeEventListener("click", this.chapterClickHandler.bind(this));
-            item.addEventListener("click", this.chapterClickHandler.bind(this));
-        });
     },
-    chapterClickHandler(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        const chapterId = parseInt(e.currentTarget.dataset.chapter-id);
-        const chapterType = e.currentTarget.dataset.chapter-type;
-        this.loadChapter(chapterId, chapterType);
-        this.hideChapterDrawer();
-    },
+    // 核心修复：章节加载逻辑，优化锁机制，确保内容正确渲染
     loadChapter(chapterId, chapterType = "original") {
+        // 强制重置所有锁，避免之前的异常导致无法加载
+        this.resetAllLocks();
+        
         this.isPageTurning = true;
         this.globalPageCooldown = true;
         this.isProgrammaticScroll = true;
+
         const contentEl = document.getElementById("reader-content");
         const titleEl = document.getElementById("reader-current-chapter-title");
         const chapterCountEl = document.getElementById("reader-chapter-count");
         const totalChapterCount = currentParsedChapters.length + continueWriteChain.length;
+        
         let chapterData = null;
         let chapterTitle = "";
         let chapterIndex = 0;
+
+        // 校验章节数据
         if (chapterType === "original") {
             chapterData = currentParsedChapters.find(item => item.id === chapterId);
             if (!chapterData) {
+                toastr.error("原始章节不存在，无法加载", "小说阅读器");
                 this.resetAllLocks();
                 return;
             }
@@ -766,6 +819,7 @@ const NovelReader = {
         } else {
             chapterData = continueWriteChain.find(item => item.id === chapterId);
             if (!chapterData) {
+                toastr.error("续写章节不存在，无法加载", "小说阅读器");
                 this.resetAllLocks();
                 return;
             }
@@ -774,15 +828,24 @@ const NovelReader = {
             chapterTitle = `${baseChapter?.title || '未知章节'} - 续写章节 ${continueIndex}`;
             chapterIndex = currentParsedChapters.length + continueWriteChain.findIndex(item => item.id === chapterId) + 1;
         }
+
+        // 更新全局状态
         this.currentChapterId = chapterId;
         this.currentChapterType = chapterType;
         extension_settings[extensionName].readerState.currentChapterId = chapterId;
         extension_settings[extensionName].readerState.currentChapterType = chapterType;
+
+        // 渲染UI
         titleEl.textContent = chapterTitle;
-        contentEl.textContent = chapterData.content;
+        // 修复：使用innerText确保换行正确渲染，兼容pre-wrap
+        contentEl.innerText = chapterData.content;
         chapterCountEl.textContent = `${chapterIndex}/${totalChapterCount}`;
+
+        // 恢复阅读进度
         const progressKey = `${chapterType}_${chapterId}`;
         const savedScrollTop = extension_settings[extensionName].readerState.readProgress[progressKey] || 0;
+
+        // 多帧确保内容渲染完成后设置滚动位置，避免失效
         requestAnimationFrame(() => {
             contentEl.scrollTop = savedScrollTop;
             requestAnimationFrame(() => {
@@ -797,6 +860,8 @@ const NovelReader = {
                 }, 200);
             });
         });
+
+        // 刷新章节列表高亮
         this.renderChapterList();
         saveSettingsDebounced();
     },
@@ -819,6 +884,7 @@ const NovelReader = {
         if (this.currentChapterType === "original") {
             const currentIndex = currentParsedChapters.findIndex(item => item.id === this.currentChapterId);
             if (currentIndex < 0 || currentIndex >= currentParsedChapters.length - 1) {
+                toastr.info("已经是最后一章了", "小说阅读器");
                 this.resetAllLocks();
                 return;
             }
@@ -838,6 +904,7 @@ const NovelReader = {
             } else {
                 const baseChapterIndex = currentParsedChapters.findIndex(item => item.id === currentChapter.baseChapterId);
                 if (baseChapterIndex < 0 || baseChapterIndex >= currentParsedChapters.length - 1) {
+                    toastr.info("已经是最后一章了", "小说阅读器");
                     this.resetAllLocks();
                     return;
                 }
@@ -873,6 +940,7 @@ const NovelReader = {
         if (this.currentChapterType === "original") {
             const currentIndex = currentParsedChapters.findIndex(item => item.id === this.currentChapterId);
             if (currentIndex <= 0) {
+                toastr.info("已经是第一章了", "小说阅读器");
                 this.resetAllLocks();
                 return;
             }
@@ -945,6 +1013,12 @@ const NovelReader = {
         this.setFontSize(state.fontSize);
         this.currentChapterId = state.currentChapterId;
         this.currentChapterType = state.currentChapterType || "original";
+        // 恢复上次阅读的章节
+        if (this.currentChapterId !== null) {
+            setTimeout(() => {
+                this.loadChapter(this.currentChapterId, this.currentChapterType);
+            }, 300);
+        }
     }
 };
 // ==============================================
