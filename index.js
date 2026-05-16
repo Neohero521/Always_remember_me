@@ -366,7 +366,7 @@ const ThemeManager = {
 
 // ==============================================主程序开始==============================================
 
-const extensionName = "Verification";
+const extensionName = "Always_remember_me";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 const BREAK_LIMIT_PROMPT = `
