@@ -3977,14 +3977,12 @@ async function generateContinueWrite(targetChainId) {
     
     let useGraph = {};
     
-    // 安全检查：确保 mergedGraph 是对象且有内容
-    if (mergedGraph && typeof mergedGraph === 'object' && Object.keys(mergedGraph).length > 0) {
+    if (Object.keys(mergedGraph).length > 0) {
         useGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
         console.log('[时间线优化] 已对合并图谱执行时间线过滤，屏蔽第' + baseChapterId + '章之后的所有内容');
     }
     
-    // 安全检查：确保 preGraph 是对象且有内容
-    if (precheckResult.preGraph && typeof precheckResult.preGraph === 'object' && Object.keys(precheckResult.preGraph).length > 0) {
+    if (Object.keys(precheckResult.preGraph || {}).length > 0) {
         const filteredPreGraph = PromptConstants.filterGraphByTimeline(precheckResult.preGraph, baseChapterId);
         console.log('[时间线优化] 已对前置图谱执行时间线过滤');
         useGraph = filteredPreGraph;
@@ -4152,14 +4150,12 @@ async function generateNovelWrite() {
         
         let useGraph = {};
         
-        // 安全检查：确保 mergedGraph 是对象且有内容
-        if (mergedGraph && typeof mergedGraph === 'object' && Object.keys(mergedGraph).length > 0) {
+        if (Object.keys(mergedGraph).length > 0) {
             useGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
             console.log('[时间线优化] 已对合并图谱执行时间线过滤，屏蔽第' + baseChapterId + '章之后的所有内容');
         }
         
-        // 安全检查：确保 preGraph 是对象且有内容
-        if (precheckResult.preGraph && typeof precheckResult.preGraph === 'object' && Object.keys(precheckResult.preGraph).length > 0) {
+        if (Object.keys(precheckResult.preGraph || {}).length > 0) {
             const filteredPreGraph = PromptConstants.filterGraphByTimeline(precheckResult.preGraph, baseChapterId);
             console.log('[时间线优化] 已对前置图谱执行时间线过滤');
             useGraph = filteredPreGraph;
