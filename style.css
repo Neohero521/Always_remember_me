@@ -3385,8 +3385,8 @@
     .novel-writer-extension-root .card-footer {
         padding: 10px 12px;
         gap: 6px;
-        flex-wrap: wrap;
-        justify-content: center;
+        flex-wrap: nowrap;
+        overflow-x: auto;
     }
     
     /* 6. 表单元素优化 - 大触摸目标 */
@@ -3515,10 +3515,10 @@
     
     .novel-writer-extension-root .action-hints {
         flex-direction: row;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         gap: 8px;
         margin-top: 12px;
-        justify-content: center;
+        overflow-x: auto;
     }
     
     .novel-writer-extension-root .hint-card {
