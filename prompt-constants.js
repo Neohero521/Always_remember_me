@@ -348,3 +348,167 @@ export function getContinueWriteSystemPrompt(options) {
     const { redLines, forbiddenRules, targetLastParagraph, foreshadowList, wordCount, conflictWarning, targetChapterTitle } = options;
     return `小说续写规则（100%遵守）： 人设锁定：续写内容必须完全贴合小说的核心人物设定，绝对不能出现人设崩塌（OOC），严格遵守以下人设红线：${redLines} 设定合规：续写内容必须完全符合小说的世界观设定，绝对不能出现吃书、新增违规设定、违反原有规则的问题，严格遵守以下设定禁区：${forbiddenRules} 文本衔接：续写内容必须紧接在上一章（续写章节 ${targetChapterTitle}）的最后一段之后开始，从那个地方继续写下去，确保文本连续，逻辑自洽。上一章的最后一段内容是："${targetLastParagraph}"续写必须从这段文字之后直接开始，不能重复这段内容。 剧情承接：续写内容必须承接前文所有剧情，合理呼应以下伏笔：${foreshadowList}，开启新章节，且与上述文本衔接要求一致，不得重复前文已有的情节。 文风统一：续写内容必须完全贴合原小说的叙事风格、语言习惯、对话方式、节奏特点，和原文无缝衔接，无风格割裂 剧情合理：续写内容要符合原小说的世界观设定，推动主线剧情发展，有完整的情节起伏、生动的细节、符合人设的对话 输出要求：只输出续写的正文内容，不要任何标题、章节名、解释、备注、说明、分割线 字数要求：续写约${wordCount}字，误差不超过10% 矛盾规避：必须规避以下潜在剧情矛盾：${conflictWarning} 小数据适配：若前文内容较少，严格遵循现有文本的叙事范式、对话模式、剧情节奏，不做风格跳脱的续写，不无限新增设定与人物`;
 }
+
+/**
+ * 从章节节点标识中提取章节号
+ * @param {string} nodeId - 节点唯一标识，如 "chapter_5" 或 "第5章"
+ * @returns {number|null} - 章节号，提取失败返回 null
+ */
+function extractChapterNumber(nodeId) {
+    if (!nodeId || typeof nodeId !== 'string') return null;
+    
+    const patterns = [
+        /chapter[_\s]?(\d+)/i,
+        /第\s*(\d+)\s*章/,
+        /(\d+)\s*章/,
+        /第\s*(\d+)\s*话/,
+        /(\d+)\s*话/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = nodeId.match(pattern);
+        if (match) {
+            return parseInt(match[1], 10);
+        }
+    }
+    return null;
+}
+
+/**
+ * 根据时间线过滤知识图谱，只保留当前章节之前的内容
+ * @param {Object} mergedGraph - 完整的合并图谱
+ * @param {number} baseChapterId - 当前续写基准章节号
+ * @returns {Object} - 过滤后的图谱副本
+ */
+export function filterGraphByTimeline(mergedGraph, baseChapterId) {
+    if (!mergedGraph || typeof mergedGraph !== 'object') {
+        console.warn('[时间线过滤] 无效的图谱数据');
+        return mergedGraph;
+    }
+    
+    if (!baseChapterId || typeof baseChapterId !== 'number') {
+        console.warn('[时间线过滤] 无效的基准章节号');
+        return mergedGraph;
+    }
+    
+    console.log(`[时间线过滤] 开始过滤，基准章节: ${baseChapterId}`);
+    
+    const filteredGraph = JSON.parse(JSON.stringify(mergedGraph));
+    let filteredCount = 0;
+    
+    if (filteredGraph.全剧情时间线?.全本关键事件时序表) {
+        const originalLength = filteredGraph.全剧情时间线.全本关键事件时序表.length;
+        filteredGraph.全剧情时间线.全本关键事件时序表 = filteredGraph.全剧情时间线.全本关键事件时序表.filter(event => {
+            const chapterNum = extractChapterNumber(event.发生章节 || '');
+            if (chapterNum !== null && chapterNum > baseChapterId) {
+                filteredCount++;
+                return false;
+            }
+            return true;
+        });
+        console.log(`[时间线过滤] 事件时序表: ${originalLength} -> ${filteredGraph.全剧情时间线.全本关键事件时序表.length}，过滤 ${filteredCount} 个未来事件`);
+    }
+    
+    if (filteredGraph.全量实体关系网络) {
+        const originalLength = filteredGraph.全量实体关系网络.length;
+        filteredGraph.全量实体关系网络 = filteredGraph.全量实体关系网络.filter(relation => {
+            if (relation.length < 3) return true;
+            
+            for (let i = 0; i < relation.length; i++) {
+                const chapterNum = extractChapterNumber(relation[i]);
+                if (chapterNum !== null && chapterNum > baseChapterId) {
+                    filteredCount++;
+                    return false;
+                }
+            }
+            return true;
+        });
+        console.log(`[时间线过滤] 实体关系网络: ${originalLength} -> ${filteredGraph.全量实体关系网络.length}，过滤 ${filteredCount} 个未来关系`);
+    }
+    
+    if (filteredGraph.人物信息库) {
+        filteredGraph.人物信息库 = filteredGraph.人物信息库.map(character => {
+            const filteredChar = { ...character };
+            
+            if (filteredChar.全时间线人物关系网) {
+                const originalLength = filteredChar.全时间线人物关系网.length;
+                filteredChar.全时间线人物关系网 = filteredChar.全时间线人物关系网.filter(relation => {
+                    const chapterNum = extractChapterNumber(relation.对应章节 || '');
+                    if (chapterNum !== null && chapterNum > baseChapterId) {
+                        return false;
+                    }
+                    return true;
+                });
+                if (originalLength !== filteredChar.全时间线人物关系网.length) {
+                    console.log(`[时间线过滤] 人物 ${character.姓名}: 关系网 ${originalLength} -> ${filteredChar.全时间线人物关系网.length}`);
+                }
+            }
+            
+            if (filteredChar.人物关键事件时间线) {
+                const timelineText = filteredChar.人物关键事件时间线;
+                const lines = timelineText.split('\n').filter(line => {
+                    const chapterNum = extractChapterNumber(line);
+                    return chapterNum === null || chapterNum <= baseChapterId;
+                });
+                filteredChar.人物关键事件时间线 = lines.join('\n');
+            }
+            
+            return filteredChar;
+        });
+    }
+    
+    if (filteredGraph.世界观设定库?.全本所有隐藏设定与伏笔汇总) {
+        const originalLength = filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总.length;
+        filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总 = filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总.filter(foreshadow => {
+            const chapterNum = extractChapterNumber(foreshadow.出现章节 || '');
+            return chapterNum === null || chapterNum <= baseChapterId;
+        });
+        console.log(`[时间线过滤] 伏笔汇总: ${originalLength} -> ${filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总.length}`);
+    }
+    
+    if (filteredGraph.变更与依赖信息) {
+        delete filteredGraph.变更与依赖信息.本章内容对后续剧情的影响预判;
+        console.log('[时间线过滤] 已移除"后续剧情影响预判"字段');
+    }
+    
+    if (filteredGraph.逆向分析与质量评估?.全本隐藏信息汇总) {
+        filteredGraph.逆向分析与质量评估.全本隐藏信息汇总 = '';
+        console.log('[时间线过滤] 已清空"全本隐藏信息汇总"字段');
+    }
+    
+    console.log(`[时间线过滤] 完成，共过滤 ${filteredCount} 个未来时间线的条目`);
+    
+    return filteredGraph;
+}
+
+/**
+ * 构建时间线安全的小说续写提示词
+ * @param {Object} options - 续写选项
+ * @param {string} options.redLines - 人设红线
+ * @param {string} options.forbiddenRules - 设定禁区
+ * @param {string} options.baseLastParagraph - 基准章节最后一段
+ * @param {string} options.foreshadowList - 伏笔列表
+ * @param {number} options.wordCount - 目标字数
+ * @param {string} options.conflictWarning - 矛盾预警
+ * @param {number} options.baseChapterId - 基准章节号（用于时间线验证）
+ * @returns {string} - 系统提示词
+ */
+export function getTimelineSafeWriteSystemPrompt(options) {
+    const { redLines, forbiddenRules, baseLastParagraph, foreshadowList, wordCount, conflictWarning, baseChapterId } = options;
+    const timelineWarning = baseChapterId 
+        ? `【重要】当前续写基准章节为第${baseChapterId}章，续写内容只能基于第${baseChapterId}章及之前发生的情节，绝对不能提前透露或暗示第${baseChapterId}章之后的剧情发展、角色命运或事件结果。如果前文没有明确铺垫，不能凭空创造角色关系或事件。`
+        : '';
+    
+    return `小说续写规则（100%遵守）：
+${timelineWarning}
+人设锁定：续写内容必须完全贴合小说的核心人物设定，绝对不能出现人设崩塌（OOC），严格遵守以下人设红线：${redLines}
+设定合规：续写内容必须完全符合小说的世界观设定，绝对不能出现吃书、新增违规设定、违反原有规则的问题，严格遵守以下设定禁区：${forbiddenRules}
+文本衔接：续写内容必须紧接在基准章节的最后一段之后开始，从那个地方继续写下去，确保文本连续，逻辑自洽。基准章节的最后一段内容是："${baseLastParagraph}"续写必须从这段文字之后直接开始，不能重复这段内容。
+剧情承接：续写内容必须承接前文剧情，合理呼应以下伏笔：${foreshadowList}，开启新的章节内容，且与上述文本衔接要求一致。
+文风统一：续写内容必须完全贴合原小说的叙事风格、语言习惯、对话方式、节奏特点，和原文无缝衔接，无风格割裂
+剧情合理：续写内容要符合原小说的世界观设定，推动主线剧情发展，有完整的情节起伏、生动的细节、符合人设的对话
+输出要求：只输出续写的正文内容，不要任何标题、章节名、解释、备注、说明、分割线
+字数要求：续写约${wordCount}字，误差不超过10%
+矛盾规避：必须规避以下潜在剧情矛盾：${conflictWarning}
+小数据适配：若前文内容较少，严格遵循现有文本的叙事范式、对话模式、剧情节奏，不做风格跳脱的续写，不无限新增设定与人物`;
+}

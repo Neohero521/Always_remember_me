@@ -4110,8 +4110,25 @@ async function generateNovelWrite() {
     $('#write-status').text('正在执行续写前置校验...');
     
     try {
+        const baseChapterId = parseInt(selectedChapterId);
+        console.log(`[时间线优化] 开始续写，基准章节: ${baseChapterId}`);
+        
         const precheckResult = await validateContinuePrecondition(selectedChapterId, editedChapterContent);
-        const useGraph = Object.keys(precheckResult.preGraph).length > 0 ? precheckResult.preGraph : mergedGraph;
+        let preGraph = precheckResult.preGraph || {};
+        
+        if (Object.keys(preGraph).length > 0) {
+            const filteredPreGraph = PromptConstants.filterGraphByTimeline(preGraph, baseChapterId);
+            console.log('[时间线优化] 已对前置图谱执行时间线过滤');
+            preGraph = filteredPreGraph;
+        }
+        
+        let useGraph = Object.keys(preGraph).length > 0 ? preGraph : mergedGraph;
+        
+        if (Object.keys(useGraph).length > 0 && useGraph === mergedGraph) {
+            const filteredMergedGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
+            console.log('[时间线优化] 已对合并图谱执行时间线过滤');
+            useGraph = filteredMergedGraph;
+        }
         
         if (stopGenerateFlag) {
             $('#write-status').text('已停止生成');
@@ -4120,7 +4137,6 @@ async function generateNovelWrite() {
         }
         
         let fullContextContent = '';
-        const baseChapterId = parseInt(selectedChapterId);
         const preBaseChapters = currentParsedChapters.filter(chapter => chapter.id < baseChapterId && chapter.id >= (baseChapterId - 2));
         preBaseChapters.forEach(chapter => {
             fullContextContent += `${chapter.title}\n${chapter.content}\n\n`;
@@ -4129,18 +4145,36 @@ async function generateNovelWrite() {
         const baseChapterTitle = currentParsedChapters.find(c => c.id === baseChapterId)?.title || '基准章节';
         fullContextContent += `${baseChapterTitle}\n${editedChapterContent}\n\n`;
         
-        const systemPrompt = PromptConstants.getNovelWriteSystemPrompt({
-            redLines: precheckResult.redLines,
-            forbiddenRules: precheckResult.forbiddenRules,
-            baseLastParagraph: baseLastParagraph,
-            foreshadowList: precheckResult.foreshadowList,
-            wordCount: wordCount,
-            conflictWarning: precheckResult.conflictWarning
-        });
+        const isTimelineSafeMode = Object.keys(useGraph).length > 0 && useGraph !== mergedGraph;
         
-        const userPrompt = `小说核心设定知识图谱：${JSON.stringify(useGraph)} 基准章节内容：${editedChapterContent} 请基于以上内容续写后续章节。`;
+        let systemPrompt;
+        let userPrompt;
         
-        $('#write-status').text('正在生成续写章节...');
+        if (isTimelineSafeMode) {
+            systemPrompt = PromptConstants.getTimelineSafeWriteSystemPrompt({
+                redLines: precheckResult.redLines,
+                forbiddenRules: precheckResult.forbiddenRules,
+                baseLastParagraph: baseLastParagraph,
+                foreshadowList: precheckResult.foreshadowList,
+                wordCount: wordCount,
+                conflictWarning: precheckResult.conflictWarning,
+                baseChapterId: baseChapterId
+            });
+            userPrompt = `小说核心设定知识图谱（仅包含第${baseChapterId}章及之前的剧情）：${JSON.stringify(useGraph)} 基准章节内容（第${baseChapterId}章）：${editedChapterContent} 请基于以上内容续写后续章节。`;
+            $('#write-status').text('正在生成续写章节（时间线安全模式）...');
+        } else {
+            systemPrompt = PromptConstants.getNovelWriteSystemPrompt({
+                redLines: precheckResult.redLines,
+                forbiddenRules: precheckResult.forbiddenRules,
+                baseLastParagraph: baseLastParagraph,
+                foreshadowList: precheckResult.foreshadowList,
+                wordCount: wordCount,
+                conflictWarning: precheckResult.conflictWarning
+            });
+            userPrompt = `小说核心设定知识图谱：${JSON.stringify(useGraph)} 基准章节内容：${editedChapterContent} 请基于以上内容续写后续章节。`;
+            $('#write-status').text('正在生成续写章节...');
+        }
+        
         let continueContent = await generateRawWithBreakLimit({ systemPrompt, prompt: userPrompt, ...getActivePresetParams()});
         
         if (stopGenerateFlag) {
@@ -4188,7 +4222,8 @@ async function generateNovelWrite() {
         }
         
         $('#write-content-preview').val(continueContent);
-        $('#write-status').text('续写章节生成完成！');
+        const completionMessage = isTimelineSafeMode ? '续写章节生成完成（时间线安全）！' : '续写章节生成完成！';
+        $('#write-status').text(completionMessage);
         extension_settings[extensionName].writeContentPreview = continueContent;
         saveSettingsDebounced();
         
@@ -4196,7 +4231,7 @@ async function generateNovelWrite() {
             id: continueChapterIdCounter++,
             title: `续写章节 ${continueWriteChain.length + 1}`,
             content: continueContent,
-            baseChapterId: parseInt(selectedChapterId)
+            baseChapterId: baseChapterId
         };
         
         continueWriteChain.push(newChapter);
@@ -4207,7 +4242,8 @@ async function generateNovelWrite() {
         await updateGraphWithContinueContent(newChapter, newChapter.id);
         renderContinueWriteChain(continueWriteChain);
         NovelReader.renderChapterList();
-        toastr.success('续写章节生成完成！', "小说续写器");
+        const successMessage = isTimelineSafeMode ? '续写章节生成完成（时间线安全模式）！' : '续写章节生成完成！';
+        toastr.success(successMessage, "小说续写器");
     } catch (error) {
         if (!stopGenerateFlag) {
             console.error('续写生成失败:', error);
