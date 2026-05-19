@@ -3974,20 +3974,18 @@ async function generateContinueWrite(targetChainId) {
     console.log(`[时间线优化] 开始续写链续写，基准章节: ${baseChapterId}`);
     
     const precheckResult = await validateContinuePrecondition(selectedBaseChapterId, editedBaseChapterContent);
-    let preGraph = precheckResult.preGraph || {};
     
-    if (Object.keys(preGraph).length > 0) {
-        const filteredPreGraph = PromptConstants.filterGraphByTimeline(preGraph, baseChapterId);
-        console.log('[时间线优化] 已对前置图谱执行时间线过滤');
-        preGraph = filteredPreGraph;
+    let useGraph = {};
+    
+    if (Object.keys(mergedGraph).length > 0) {
+        useGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
+        console.log('[时间线优化] 已对合并图谱执行时间线过滤，屏蔽第' + baseChapterId + '章之后的所有内容');
     }
     
-    let useGraph = Object.keys(preGraph).length > 0 ? preGraph : mergedGraph;
-    
-    if (Object.keys(useGraph).length > 0 && useGraph === mergedGraph) {
-        const filteredMergedGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
-        console.log('[时间线优化] 已对合并图谱执行时间线过滤');
-        useGraph = filteredMergedGraph;
+    if (Object.keys(precheckResult.preGraph || {}).length > 0) {
+        const filteredPreGraph = PromptConstants.filterGraphByTimeline(precheckResult.preGraph, baseChapterId);
+        console.log('[时间线优化] 已对前置图谱执行时间线过滤');
+        useGraph = filteredPreGraph;
     }
     
     let fullContextContent = '';
@@ -4005,7 +4003,7 @@ async function generateContinueWrite(targetChainId) {
         fullContextContent += `续写章节 ${chapterNum}\n${chapter.content}\n\n`;
     });
     
-    const isTimelineSafeMode = Object.keys(useGraph).length > 0 && useGraph !== mergedGraph;
+    const isTimelineSafeMode = Object.keys(useGraph).length > 0 && baseChapterId > 0;
     
     let systemPrompt;
     let userPrompt;
@@ -4149,20 +4147,18 @@ async function generateNovelWrite() {
         console.log(`[时间线优化] 开始续写，基准章节: ${baseChapterId}`);
         
         const precheckResult = await validateContinuePrecondition(selectedChapterId, editedChapterContent);
-        let preGraph = precheckResult.preGraph || {};
         
-        if (Object.keys(preGraph).length > 0) {
-            const filteredPreGraph = PromptConstants.filterGraphByTimeline(preGraph, baseChapterId);
-            console.log('[时间线优化] 已对前置图谱执行时间线过滤');
-            preGraph = filteredPreGraph;
+        let useGraph = {};
+        
+        if (Object.keys(mergedGraph).length > 0) {
+            useGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
+            console.log('[时间线优化] 已对合并图谱执行时间线过滤，屏蔽第' + baseChapterId + '章之后的所有内容');
         }
         
-        let useGraph = Object.keys(preGraph).length > 0 ? preGraph : mergedGraph;
-        
-        if (Object.keys(useGraph).length > 0 && useGraph === mergedGraph) {
-            const filteredMergedGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
-            console.log('[时间线优化] 已对合并图谱执行时间线过滤');
-            useGraph = filteredMergedGraph;
+        if (Object.keys(precheckResult.preGraph || {}).length > 0) {
+            const filteredPreGraph = PromptConstants.filterGraphByTimeline(precheckResult.preGraph, baseChapterId);
+            console.log('[时间线优化] 已对前置图谱执行时间线过滤');
+            useGraph = filteredPreGraph;
         }
         
         if (stopGenerateFlag) {
@@ -4180,7 +4176,7 @@ async function generateNovelWrite() {
         const baseChapterTitle = currentParsedChapters.find(c => c.id === baseChapterId)?.title || '基准章节';
         fullContextContent += `${baseChapterTitle}\n${editedChapterContent}\n\n`;
         
-        const isTimelineSafeMode = Object.keys(useGraph).length > 0 && useGraph !== mergedGraph;
+        const isTimelineSafeMode = Object.keys(useGraph).length > 0 && baseChapterId > 0;
         
         let systemPrompt;
         let userPrompt;
