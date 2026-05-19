@@ -3039,31 +3039,23 @@ function renderBookshelf() {
             // 列表视图（默认）
             const isSelected = selectedNovelIds.has(novel.id);
             return `
-                <div class="book-item ${isCurrentNovel ? 'active' : ''} ${isSelected ? 'selected' : ''}" data-novel-id="${novel.id}" draggable="true">
-                    <input type="checkbox" class="book-checkbox" data-novel-id="${novel.id}" ${isSelected ? 'checked' : ''}>
-                    <div class="drag-handle drag-handle-icon" title="拖拽排序">☰</div>
+                <div class="book-item ${isCurrentNovel ? 'active' : ''} ${isSelected ? 'selected' : ''}" data-novel-id="${novel.id}">
                     <div class="book-info">
                         <div class="book-title">${escapeHtml(novel.name)}</div>
                         ${(novel.tags || []).length > 0 ? `
                             <div class="book-tags-list">
-                                ${novel.tags.map(tag => `<span class="book-tag">${escapeHtml(tag)}</span>`).join('')}
+                                ${novel.tags.slice(0, 3).map(tag => `<span class="book-tag">${escapeHtml(tag)}</span>`).join('')}
                             </div>
                         ` : ''}
                         <div class="book-meta">
-                            <span class="book-meta-item" title="章节数">📖 ${chapterCount} 章节</span>
-                            <span class="book-meta-item" title="图谱数">🧠 ${graphCount} 图谱</span>
-                            <span class="book-meta-item" title="创建时间">📅 ${createdAt}</span>
-                            <span class="book-meta-item" title="更新时间">⏰ ${updatedAt}</span>
+                            <span class="book-meta-item">${chapterCount} 章节</span>
+                            <span class="book-meta-item">${graphCount} 图谱</span>
                         </div>
                     </div>
                     <div class="book-actions">
                         <button class="btn btn-sm ${isCurrentNovel ? 'btn-primary' : 'btn-secondary'} load-book-btn" data-novel-id="${novel.id}" title="加载">
-                            ${isCurrentNovel ? '✓ 使用中' : '📂 加载'}
+                            ${isCurrentNovel ? '✓ 使用中' : '加载'}
                         </button>
-                        <button class="btn btn-sm btn-icon rename-book-btn" data-novel-id="${novel.id}" title="重命名">✏️</button>
-                        <button class="btn btn-sm btn-icon copy-book-btn" data-novel-id="${novel.id}" title="复制">📋</button>
-                        <button class="btn btn-sm btn-icon export-book-btn" data-novel-id="${novel.id}" title="导出">💾</button>
-                        <button class="btn btn-sm btn-icon delete-book-btn" data-novel-id="${novel.id}" title="删除">🗑️</button>
                     </div>
                 </div>
             `;
