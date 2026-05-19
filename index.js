@@ -2928,7 +2928,7 @@ function renderBookshelf() {
     const settings = extension_settings[extensionName];
     const sortBy = settings.bookshelfSortBy || 'updatedAt';
     const sortOrder = settings.bookshelfSortOrder || 'desc';
-    const viewMode = settings.bookshelfViewMode || 'list';
+    const viewMode = 'list';
     const searchQuery = (settings.bookshelfSearchQuery || '').toLowerCase();
     const filterTag = settings.bookshelfFilterByTag || '';
 
