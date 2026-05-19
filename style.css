@@ -3522,10 +3522,13 @@
         padding: 12px;
         border-radius: 6px;
         gap: 10px;
+        flex-direction: row;
+        align-items: center;
     }
     
     .novel-writer-extension-root .upload-icon {
         font-size: 1.5rem;
+        flex-shrink: 0;
     }
     
     .novel-writer-extension-root .upload-icon .svg-icon {
@@ -3554,6 +3557,49 @@
         min-width: 0;
     }
     
+    .novel-writer-extension-root .bookshelf-toolbar {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .content-card {
+        margin-bottom: 0;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .card-body {
+        padding: 10px;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .upload-zone-compact {
+        gap: 8px;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .upload-zone-content-compact {
+        padding: 10px;
+        gap: 8px;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .upload-text {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .upload-zone-right {
+        gap: 8px;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .form-input-compact {
+        padding: 8px 10px;
+        font-size: 14px;
+    }
+    
+    .novel-writer-extension-root .bookshelf-toolbar .btn-compact {
+        padding: 10px 14px;
+        font-size: 0.85rem;
+    }
+    
     .novel-writer-extension-root .import-export-row {
         flex-direction: column;
         gap: 8px;
@@ -3569,15 +3615,28 @@
         grid-template-columns: repeat(2, 1fr);
         gap: 10px;
         padding: 8px;
+        min-height: 200px;
     }
     
     .novel-writer-extension-root .book-grid-item {
         border-radius: 6px;
         overflow: hidden;
+        background: var(--novel-bg-card);
+        border: 2px solid var(--novel-border-color);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    
+    .novel-writer-extension-root .book-grid-item:active {
+        transform: scale(0.96);
     }
     
     .novel-writer-extension-root .book-cover-placeholder {
         height: 120px;
+        background: linear-gradient(135deg, var(--novel-bg-elevated) 0%, var(--novel-bg-card) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .novel-writer-extension-root .book-cover-icon {
@@ -3606,9 +3665,9 @@
     
     .novel-writer-extension-root .book-grid-meta {
         font-size: 0.65rem;
+        color: var(--novel-text-muted);
     }
     
-    /* 13. 书架列表视图优化 */
     .novel-writer-extension-root .bookshelf-list {
         gap: 8px;
         padding: 8px;
@@ -3664,19 +3723,42 @@
     .novel-writer-extension-root .card-list .card-header {
         flex-direction: column;
         align-items: stretch;
-        gap: 8px;
+        gap: 10px;
+        padding: 10px 12px;
+    }
+    
+    .novel-writer-extension-root .card-list .card-title-group {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
     }
     
     .novel-writer-extension-root .card-actions {
         flex-wrap: wrap;
         gap: 6px;
         justify-content: flex-start;
+        width: 100%;
     }
     
     .novel-writer-extension-root .card-actions .form-input,
     .novel-writer-extension-root .card-actions .form-select {
         flex: 1;
         min-width: 100px;
+        max-width: 150px;
+    }
+    
+    .novel-writer-extension-root .card-actions .btn-icon {
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
+    }
+    
+    .novel-writer-extension-root #bookshelf-search-input,
+    .novel-writer-extension-root #bookshelf-sort-select {
+        height: 36px;
+        padding: 6px 10px;
+        font-size: 14px;
     }
     
     /* 15. 抽屉优化 - 移动端侧边抽屉 */
@@ -3685,24 +3767,36 @@
         border-radius: 0;
         border: none;
         border-top: 2px solid var(--novel-border-color);
+        border-bottom: 2px solid var(--novel-border-color);
         margin-bottom: 10px;
+        background: var(--novel-bg-card);
     }
     
     .novel-writer-extension-root .drawer-header,
     .novel-writer-extension-root .inline-drawer-header {
         padding: 12px;
         min-height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        cursor: pointer;
+        user-select: none;
     }
     
     .novel-writer-extension-root .drawer-title,
     .novel-writer-extension-root .inline-drawer-title {
         font-size: 0.9rem;
         gap: 8px;
+        display: flex;
+        align-items: center;
+        flex: 1;
     }
     
     .novel-writer-extension-root .drawer-icon,
     .novel-writer-extension-root .inline-drawer-icon {
         font-size: 1rem;
+        flex-shrink: 0;
     }
     
     .novel-writer-extension-root .drawer-icon .svg-icon,
@@ -3720,6 +3814,9 @@
     .novel-writer-extension-root .drawer-indicator,
     .novel-writer-extension-root .inline-drawer-indicator {
         gap: 8px;
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
     }
     
     .novel-writer-extension-root .drawer-content,
@@ -3731,6 +3828,12 @@
         width: 85vw;
         left: -85vw;
         border-radius: 0;
+        position: fixed;
+        top: 0;
+        height: 100vh;
+        z-index: 999999;
+        border: none;
+        border-right: 2px solid var(--novel-border-color);
     }
     
     /* 16. 进度条优化 */
@@ -3765,36 +3868,58 @@
         max-height: 300px;
         padding: 10px;
         gap: 8px;
+        border: 2px solid var(--novel-border-color);
+        border-radius: 6px;
+        background: var(--novel-bg-card);
     }
     
     .novel-writer-extension-root .continue-chapter-item {
         padding: 12px;
         border-radius: 6px;
+        border: 1px solid var(--novel-border-color);
+        background: var(--novel-bg-elevated);
     }
     
     .novel-writer-extension-root .chapter-header {
         gap: 6px;
         margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
     }
     
     .novel-writer-extension-root .chapter-number {
         font-size: 0.75rem;
         padding: 2px 6px;
+        background: var(--novel-primary);
+        color: var(--novel-bg-card);
+        border-radius: 3px;
+        font-weight: 700;
     }
     
     .novel-writer-extension-root .chapter-timestamp {
         font-size: 0.65rem;
+        color: var(--novel-text-muted);
+        margin-left: auto;
     }
     
     .novel-writer-extension-root .chapter-preview {
         font-size: 0.85rem;
         line-height: 1.5;
+        color: var(--novel-text-secondary);
+        margin-bottom: 8px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
     
     .novel-writer-extension-root .chapter-actions {
         gap: 6px;
         margin-top: 8px;
         flex-wrap: wrap;
+        display: flex;
+        gap: 6px;
     }
     
     /* 18. 阅读器优化 - 移动端阅读体验 */
@@ -3809,12 +3934,16 @@
         position: sticky;
         top: 0;
         z-index: 50;
+        display: flex;
+        min-height: 48px;
     }
     
     .novel-writer-extension-root .reader-title {
         flex: 1;
         min-width: 0;
         gap: 8px;
+        display: flex;
+        align-items: center;
     }
     
     .novel-writer-extension-root .reader-icon {
@@ -3842,22 +3971,30 @@
     
     #reader-chapter-count {
         font-size: 0.7rem;
+        color: var(--novel-text-muted);
     }
     
     .novel-writer-extension-root .reader-controls {
         flex-shrink: 0;
         gap: 8px;
         align-items: center;
+        display: flex;
     }
     
     .novel-writer-extension-root .font-size-control {
         gap: 6px;
+        display: flex;
+        align-items: center;
     }
     
     .novel-writer-extension-root .reader-font-btn {
         width: 32px;
         height: 32px;
         font-size: 0.9rem;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
     
     .novel-writer-extension-root .font-size-display {
@@ -3873,16 +4010,25 @@
         line-height: 1.8;
         flex: 1;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        color: var(--novel-reader-text);
+        background: var(--novel-reader-bg);
     }
     
     .novel-writer-extension-root .reader-empty-state {
         padding: 40px 20px;
         text-align: center;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
     
     .novel-writer-extension-root .reader-empty-icon {
         font-size: 3rem;
         margin-bottom: 16px;
+        opacity: 0.6;
     }
     
     .novel-writer-extension-root .reader-empty-icon .svg-icon {
@@ -3893,6 +4039,7 @@
     .novel-writer-extension-root .reader-empty-text {
         font-size: 0.9rem;
         line-height: 1.6;
+        color: var(--novel-text-secondary);
     }
     
     .novel-writer-extension-root .reader-footer {
@@ -3903,6 +4050,8 @@
         position: sticky;
         bottom: 0;
         z-index: 50;
+        display: flex;
+        min-height: 60px;
     }
     
     .novel-writer-extension-root .reader-nav-btn {
@@ -3910,6 +4059,10 @@
         padding: 10px;
         font-size: 0.85rem;
         min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
     }
     
     .novel-writer-extension-root .nav-icon .svg-icon {
@@ -3920,33 +4073,47 @@
     .novel-writer-extension-root .reader-progress-wrapper {
         flex: 2;
         gap: 8px;
+        display: flex;
+        align-items: center;
     }
     
     .novel-writer-extension-root .reader-progress-text {
         font-size: 0.75rem;
         font-weight: 700;
         min-width: 36px;
+        text-align: center;
     }
     
     .novel-writer-extension-root .reader-progress-bar {
         flex: 1;
         height: 6px;
         border-radius: 3px;
+        background: var(--novel-bg-elevated);
+        overflow: hidden;
     }
     
     .novel-writer-extension-root .reader-progress-fill {
         border-radius: 3px;
+        height: 100%;
+        background: var(--novel-primary);
+        transition: width 0.3s;
     }
     
     /* 19. 空状态优化 */
     .novel-writer-extension-root .empty-state {
-        padding: 30px 20px;
+        padding: 40px 20px;
         text-align: center;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
     }
     
     .novel-writer-extension-root .empty-icon {
         font-size: 3rem;
         margin-bottom: 12px;
+        opacity: 0.6;
     }
     
     .novel-writer-extension-root .empty-icon .svg-icon {
@@ -3957,6 +4124,11 @@
     .novel-writer-extension-root .empty-text {
         font-size: 0.9rem;
         line-height: 1.6;
+        color: var(--novel-text-secondary);
+    }
+    
+    .novel-writer-extension-root .empty-state .btn {
+        margin-top: 16px;
     }
     
     /* 20. 模态框优化 */
@@ -3964,6 +4136,7 @@
         padding: 20px;
         align-items: flex-end;
         justify-content: center;
+        background: rgba(0, 0, 0, 0.5);
     }
     
     .novel-writer-extension-root .modal-content {
@@ -3974,30 +4147,52 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
+        background: var(--novel-bg-card);
+        border: 2px solid var(--novel-border-color);
     }
     
     .novel-writer-extension-root .modal-header {
-        padding: 16px;
+        padding: 14px 16px;
         border-bottom: 2px solid var(--novel-border-color);
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    
+    .novel-writer-extension-root .modal-title {
+        font-size: 1rem;
+        font-weight: 700;
+        flex: 1;
     }
     
     .novel-writer-extension-root .modal-body {
         padding: 16px;
         flex: 1;
         overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .novel-writer-extension-root .modal-footer {
-        padding: 16px;
+        padding: 14px 16px;
         gap: 10px;
         border-top: 2px solid var(--novel-border-color);
         flex-shrink: 0;
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+    
+    .novel-writer-extension-root .modal-footer .btn {
+        flex: 1;
+        min-width: 100px;
     }
     
     .novel-writer-extension-root .modal-close-btn {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
+        flex-shrink: 0;
     }
     
     /* 21. 切换开关优化 */
@@ -4045,10 +4240,14 @@
         bottom: 60px;
         z-index: 90;
         margin-bottom: 10px;
+        background: var(--novel-bg-card);
+        border: 2px solid var(--novel-border-color);
     }
     
     .novel-writer-extension-root .batch-info {
         text-align: center;
+        font-size: 0.9rem;
+        font-weight: 700;
     }
     
     .novel-writer-extension-root .batch-buttons {
@@ -4057,22 +4256,34 @@
         justify-content: center;
     }
     
+    .novel-writer-extension-root .batch-buttons .btn {
+        flex: 1;
+        min-width: 100px;
+        justify-content: center;
+    }
+    
     /* 25. 标签筛选优化 */
     .novel-writer-extension-root .bookshelf-tag-filter {
         padding: 10px;
         border-radius: 6px;
         margin-bottom: 10px;
+        background: var(--novel-bg-card);
+        border: 2px solid var(--novel-border-color);
     }
     
     .novel-writer-extension-root .tag-filter-header {
         gap: 8px;
         margin-bottom: 8px;
+        flex-wrap: wrap;
+        align-items: center;
     }
     
     .novel-writer-extension-root .tag-filter-label {
         font-size: 0.85rem;
         font-weight: 700;
         gap: 6px;
+        display: flex;
+        align-items: center;
     }
     
     .novel-writer-extension-root .tag-filter-label .svg-icon {
@@ -4083,6 +4294,22 @@
     .novel-writer-extension-root .bookshelf-tag-list {
         gap: 6px;
         flex-wrap: wrap;
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+    .novel-writer-extension-root .bookshelf-tag-list .tag {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        border-radius: 4px;
+        background: var(--novel-bg-elevated);
+        border: 1px solid var(--novel-border-color);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .novel-writer-extension-root .bookshelf-tag-list .tag:active {
+        transform: scale(0.95);
     }
     
     /* 26. 验证徽章优化 */
