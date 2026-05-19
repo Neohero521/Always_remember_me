@@ -3,6 +3,42 @@
    Modern UI Design for Novel Writer Extension
    ============================================== */
 
+/* ==============================================SVG 图标库============================================== */
+.novel-writer-extension-root .svg-icon {
+    width: 1em;
+    height: 1em;
+    display: inline-block;
+    vertical-align: middle;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+/* 特定场景下的图标样式调整 */
+.novel-writer-extension-root .ball-icon .svg-icon,
+.novel-writer-extension-root .title-icon .svg-icon,
+.novel-writer-extension-root .tab-icon .svg-icon,
+.novel-writer-extension-root .card-icon .svg-icon,
+.novel-writer-extension-root .upload-icon .svg-icon,
+.novel-writer-extension-root .empty-icon .svg-icon,
+.novel-writer-extension-root .btn-icon .svg-icon {
+    width: 1.25em;
+    height: 1.25em;
+}
+
+.novel-writer-extension-root .btn-icon-only .svg-icon {
+    width: 1.5em;
+    height: 1.5em;
+}
+
+.novel-writer-extension-root .empty-icon .svg-icon {
+    width: 3em;
+    height: 3em;
+    opacity: 0.7;
+}
+
 /* ==============================================插件根容器============================================== */
 .novel-writer-extension-root {
     position: fixed;
