@@ -1167,11 +1167,16 @@
 
 .novel-writer-extension-root .action-hints {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin-top: 10px;
     flex-wrap: nowrap;
     align-items: center;
     overflow-x: auto;
+}
+
+.novel-writer-extension-root .action-hints .btn {
+    padding: 5px 8px;
+    font-size: 0.7rem;
 }
 
 .novel-writer-extension-root .hint-card {
@@ -1205,6 +1210,11 @@
     gap: 8px;
     flex-wrap: nowrap;
     overflow-x: auto;
+}
+
+.novel-writer-extension-root .card-footer .btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
 }
 
 .novel-writer-extension-root .chapter-list {
@@ -3389,6 +3399,11 @@
         overflow-x: auto;
     }
     
+    .novel-writer-extension-root .card-footer .btn {
+        padding: 6px 8px;
+        font-size: 0.7rem;
+    }
+    
     /* 6. 表单元素优化 - 大触摸目标 */
     .novel-writer-extension-root .form-group {
         margin-bottom: 12px;
@@ -3516,9 +3531,14 @@
     .novel-writer-extension-root .action-hints {
         flex-direction: row;
         flex-wrap: nowrap;
-        gap: 8px;
+        gap: 4px;
         margin-top: 12px;
         overflow-x: auto;
+    }
+    
+    .novel-writer-extension-root .action-hints .btn {
+        padding: 5px 6px;
+        font-size: 0.65rem;
     }
     
     .novel-writer-extension-root .hint-card {
