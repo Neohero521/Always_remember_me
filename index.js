@@ -3970,11 +3970,27 @@ async function generateContinueWrite(targetChainId) {
     const targetParagraphs = targetContent.split('\n').filter(p => p.trim() !== '');
     const targetLastParagraph = targetParagraphs.length > 0 ? targetParagraphs[targetParagraphs.length - 1].trim() : '';
     
+    const baseChapterId = parseInt(selectedBaseChapterId);
+    console.log(`[时间线优化] 开始续写链续写，基准章节: ${baseChapterId}`);
+    
     const precheckResult = await validateContinuePrecondition(selectedBaseChapterId, editedBaseChapterContent);
-    const useGraph = Object.keys(precheckResult.preGraph).length > 0 ? precheckResult.preGraph : mergedGraph;
+    let preGraph = precheckResult.preGraph || {};
+    
+    if (Object.keys(preGraph).length > 0) {
+        const filteredPreGraph = PromptConstants.filterGraphByTimeline(preGraph, baseChapterId);
+        console.log('[时间线优化] 已对前置图谱执行时间线过滤');
+        preGraph = filteredPreGraph;
+    }
+    
+    let useGraph = Object.keys(preGraph).length > 0 ? preGraph : mergedGraph;
+    
+    if (Object.keys(useGraph).length > 0 && useGraph === mergedGraph) {
+        const filteredMergedGraph = PromptConstants.filterGraphByTimeline(mergedGraph, baseChapterId);
+        console.log('[时间线优化] 已对合并图谱执行时间线过滤');
+        useGraph = filteredMergedGraph;
+    }
     
     let fullContextContent = '';
-    const baseChapterId = parseInt(selectedBaseChapterId);
     const preBaseChapters = currentParsedChapters.filter(chapter => chapter.id < baseChapterId && chapter.id >= (baseChapterId - 2));
     preBaseChapters.forEach(chapter => {
         fullContextContent += `${chapter.title}\n${chapter.content}\n\n`;
@@ -3989,17 +4005,35 @@ async function generateContinueWrite(targetChainId) {
         fullContextContent += `续写章节 ${chapterNum}\n${chapter.content}\n\n`;
     });
     
-    const systemPrompt = PromptConstants.getContinueWriteSystemPrompt({
-        redLines: precheckResult.redLines,
-        forbiddenRules: precheckResult.forbiddenRules,
-        targetLastParagraph: targetLastParagraph,
-        foreshadowList: precheckResult.foreshadowList,
-        wordCount: wordCount,
-        conflictWarning: precheckResult.conflictWarning,
-        targetChapterTitle: targetChapter.title
-    });
+    const isTimelineSafeMode = Object.keys(useGraph).length > 0 && useGraph !== mergedGraph;
     
-    const userPrompt = `小说核心设定知识图谱：${JSON.stringify(useGraph)} 完整前文上下文：${fullContextContent} 请基于以上内容续写后续章节。`;
+    let systemPrompt;
+    let userPrompt;
+    
+    if (isTimelineSafeMode) {
+        systemPrompt = PromptConstants.getTimelineSafeContinueWriteSystemPrompt({
+            redLines: precheckResult.redLines,
+            forbiddenRules: precheckResult.forbiddenRules,
+            targetLastParagraph: targetLastParagraph,
+            foreshadowList: precheckResult.foreshadowList,
+            wordCount: wordCount,
+            conflictWarning: precheckResult.conflictWarning,
+            targetChapterTitle: targetChapter.title,
+            baseChapterId: baseChapterId
+        });
+        userPrompt = `小说核心设定知识图谱（仅包含第${baseChapterId}章及之前的剧情）：${JSON.stringify(useGraph)} 完整前文上下文：${fullContextContent} 请基于以上内容续写后续章节。`;
+    } else {
+        systemPrompt = PromptConstants.getContinueWriteSystemPrompt({
+            redLines: precheckResult.redLines,
+            forbiddenRules: precheckResult.forbiddenRules,
+            targetLastParagraph: targetLastParagraph,
+            foreshadowList: precheckResult.foreshadowList,
+            wordCount: wordCount,
+            conflictWarning: precheckResult.conflictWarning,
+            targetChapterTitle: targetChapter.title
+        });
+        userPrompt = `小说核心设定知识图谱：${JSON.stringify(useGraph)} 完整前文上下文：${fullContextContent} 请基于以上内容续写后续章节。`;
+    }
     
     isGeneratingWrite = true;
     stopGenerateFlag = false;
@@ -4056,7 +4090,7 @@ async function generateContinueWrite(targetChainId) {
             id: continueChapterIdCounter++,
             title: `续写章节 ${continueWriteChain.length + 1}`,
             content: continueContent,
-            baseChapterId: parseInt(selectedBaseChapterId)
+            baseChapterId: baseChapterId
         };
         
         continueWriteChain.push(newChapter);
@@ -4067,7 +4101,8 @@ async function generateContinueWrite(targetChainId) {
         await updateGraphWithContinueContent(newChapter, newChapter.id);
         renderContinueWriteChain(continueWriteChain);
         NovelReader.renderChapterList();
-        toastr.success('续写章节生成完成！', "小说续写器");
+        const successMessage = isTimelineSafeMode ? '续写章节生成完成（时间线安全模式）！' : '续写章节生成完成！';
+        toastr.success(successMessage, "小说续写器");
     } catch (error) {
         if (!stopGenerateFlag) {
             console.error('续写生成失败:', error);

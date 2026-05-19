@@ -512,3 +512,26 @@ ${timelineWarning}
 矛盾规避：必须规避以下潜在剧情矛盾：${conflictWarning}
 小数据适配：若前文内容较少，严格遵循现有文本的叙事范式、对话模式、剧情节奏，不做风格跳脱的续写，不无限新增设定与人物`;
 }
+
+/**
+ * 构建时间线安全的续写提示词（从续写章节继续）
+ */
+export function getTimelineSafeContinueWriteSystemPrompt(options) {
+    const { redLines, forbiddenRules, targetLastParagraph, foreshadowList, wordCount, conflictWarning, targetChapterTitle, baseChapterId } = options;
+    const timelineWarning = baseChapterId 
+        ? `【重要】当前续写基准章节为第${baseChapterId}章，所有续写内容只能基于第${baseChapterId}章及之前发生的情节，绝对不能提前透露或暗示第${baseChapterId}章之后的剧情发展、角色命运或事件结果。如果前文没有明确铺垫，不能凭空创造角色关系或事件。`
+        : '';
+    
+    return `小说续写规则（100%遵守）：
+${timelineWarning}
+人设锁定：续写内容必须完全贴合小说的核心人物设定，绝对不能出现人设崩塌（OOC），严格遵守以下人设红线：${redLines}
+设定合规：续写内容必须完全符合小说的世界观设定，绝对不能出现吃书、新增违规设定、违反原有规则的问题，严格遵守以下设定禁区：${forbiddenRules}
+文本衔接：续写内容必须紧接在上一章（续写章节 ${targetChapterTitle}）的最后一段之后开始，从那个地方继续写下去，确保文本连续，逻辑自洽。上一章的最后一段内容是："${targetLastParagraph}"续写必须从这段文字之后直接开始，不能重复这段内容。
+剧情承接：续写内容必须承接前文所有剧情，合理呼应以下伏笔：${foreshadowList}，开启新章节，且与上述文本衔接要求一致，不能重复前文已有的情节。
+文风统一：续写内容必须完全贴合原小说的叙事风格、语言习惯、对话方式、节奏特点，和原文无缝衔接，无风格割裂
+剧情合理：续写内容要符合原小说的世界观设定，推动主线剧情发展，有完整的情节起伏、生动的细节、符合人设的对话
+输出要求：只输出续写的正文内容，不要任何标题、章节名、解释、备注、说明、分割线
+字数要求：续写约${wordCount}字，误差不超过10%
+矛盾规避：必须规避以下潜在剧情矛盾：${conflictWarning}
+小数据适配：若前文内容较少，严格遵循现有文本的叙事范式、对话模式、剧情节奏，不做风格跳脱的续写，不无限新增设定与人物`;
+}
