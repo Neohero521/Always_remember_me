@@ -416,33 +416,8 @@
                                    aria-atomic="true">共 0 本小说</p>
                             </div>
                         </div>
-                        <div class="card-actions">
-                            <button class="btn btn-sm btn-icon" id="bookshelf-select-all-btn" title="全选" aria-label="全选">
-                                <span><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
-                            </button>
-                            <button class="btn btn-sm btn-icon" id="bookshelf-manage-tags-btn" title="管理标签" aria-label="管理标签">
-                                <span><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span>
-                            </button>
-                            <input type="text" 
-                                   id="bookshelf-search-input"
-                                   class="form-input form-input-sm"
-                                   placeholder="搜索小说..."
-                                   aria-label="搜索小说">
-                            <select id="bookshelf-sort-select" class="form-select form-select-sm" aria-label="排序方式">
-                                <option value="updatedAt">按更新时间</option>
-                                <option value="createdAt">按创建时间</option>
-                                <option value="name">按名称</option>
-                                <option value="chapterCount">按章节数</option>
-                            </select>
-                            <button class="btn btn-sm btn-icon" id="bookshelf-sort-order-btn" title="切换排序方向" aria-label="切换升序/降序">
-                                <span id="bookshelf-sort-order-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></span>
-                            </button>
-                            <button class="btn btn-sm btn-icon" id="bookshelf-view-toggle-btn" title="切换视图" aria-label="切换列表/网格视图">
-                                <span id="bookshelf-view-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
-                            </button>
-                        </div>
                     </div>
-                    <div id="bookshelf-container" class="bookshelf-grid" aria-label="书架列表">
+                    <div id="bookshelf-container" class="bookshelf-list" aria-label="书架列表">
                         <div class="empty-state">
                             <div class="empty-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9 2-2-2zm0 16H3V5h18v14z"/><path d="M5 7h4v10H5zm6 0h4v10h-4z"/></svg></div>
                             <div class="empty-text">书架为空，请上传小说</div>

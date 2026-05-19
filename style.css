@@ -2959,29 +2959,94 @@
     /* 列表视图移动端优化 */
     .novel-writer-extension-root .bookshelf-list {
         gap: 12px;
-        padding: 8px;
+        padding: 12px;
+        min-height: 250px;
     }
     
     .novel-writer-extension-root .book-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-        padding: 16px;
+        background: var(--novel-bg-card);
+        border: 2px solid var(--novel-border-color);
+        border-radius: 8px;
+        padding: 14px;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        transition: all 0.2s;
+        cursor: pointer;
     }
     
-    .novel-writer-extension-root .book-actions {
-        width: 100%;
-        justify-content: flex-end;
-        flex-wrap: wrap;
+    .novel-writer-extension-root .book-item:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--novel-shadow-md);
+        border-color: var(--novel-primary);
+    }
+    
+    .novel-writer-extension-root .book-cover-thumb {
+        width: 70px;
+        height: 90px;
+        background: linear-gradient(135deg, var(--novel-bg-elevated) 0%, var(--novel-bg-card) 100%);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 1px solid var(--novel-border-color);
+    }
+    
+    .novel-writer-extension-root .book-info {
+        flex: 1;
+        min-width: 0;
     }
     
     .novel-writer-extension-root .book-title {
-        font-size: 1rem;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--novel-text-primary);
+        margin-bottom: 6px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .novel-writer-extension-root .book-meta {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
     }
     
     .novel-writer-extension-root .book-meta-item {
+        font-size: 0.8rem;
+        color: var(--novel-text-secondary);
+        background: var(--novel-bg-elevated);
+        padding: 3px 10px;
+        border-radius: 4px;
+    }
+    
+    .novel-writer-extension-root .book-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+    
+    .novel-writer-extension-root .book-tag {
         font-size: 0.75rem;
         padding: 3px 8px;
+        background: var(--novel-bg-elevated);
+        border: 1px solid var(--novel-border-color);
+        border-radius: 4px;
+        color: var(--novel-text-secondary);
+    }
+    
+    .novel-writer-extension-root .book-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+    
+    .novel-writer-extension-root .book-actions .btn {
+        padding: 8px 14px;
+        font-size: 0.85rem;
     }
     
     /* 上传区域移动端优化 */
@@ -3673,52 +3738,95 @@
     .novel-writer-extension-root .bookshelf-list {
         gap: 8px;
         padding: 8px;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
     }
     
     .novel-writer-extension-root .book-item {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 8px;
-        padding: 12px;
+        background: var(--novel-bg-card);
+        border: 2px solid var(--novel-border-color);
         border-radius: 6px;
+        padding: 12px;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+    
+    .novel-writer-extension-root .book-item:active {
+        transform: scale(0.98);
+        background: var(--novel-bg-elevated);
     }
     
     .novel-writer-extension-root .book-cover-thumb {
-        width: 50px;
-        height: 70px;
+        width: 60px;
+        height: 80px;
+        background: linear-gradient(135deg, var(--novel-bg-elevated) 0%, var(--novel-bg-card) 100%);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 0;
+        border: 1px solid var(--novel-border-color);
+    }
+    
+    .novel-writer-extension-root .book-cover-thumb .svg-icon {
+        width: 2rem;
+        height: 2rem;
+        opacity: 0.5;
     }
     
     .novel-writer-extension-root .book-info {
         flex: 1;
+        min-width: 0;
     }
     
     .novel-writer-extension-root .book-title {
-        font-size: 0.9rem;
+        font-size: 1rem;
         font-weight: 700;
+        color: var(--novel-text-primary);
         margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
     .novel-writer-extension-root .book-meta {
-        gap: 4px;
+        display: flex;
+        gap: 8px;
         flex-wrap: wrap;
+        margin-bottom: 6px;
     }
     
     .novel-writer-extension-root .book-meta-item {
-        font-size: 0.65rem;
-        padding: 2px 6px;
-    }
-    
-    .novel-writer-extension-root .book-actions {
-        width: 100%;
-        justify-content: flex-start;
-        gap: 6px;
-        flex-wrap: wrap;
+        font-size: 0.75rem;
+        color: var(--novel-text-secondary);
+        background: var(--novel-bg-elevated);
+        padding: 2px 8px;
+        border-radius: 3px;
     }
     
     .novel-writer-extension-root .book-tags {
+        display: flex;
         gap: 4px;
         flex-wrap: wrap;
+    }
+    
+    .novel-writer-extension-root .book-tag {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        background: var(--novel-bg-elevated);
+        border: 1px solid var(--novel-border-color);
+        border-radius: 3px;
+        color: var(--novel-text-secondary);
+    }
+    
+    .novel-writer-extension-root .book-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
     }
     
     /* 14. 卡片列表头部优化 */
