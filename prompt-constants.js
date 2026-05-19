@@ -381,24 +381,37 @@ function extractChapterNumber(nodeId) {
  * @returns {Object} - 过滤后的图谱副本
  */
 export function filterGraphByTimeline(mergedGraph, baseChapterId) {
+    // 安全检查：确保图谱是有效的对象
     if (!mergedGraph || typeof mergedGraph !== 'object') {
         console.warn('[时间线过滤] 无效的图谱数据');
-        return mergedGraph;
+        return mergedGraph || {};
     }
     
-    if (!baseChapterId || typeof baseChapterId !== 'number') {
+    // 安全检查：确保章节号是有效的
+    if (!baseChapterId || typeof baseChapterId !== 'number' || isNaN(baseChapterId)) {
         console.warn('[时间线过滤] 无效的基准章节号');
         return mergedGraph;
     }
     
     console.log(`[时间线过滤] 开始过滤，基准章节: ${baseChapterId}`);
     
-    const filteredGraph = JSON.parse(JSON.stringify(mergedGraph));
+    // 深拷贝图谱，确保不修改原始数据
+    let filteredGraph;
+    try {
+        filteredGraph = JSON.parse(JSON.stringify(mergedGraph));
+    } catch (error) {
+        console.error('[时间线过滤] 图谱深拷贝失败:', error);
+        // 如果拷贝失败，返回一个安全的空对象
+        return {};
+    }
+    
     let filteredCount = 0;
     
-    if (filteredGraph.全剧情时间线?.全本关键事件时序表) {
+    // 过滤全剧情时间线中的未来事件
+    if (filteredGraph.全剧情时间线?.全本关键事件时序表 && Array.isArray(filteredGraph.全剧情时间线.全本关键事件时序表)) {
         const originalLength = filteredGraph.全剧情时间线.全本关键事件时序表.length;
         filteredGraph.全剧情时间线.全本关键事件时序表 = filteredGraph.全剧情时间线.全本关键事件时序表.filter(event => {
+            if (!event || typeof event !== 'object') return true;
             const chapterNum = extractChapterNumber(event.发生章节 || '');
             if (chapterNum !== null && chapterNum > baseChapterId) {
                 filteredCount++;
@@ -409,10 +422,11 @@ export function filterGraphByTimeline(mergedGraph, baseChapterId) {
         console.log(`[时间线过滤] 事件时序表: ${originalLength} -> ${filteredGraph.全剧情时间线.全本关键事件时序表.length}，过滤 ${filteredCount} 个未来事件`);
     }
     
-    if (filteredGraph.全量实体关系网络) {
+    // 过滤全量实体关系网络中的未来关系
+    if (filteredGraph.全量实体关系网络 && Array.isArray(filteredGraph.全量实体关系网络)) {
         const originalLength = filteredGraph.全量实体关系网络.length;
         filteredGraph.全量实体关系网络 = filteredGraph.全量实体关系网络.filter(relation => {
-            if (relation.length < 3) return true;
+            if (!Array.isArray(relation) || relation.length < 3) return true;
             
             for (let i = 0; i < relation.length; i++) {
                 const chapterNum = extractChapterNumber(relation[i]);
@@ -426,13 +440,18 @@ export function filterGraphByTimeline(mergedGraph, baseChapterId) {
         console.log(`[时间线过滤] 实体关系网络: ${originalLength} -> ${filteredGraph.全量实体关系网络.length}，过滤 ${filteredCount} 个未来关系`);
     }
     
-    if (filteredGraph.人物信息库) {
+    // 过滤人物信息库
+    if (filteredGraph.人物信息库 && Array.isArray(filteredGraph.人物信息库)) {
         filteredGraph.人物信息库 = filteredGraph.人物信息库.map(character => {
+            if (!character || typeof character !== 'object') return character;
+            
             const filteredChar = { ...character };
             
-            if (filteredChar.全时间线人物关系网) {
+            // 过滤人物关系网
+            if (filteredChar.全时间线人物关系网 && Array.isArray(filteredChar.全时间线人物关系网)) {
                 const originalLength = filteredChar.全时间线人物关系网.length;
                 filteredChar.全时间线人物关系网 = filteredChar.全时间线人物关系网.filter(relation => {
+                    if (!relation || typeof relation !== 'object') return true;
                     const chapterNum = extractChapterNumber(relation.对应章节 || '');
                     if (chapterNum !== null && chapterNum > baseChapterId) {
                         return false;
@@ -440,11 +459,12 @@ export function filterGraphByTimeline(mergedGraph, baseChapterId) {
                     return true;
                 });
                 if (originalLength !== filteredChar.全时间线人物关系网.length) {
-                    console.log(`[时间线过滤] 人物 ${character.姓名}: 关系网 ${originalLength} -> ${filteredChar.全时间线人物关系网.length}`);
+                    console.log(`[时间线过滤] 人物 ${character.姓名 || '未知'}: 关系网 ${originalLength} -> ${filteredChar.全时间线人物关系网.length}`);
                 }
             }
             
-            if (filteredChar.人物关键事件时间线) {
+            // 过滤人物关键事件时间线文本
+            if (filteredChar.人物关键事件时间线 && typeof filteredChar.人物关键事件时间线 === 'string') {
                 const timelineText = filteredChar.人物关键事件时间线;
                 const lines = timelineText.split('\n').filter(line => {
                     const chapterNum = extractChapterNumber(line);
@@ -457,16 +477,19 @@ export function filterGraphByTimeline(mergedGraph, baseChapterId) {
         });
     }
     
-    if (filteredGraph.世界观设定库?.全本所有隐藏设定与伏笔汇总) {
+    // 过滤世界观设定库中的伏笔
+    if (filteredGraph.世界观设定库?.全本所有隐藏设定与伏笔汇总 && Array.isArray(filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总)) {
         const originalLength = filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总.length;
         filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总 = filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总.filter(foreshadow => {
+            if (!foreshadow || typeof foreshadow !== 'object') return true;
             const chapterNum = extractChapterNumber(foreshadow.出现章节 || '');
             return chapterNum === null || chapterNum <= baseChapterId;
         });
         console.log(`[时间线过滤] 伏笔汇总: ${originalLength} -> ${filteredGraph.世界观设定库.全本所有隐藏设定与伏笔汇总.length}`);
     }
     
-    if (filteredGraph.变更与依赖信息) {
+    // 移除可能剧透的字段
+    if (filteredGraph.变更与依赖信息 && typeof filteredGraph.变更与依赖信息 === 'object') {
         delete filteredGraph.变更与依赖信息.本章内容对后续剧情的影响预判;
         console.log('[时间线过滤] 已移除"后续剧情影响预判"字段');
     }
