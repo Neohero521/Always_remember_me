@@ -1169,8 +1169,9 @@
     display: flex;
     gap: 8px;
     margin-top: 10px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
+    overflow-x: auto;
 }
 
 .novel-writer-extension-root .hint-card {
@@ -1202,7 +1203,8 @@
     border-top: 1px solid var(--novel-border-color);
     display: flex;
     gap: 8px;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    overflow-x: auto;
 }
 
 .novel-writer-extension-root .chapter-list {
