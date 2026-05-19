@@ -67,6 +67,35 @@
     font-family: var(--novel-font-sans);
 }
 
+/* ==============================================SVG 图标样式============================================== */
+.novel-writer-extension-root svg {
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
+}
+
+.novel-writer-extension-root .ball-icon svg,
+.novel-writer-extension-root .title-icon svg,
+.novel-writer-extension-root .tab-icon svg,
+.novel-writer-extension-root .card-icon svg,
+.novel-writer-extension-root .btn-icon svg,
+.novel-writer-extension-root .upload-icon svg,
+.novel-writer-extension-root .label-icon svg,
+.novel-writer-extension-root .drawer-icon svg,
+.novel-writer-extension-root .empty-icon svg,
+.novel-writer-extension-root .hint-icon svg,
+.novel-writer-extension-root .reader-icon svg,
+.novel-writer-extension-root .badge-icon svg,
+.novel-writer-extension-root .nav-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
 .novel-writer-extension-root ::-webkit-scrollbar {
     width: 6px;
     height: 6px;
