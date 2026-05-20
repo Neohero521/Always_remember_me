@@ -230,9 +230,9 @@
     left: 50%;
     transform: translate(-50%, -50%) scale(0.9);
     width: 90vw;
-    height: 85vh;
+    height: 88vh;
     max-width: 1000px;
-    max-height: 90vh;
+    max-height: 92vh;
     min-width: 320px;
     min-height: 400px;
     background: var(--novel-bg-dark);
@@ -443,7 +443,7 @@
     overflow-x: hidden;
     padding: 16px;
     background: var(--novel-bg-dark);
-    max-height: calc(85vh - 150px);
+    min-height: 0;
     -webkit-overflow-scrolling: touch;
 }
 
