@@ -1195,9 +1195,23 @@
 }
 
 /* ==============================================章节列表样式============================================== */
+.novel-writer-extension-root .card-list {
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    overflow: hidden;
+}
+
 .novel-writer-extension-root .card-list .card-header {
     flex-wrap: wrap;
     gap: 12px;
+    flex-shrink: 0;
+}
+
+.novel-writer-extension-root .card-list #bookshelf-container {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .novel-writer-extension-root .card-actions {
@@ -2331,6 +2345,8 @@
     justify-content: space-between;
     align-items: center;
     animation: slideUp 0.3s ease;
+    flex-shrink: 0;
+    z-index: 10;
 }
 
 @keyframes slideUp {
@@ -4395,10 +4411,8 @@
         gap: 10px;
         padding: 12px;
         border-radius: 6px;
-        position: sticky;
-        bottom: 60px;
-        z-index: 90;
-        margin-bottom: 10px;
+        flex-shrink: 0;
+        z-index: 10;
         background: var(--novel-bg-card);
         border: 2px solid var(--novel-border-color);
     }
