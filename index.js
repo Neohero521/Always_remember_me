@@ -3040,6 +3040,7 @@ function renderBookshelf() {
             const isSelected = selectedNovelIds.has(novel.id);
             return `
                 <div class="book-item ${isCurrentNovel ? 'active' : ''} ${isSelected ? 'selected' : ''}" data-novel-id="${novel.id}">
+                    <input type="checkbox" class="book-checkbox" data-novel-id="${novel.id}" ${isSelected ? 'checked' : ''}>
                     <div class="book-info">
                         <div class="book-title">${escapeHtml(novel.name)}</div>
                         ${(novel.tags || []).length > 0 ? `
@@ -3055,6 +3056,9 @@ function renderBookshelf() {
                     <div class="book-actions">
                         <button class="btn btn-sm ${isCurrentNovel ? 'btn-primary' : 'btn-secondary'} load-book-btn" data-novel-id="${novel.id}" title="加载">
                             ${isCurrentNovel ? '✓ 使用中' : '加载'}
+                        </button>
+                        <button class="btn btn-sm btn-danger delete-book-btn" data-novel-id="${novel.id}" title="删除">
+                            <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                         </button>
                     </div>
                 </div>
