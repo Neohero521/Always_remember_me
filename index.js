@@ -5162,4 +5162,21 @@ jQuery(async () => {
         $("#bookshelf-view-icon").text(newView === 'grid' ? '📑' : '📋');
         renderBookshelf();
     });
+
+    // 窗口大小自适应功能
+    let resizeTimeout;
+    function handleWindowResize() {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            // 确保面板在窗口中心显示
+            const $panel = $('.novel-writer-extension-root .writer-panel');
+            if ($panel.hasClass('show')) {
+                // 面板样式已经通过 CSS 的 max-width/max-height 和 viewport 单位自适应
+                // 这里不需要额外调整，CSS 会自动处理
+            }
+        }, 100);
+    }
+
+    // 监听窗口大小变化
+    $(window).off('resize.novelWriter').on('resize.novelWriter', handleWindowResize);
 });
