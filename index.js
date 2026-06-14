@@ -1333,19 +1333,27 @@ const FloatBall = {
     autoAdsorbEdge() {
         const rect = this.ball.getBoundingClientRect();
         const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        const ballWidth = this.ball.offsetWidth;
+        const ballHeight = this.ball.offsetHeight;
         const centerX = windowWidth / 2;
         
+        // 水平吸边
         if (rect.left < centerX) {
             this.ball.style.left = "10px";
         } else {
-            this.ball.style.left = `${windowWidth - this.ball.offsetWidth - 10}px`;
+            this.ball.style.left = `${windowWidth - ballWidth - 10}px`;
         }
+        
+        // 垂直方向限制在可视范围内（修复横屏时悬浮球超出屏幕的问题）
+        const maxY = windowHeight - ballHeight - 10;
+        const newTop = Math.max(10, Math.min(rect.top, maxY));
+        this.ball.style.top = `${newTop}px`;
         
         this.ball.style.right = 'auto';
         this.ball.style.transform = "none";
         
-        const newRect = this.ball.getBoundingClientRect();
-        extension_settings[extensionName].floatBallState.position = { x: newRect.left, y: newRect.top };
+        extension_settings[extensionName].floatBallState.position = { x: parseInt(this.ball.style.left), y: newTop };
         saveSettingsDebounced();
     },
     
