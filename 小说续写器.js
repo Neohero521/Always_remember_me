@@ -19,6 +19,58 @@
 (function() {
 'use strict';
 
+
+/* ============================================================
+ * ▌SECTION 0.5  运行环境补全（解决酒馆 iframe 中部分全局不存在的问题）
+ * ------------------------------------------------------------
+ * 脚本运行在无沙盒 iframe 中，SillyTavern / tavern_events 等
+ * 是被酒馆助手注入的全局；但 jQuery、$、toastr、getScriptId
+ * 等通常在父页面，iframe 中未直接暴露。这里做一次性的兜底：
+ * 优先取 iframe 自身的同名全局，否则从 window.parent 取，
+ * 最后给一个安全的空实现以避免脚本直接崩溃。
+ * ============================================================ */
+const __parent = window.parent;
+const __jQuery  = (typeof jQuery  !== 'undefined') ? jQuery  : __parent.jQuery;
+const __Dollar  = (typeof $       !== 'undefined') ? $       : __parent.$;
+const __toastr  = (typeof toastr  !== 'undefined') ? toastr  : __parent.toastr || {
+    success: console.log.bind(console, '[toastr][ok]'),
+    error:   console.error.bind(console, '[toastr][err]'),
+    warning: console.warn.bind(console,  '[toastr][warn]'),
+    info:    console.info.bind(console,  '[toastr][info]'),
+};
+// 挂载为 IIFE 作用域内的局部变量，遮蔽全局（或全局不存在时兜底）
+const jQuery = __jQuery;
+const $      = __Dollar;
+const toastr = __toastr;
+
+// getVariables / replaceVariables：挂在 SillyTavern 对象上，
+// 在 iframe 中一般不作为独立函数声明
+const __getVars = (typeof getVariables !== 'undefined')
+    ? getVariables
+    : (typeof SillyTavern !== 'undefined' && SillyTavern.getVariables)
+      ? SillyTavern.getVariables.bind(SillyTavern)
+      : (() => ({}));
+const __replaceVars = (typeof replaceVariables !== 'undefined')
+    ? replaceVariables
+    : (typeof SillyTavern !== 'undefined' && SillyTavern.replaceVariables)
+      ? SillyTavern.replaceVariables.bind(SillyTavern)
+      : (() => {});
+function getVariables() {
+    return __getVars.apply(null, arguments);
+}
+function replaceVariables() {
+    return __replaceVars.apply(null, arguments);
+}
+
+// getScriptId：部分版本未直接暴露，兜底返回一个可稳定复现的标识
+const __getScriptId = (typeof getScriptId !== 'undefined')
+    ? getScriptId
+    : (() => SCRIPT_ID);
+function getScriptId() {
+    return __getScriptId.apply(null, arguments);
+}
+
+
 /* ============================================================
  * ▌SECTION 0  脚本元信息 & 内联资源
  * ============================================================ */
@@ -602,13 +654,23 @@ const PromptConstants = {
  * 此处用酒馆助手全局 API 构建同名 shim，使下方业务逻辑无需改动。
  * ============================================================ */
 
+// 先安全获取 SillyTavern：优先 iframe 全局，否则从父页面取
+const __SillyTavern = (typeof SillyTavern !== 'undefined')
+    ? SillyTavern
+    : (window.parent && window.parent.SillyTavern) || {
+        // 最后兜底：空实现，避免脚本一加载就崩
+        eventSource: { on() {}, once() {}, emit() {}, removeListener() {}, makeLast() {}, makeFirst() {} },
+        eventTypes: {},
+        getContext: () => ({}),
+    };
+
 // 事件系统：直接复用酒馆原生 eventSource / eventTypes
-const eventSource = SillyTavern.eventSource;
-const event_types = SillyTavern.eventTypes;
+const eventSource = __SillyTavern.eventSource || { on() {}, once() {}, emit() {}, removeListener() {}, makeLast() {}, makeFirst() {} };
+const event_types = __SillyTavern.eventTypes || {};
 
 // 上下文：透传 SillyTavern.getContext()
 function getContext() {
-    return SillyTavern.getContext();
+    return (__SillyTavern.getContext && __SillyTavern.getContext()) || {};
 }
 
 // 存储兼容：用脚本变量替代 extension_settings
