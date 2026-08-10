@@ -5988,14 +5988,51 @@ function registerNovelWriterButton() {
 function addNovelWriterFloatingButton() {
     try {
         const pDoc = (window.parent && window.parent.document) ? window.parent.document : document;
+        if (!pDoc || !pDoc.body) {
+            console.warn('[小说续写插件] 父页面body尚未就绪，稍后重试');
+            setTimeout(addNovelWriterFloatingButton, 500);
+            return false;
+        }
         const old = pDoc.getElementById(SCRIPT_ID + '-btn');
         if (old) old.remove();
         const btn = pDoc.createElement('button');
         btn.id = SCRIPT_ID + '-btn';
         btn.textContent = '📖 小说续写器';
-        btn.style.cssText = 'position:fixed;bottom:80px;right:20px;z-index:99998;padding:10px 18px;background:linear-gradient(135deg,#333,#111);color:#fff;border:2px solid #000;border-radius:8px;cursor:pointer;font-weight:700;box-shadow:4px 4px 0 rgba(0,0,0,.3);font-size:14px;';
-        btn.onclick = openNovelWriter;
+        // 高对比度醒目样式：暖橙背景 + 白色文字 + 深色边框 + 高 z-index
+        // !important 防止被父页面 CSS 覆盖
+        btn.style.cssText = [
+            'position:fixed !important',
+            'bottom:80px !important',
+            'right:20px !important',
+            'z-index:2147483647 !important',  // JS最大int，几乎无敌
+            'padding:12px 20px !important',
+            'background:linear-gradient(135deg,#f97316,#ea580c) !important',
+            'color:#ffffff !important',
+            'border:2px solid #7c2d12 !important',
+            'border-radius:10px !important',
+            'cursor:pointer !important',
+            'font-weight:800 !important',
+            'font-size:15px !important',
+            'box-shadow:0 6px 24px rgba(249,115,22,.5), 2px 2px 0 #7c2d12 !important',
+            'transition:transform .15s,box-shadow .15s !important',
+            'display:inline-block !important',
+            'opacity:1 !important',
+            'visibility:visible !important',
+            'pointer-events:auto !important',
+            'font-family:system-ui,-apple-system,"Segoe UI",sans-serif !important',
+            ''
+        ].join(';');
+        btn.onclick = function() {
+            console.log('[小说续写插件] 🖱️ 浮动按钮被点击，即将调用 openNovelWriter()');
+            try {
+                openNovelWriter();
+            } catch (e) {
+                console.error('[小说续写插件] ❌ openNovelWriter 调用失败:', e);
+                alert('小说续写器打开失败: ' + (e && e.message ? e.message : e));
+            }
+        };
         pDoc.body.appendChild(btn);
+        console.log('[小说续写插件] ✅ 浮动按钮已插入父页面body, id=' + btn.id + ', rect: ' + (typeof btn.getBoundingClientRect === 'function' ? JSON.stringify(btn.getBoundingClientRect()) : 'n/a'));
         return true;
     } catch (e) {
         console.warn('[小说续写插件] 添加浮动按钮失败:', e);
@@ -6045,19 +6082,43 @@ function cleanupNovelWriter() {
     }
 }
 
-// ---------- 脚本入口 ----------
+// ---------- 脚本入口：立即执行，不依赖任何异步回调 ----------
+// 用户场景：通过 `import 'URL'` 的方式导入到酒馆助手。
+// 这种模式下：
+//   · eventOn / getButtonEvent 可能完全不存在（没有"脚本按钮配置"）
+//   · jQuery ready 回调（$()）可能不触发（import 的脚本没有对应 jQuery ready 钩子）
+//   · 浮动按钮是唯一可靠的入口
+// 因此：跳过所有等待与重试，脚本一加载就 → 注册 pagehide 清理 + 立即添加浮动按钮 + 暴露全局手动入口
 function novelWriterEntryPoint() {
-    window.addEventListener('pagehide', cleanupNovelWriter);
-    tryInitNovelWriter();
-    console.log('[小说续写插件] 脚本已加载，点击"打开小说续写器"按钮启动 UI');
+    try { window.addEventListener('pagehide', cleanupNovelWriter); } catch (e) { console.warn('[小说续写插件] pagehide监听失败:', e); }
+    try {
+        addNovelWriterFloatingButton();
+        console.log('[小说续写插件] ✅ 浮动按钮已添加到父页面右下角，点击"📖 小说续写器"即可打开');
+    } catch (e) {
+        console.error('[小说续写插件] ❌ 添加浮动按钮失败:', e);
+    }
+    try {
+        // 尝试注册脚本按钮（不影响浮动按钮，失败也无所谓）
+        registerNovelWriterButton();
+        console.log('[小说续写插件] 脚本按钮注册已尝试（如你的酒馆助手有"脚本按钮配置"功能，请配置按钮名="打开小说续写器"）');
+    } catch (_) {}
+    // 暴露全局手动入口：用户在控制台敲 window.openNovelWriter() 也能打开
+    try {
+        window.openNovelWriter = openNovelWriter;
+        window.cleanupNovelWriter = cleanupNovelWriter;
+        console.log('[小说续写插件] 💡 备用：控制台输入 openNovelWriter() 可手动打开');
+    } catch (_) {}
 }
 
-if (typeof $ !== 'undefined') {
-    $(novelWriterEntryPoint);
-} else if (typeof window !== 'undefined' && window.parent && typeof window.parent.$ !== 'undefined') {
-    window.parent.$(novelWriterEntryPoint);
-} else {
+// ===== 立即执行（不依赖 $ / jQuery ready / setTimeout 等任何异步机制）=====
+try {
     novelWriterEntryPoint();
+} catch (e) {
+    console.error('[小说续写插件] ❌ 入口执行失败:', e);
+    // 最后兜底：延迟 1 秒后再尝试一次
+    setTimeout(function() {
+        try { novelWriterEntryPoint(); } catch (e2) { console.error('[小说续写插件] 重试入口依然失败:', e2); }
+    }, 1000);
 }
 
 
