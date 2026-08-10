@@ -88,6 +88,68 @@
     } catch(_) {}
     return null;
   }
+  // ---- 兼容别名：业务逻辑中大量使用的 getDoc()/setDoc()/jQuery/$/toastr ----
+  var getDoc = _pDoc;
+  function setDoc(d) { /* 空实现：向后兼容，实际永远走 _pDoc 惰性取 */ try { if (d && typeof d === 'object') {} } catch(_) {} }
+
+  // toastr / $ / jQuery：IIFE 局部变量惰性取值（document 是内置只读不能 var 遮蔽，但这三个是第三方库属性，完全安全）
+  var __dollarResolved = false;
+  var __toastrCache = null;
+  function _resolveDollar() {
+    if (__dollarResolved) return;
+    __dollarResolved = true;  // 只跑一次
+    try {
+      var pWin = (typeof window !== 'undefined' && window.parent) ? window.parent : null;
+      var realJQ = null;
+      // 1) 父页面真实 jQuery（优先）
+      if (pWin) {
+        if (typeof pWin.$ === 'function' && pWin.$.fn && pWin.$.fn.jquery) realJQ = pWin.$;
+        else if (typeof pWin.jQuery === 'function' && pWin.jQuery.fn) realJQ = pWin.jQuery;
+      }
+      // 2) iframe 全局 window 上挂的（不是 IIFE 局部）
+      if (!realJQ && typeof window !== 'undefined') {
+        if (typeof window.$ === 'function' && window.$.fn && window.$.fn.jquery) realJQ = window.$;
+        else if (typeof window.jQuery === 'function' && window.jQuery.fn) realJQ = window.jQuery;
+      }
+      if (realJQ) {
+        // 找到真实 jQuery：直接覆盖 IIFE 局部 $/jQuery 绑定 → 后续所有 $/jQuery 裸调用全走真实对象
+        $ = realJQ;
+        jQuery = realJQ;
+      }
+    } catch(_) {}
+  }
+  function _toastrMake() {
+    if (__toastrCache !== null) return __toastrCache;
+    try {
+      var pWin = (typeof window !== 'undefined' && window.parent) ? window.parent : window;
+      var t = (pWin && pWin.toastr && typeof pWin.toastr.success === 'function') ? pWin.toastr
+            : (typeof window !== 'undefined' && window.toastr && typeof window.toastr.success === 'function') ? window.toastr
+            : null;
+      if (!t) {
+        t = {
+          success: function(m){ showToast(m, 'success'); },
+          error:   function(m){ showToast(m, 'error'); },
+          warning: function(m){ showToast(m, 'warning'); },
+          info:    function(m){ showToast(m, 'info'); }
+        };
+      }
+      __toastrCache = t;
+      return t;
+    } catch(_) {
+      __toastrCache = { success:function(m){showToast(m,'success');}, error:function(m){showToast(m,'error');}, warning:function(m){showToast(m,'warning');}, info:function(m){showToast(m,'info');} };
+      return __toastrCache;
+    }
+  }
+  // 先用函数占位，保证可以被调用；_resolveDollar 会在第一次 openNovelWriter 之前把 $/jQuery 替换成真实对象
+  // 占位函数：立即解析真实 jQuery，然后转发调用
+  var $ = function() {
+    _resolveDollar();
+    if (typeof $ === 'function' && $.fn && $.fn.jquery) return $.apply(null, arguments);
+    // 最差兜底：尝试用 _p$
+    return _p$.apply(null, arguments);
+  };
+  var jQuery = $;
+  var toastr  = _toastrMake();
 
   // ---- 兼容：旧版调用 getVariables/replaceVariables/getScriptId ----
   // 业务逻辑里可能直接用这些名字；这里保持接口兼容但内部走上面的实现
