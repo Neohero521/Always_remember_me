@@ -16,8 +16,15 @@
  *   ▌SECTION 4  入口 & 卸载清理
  * ============================================================================
  */
+// ╔══════════════════════════════════════════════════════════════════════╗
+// ║  最外层 try/catch：任何未被捕获的异常都在这里终结，                     ║
+// ║  1) 用 console.error 打完整堆栈到 F12 控制台                           ║
+// ║  2) 用 alert 弹窗给用户直接看报错（Tavern Helper 的"加载失败"太笼统）   ║
+// ║  3) 绝不 re-throw，避免上层（酒馆助手）捕获后显示"插件错误 加载失败"     ║
+// ╚══════════════════════════════════════════════════════════════════════╝
 (function() {
 'use strict';
+try {
 // ★ 最早诊断点：脚本一被 import 就立即打印，证明脚本确实被加载执行
 // 如果 F12 控制台看不到这条日志，说明脚本根本没被加载（import 失败 / CDN 缓存 / 网络问题）
 try { console.log('%c[小说续写插件] 🚀 脚本 IIFE 已开始执行', 'color:#f97316;font-weight:bold;font-size:13px;'); } catch(_) {}
@@ -72,7 +79,7 @@ var _Doc  = __safeGet(function(){ return (typeof document !== 'undefined') ? doc
 var jQuery = _jQ;
 var $      = _Dol;
 var toastr = _Tst;
-var document = _Doc;
+    // var document = _Doc;  ← 已移除：避免严格模式下遮蔽内置只读属性
 
 /* 变量/脚本 API：顶层同样不碰父页面，只在函数执行时才惰性查找 */
 function getVariables() {
@@ -130,7 +137,7 @@ function __bootInit() {
 
     // 重绑 IIFE 作用域变量
     try { if (pJQ)   { jQuery = pJQ; $ = pJQ; }         console.log('[小说续写插件] jQuery 绑定结果:', ($ ? '✅ 可用' : '❌ 不可用')); } catch(_){}
-    try { if (pDoc)  { document = pDoc; }               console.log('[小说续写插件] document 绑定结果:', (document ? '✅ 可用' : '❌ 不可用')); } catch(_){}
+    try { if (pDoc)  { setDoc(pDoc); }               console.log('[小说续写插件] document 绑定结果:', (document ? '✅ 可用' : '❌ 不可用')); } catch(_){}
     try { if (pTst)  { toastr = pTst; }                 console.log('[小说续写插件] toastr 绑定结果:', (toastr && toastr.success ? '✅ 可用' : '❌ 不可用')); } catch(_){}
 
     // 最终兜底：无论如何执行入口
@@ -809,7 +816,7 @@ function escapeHtml(text) {
     if (typeof text !== 'string') {
         return String(text);
     }
-    const div = document.createElement('div');
+    const div = getDoc().createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
@@ -823,7 +830,7 @@ function escapeHtml(text) {
  * @param {string} [loadingText="加载中..."] - 加载时显示的文本
  */
 function setButtonLoading(selector, isLoading, loadingText = "加载中...") {
-    const $btn = typeof selector === 'string' ? document.querySelector(selector) : selector;
+    const $btn = typeof selector === 'string' ? getDoc().querySelector(selector) : selector;
     if (!$btn) return;
     
     if (isLoading) {
@@ -1125,7 +1132,7 @@ const ThemeManager = {
      * 应用主题
      */
     _applyMode(mode) {
-        const root = document.querySelector('.novel-writer-extension-root');
+        const root = getDoc().querySelector('.novel-writer-extension-root');
         if (!root) return;
         
         root.classList.remove('theme-light', 'theme-dark');
@@ -1845,7 +1852,7 @@ function getCurrentPresetName() {
 
 const updatePresetNameDisplay = debounce(function() {
     const settings = extension_settings[extensionName];
-    const presetNameElement = document.getElementById("parent-preset-name-display");
+    const presetNameElement = getDoc().getElementById("parent-preset-name-display");
     if (!presetNameElement) return;
     
     if (!settings.enableAutoParentPreset) {
@@ -1880,8 +1887,8 @@ const FloatBall = {
     _abortController: null,
     
     init() {
-        this.ball = document.getElementById("novel-writer-float-ball");
-        this.panel = document.getElementById("novel-writer-panel");
+        this.ball = getDoc().getElementById("novel-writer-float-ball");
+        this.panel = getDoc().getElementById("novel-writer-panel");
         
         if (!this.ball || !this.panel) {
             console.error("[小说续写插件] 元素未找到");
@@ -1901,7 +1908,7 @@ const FloatBall = {
         if (this._abortController) {
             this._abortController.abort();
         }
-        document.onclick = null;
+        getDoc().onclick = null;
         window.parent.onresize = null;
     },
     
@@ -1913,22 +1920,22 @@ const FloatBall = {
         const signal = this._abortController.signal;
         
         this.ball.addEventListener("mousedown", this.startDrag.bind(this), { signal });
-        document.addEventListener("mousemove", this.onDrag.bind(this), { signal });
-        document.addEventListener("mouseup", this.stopDrag.bind(this), { signal });
+        getDoc().addEventListener("mousemove", this.onDrag.bind(this), { signal });
+        getDoc().addEventListener("mouseup", this.stopDrag.bind(this), { signal });
         this.ball.addEventListener("touchstart", this.startDrag.bind(this), { signal, passive: false });
-        document.addEventListener("touchmove", this.onDrag.bind(this), { signal, passive: false });
-        document.addEventListener("touchend", this.stopDrag.bind(this), { signal });
+        getDoc().addEventListener("touchmove", this.onDrag.bind(this), { signal, passive: false });
+        getDoc().addEventListener("touchend", this.stopDrag.bind(this), { signal });
         
         this.ball.addEventListener("keydown", this.onBallKeydown.bind(this), { signal });
         
-        const closeBtn = document.getElementById("panel-close-btn");
+        const closeBtn = getDoc().getElementById("panel-close-btn");
         closeBtn.addEventListener("click", (e) => {
             e.stopPropagation();
             this.hidePanel();
             this.ball.focus();
         }, { signal });
         
-        document.querySelectorAll(".panel-tab-item").forEach(tab => {
+        getDoc().querySelectorAll(".panel-tab-item").forEach(tab => {
             tab.addEventListener("click", (e) => {
                 e.stopPropagation();
                 this.switchTab(e.currentTarget.dataset.tab);
@@ -1936,9 +1943,9 @@ const FloatBall = {
             tab.addEventListener("keydown", this.onTabKeydown.bind(this), { signal });
         });
         
-        document.addEventListener("click", this.outsideClose.bind(this), { signal });
+        getDoc().addEventListener("click", this.outsideClose.bind(this), { signal });
         window.parent.addEventListener("resize", debounce(this.resizeHandler.bind(this), 200), { signal });
-        document.addEventListener("keydown", this.onGlobalKeydown.bind(this), { signal });
+        getDoc().addEventListener("keydown", this.onGlobalKeydown.bind(this), { signal });
     },
     
     onBallKeydown(e) {
@@ -2163,10 +2170,10 @@ const FloatBall = {
     },
     
     switchTab(tabId) {
-        document.querySelectorAll(".panel-tab-item").forEach(tab => {
+        getDoc().querySelectorAll(".panel-tab-item").forEach(tab => {
             tab.classList.toggle("active", tab.dataset.tab === tabId);
         });
-        document.querySelectorAll(".panel-tab-panel").forEach(panel => {
+        getDoc().querySelectorAll(".panel-tab-panel").forEach(panel => {
             panel.classList.toggle("active", panel.id === tabId);
         });
         extension_settings[extensionName].floatBallState.activeTab = tabId;
@@ -2214,47 +2221,47 @@ const NovelReader = {
         ];
         
         elements.forEach(id => {
-            const el = document.getElementById(id);
+            const el = getDoc().getElementById(id);
             if (el) {
                 const newEl = el.cloneNode(true);
                 el.parentNode.replaceChild(newEl, el);
             }
         });
         
-        document.getElementById("reader-font-minus").onclick = (e) => {
+        getDoc().getElementById("reader-font-minus").onclick = (e) => {
             e.stopPropagation();
             this.setFontSize(this.fontSize - 1);
         };
         
-        document.getElementById("reader-font-plus").onclick = (e) => {
+        getDoc().getElementById("reader-font-plus").onclick = (e) => {
             e.stopPropagation();
             this.setFontSize(this.fontSize + 1);
         };
         
-        document.getElementById("reader-chapter-select-btn").onclick = (e) => {
+        getDoc().getElementById("reader-chapter-select-btn").onclick = (e) => {
             e.stopPropagation();
             this.showChapterDrawer();
         };
         
-        document.getElementById("reader-drawer-close").onclick = (e) => {
+        getDoc().getElementById("reader-drawer-close").onclick = (e) => {
             e.stopPropagation();
             this.hideChapterDrawer();
         };
         
-        document.getElementById("reader-prev-chapter").onclick = (e) => {
+        getDoc().getElementById("reader-prev-chapter").onclick = (e) => {
             e.stopPropagation();
             this.loadPrevChapter();
         };
         
-        document.getElementById("reader-next-chapter").onclick = (e) => {
+        getDoc().getElementById("reader-next-chapter").onclick = (e) => {
             e.stopPropagation();
             this.loadNextChapter();
         };
         
-        const contentWrap = document.querySelector(".reader-content-wrap");
-        const contentEl = document.getElementById("reader-content");
-        const drawerEl = document.getElementById("reader-chapter-drawer");
-        const chapterListEl = document.getElementById("reader-chapter-list");
+        const contentWrap = getDoc().querySelector(".reader-content-wrap");
+        const contentEl = getDoc().getElementById("reader-content");
+        const drawerEl = getDoc().getElementById("reader-chapter-drawer");
+        const chapterListEl = getDoc().getElementById("reader-chapter-list");
         
         contentWrap.onclick = (e) => {
             if (e.target.closest(".reader-content") || e.target.closest(".reader-controls") || 
@@ -2307,9 +2314,9 @@ const NovelReader = {
     updateProgressOnly() {
         if (this.isPageTurning || this.isProgrammaticScroll) return;
         
-        const contentEl = document.getElementById("reader-content");
-        const progressEl = document.getElementById("reader-progress-fill");
-        const progressTextEl = document.getElementById("reader-progress-text");
+        const contentEl = getDoc().getElementById("reader-content");
+        const progressEl = getDoc().getElementById("reader-progress-fill");
+        const progressTextEl = getDoc().getElementById("reader-progress-text");
         
         const scrollTop = contentEl.scrollTop;
         const scrollHeight = contentEl.scrollHeight;
@@ -2334,8 +2341,8 @@ const NovelReader = {
     },
     
     renderChapterList() {
-        const listContainer = document.getElementById("reader-chapter-list");
-        const chapterCountEl = document.getElementById("reader-chapter-count");
+        const listContainer = getDoc().getElementById("reader-chapter-list");
+        const chapterCountEl = getDoc().getElementById("reader-chapter-count");
         const totalChapterCount = currentParsedChapters.length + continueWriteChain.length;
         
         let currentChapterIndex = 0;
@@ -2379,9 +2386,9 @@ const NovelReader = {
         this.globalPageCooldown = true;
         this.isProgrammaticScroll = true;
 
-        const contentEl = document.getElementById("reader-content");
-        const titleEl = document.getElementById("reader-current-chapter-title");
-        const chapterCountEl = document.getElementById("reader-chapter-count");
+        const contentEl = getDoc().getElementById("reader-content");
+        const titleEl = getDoc().getElementById("reader-current-chapter-title");
+        const chapterCountEl = getDoc().getElementById("reader-chapter-count");
         const totalChapterCount = currentParsedChapters.length + continueWriteChain.length;
         
         let chapterData = null;
@@ -2500,7 +2507,7 @@ const NovelReader = {
         this.loadChapter(nextChapterId, nextChapterType);
         
         setTimeout(() => {
-            const contentEl = document.getElementById("reader-content");
+            const contentEl = getDoc().getElementById("reader-content");
             this.isProgrammaticScroll = true;
             contentEl.scrollTop = this.safeScrollOffset;
             requestAnimationFrame(() => {
@@ -2557,7 +2564,7 @@ const NovelReader = {
         this.loadChapter(prevChapterId, prevChapterType);
         
         setTimeout(() => {
-            const contentEl = document.getElementById("reader-content");
+            const contentEl = getDoc().getElementById("reader-content");
             const maxScrollTop = contentEl.scrollHeight - contentEl.clientHeight;
             const targetScrollTop = Math.max(0, maxScrollTop - this.safeScrollOffset);
             this.isProgrammaticScroll = true;
@@ -2586,7 +2593,7 @@ const NovelReader = {
         this.isProgrammaticScroll = true;
         this.fontSize = size;
         
-        const contentEl = document.getElementById("reader-content");
+        const contentEl = getDoc().getElementById("reader-content");
         contentEl.style.setProperty("--novel-reader-font-size", `${size}px`);
         
         setTimeout(() => {
@@ -2602,15 +2609,15 @@ const NovelReader = {
     },
     
     toggleChapterDrawer() {
-        document.getElementById("reader-chapter-drawer").classList.toggle("show");
+        getDoc().getElementById("reader-chapter-drawer").classList.toggle("show");
     },
     
     showChapterDrawer() {
-        document.getElementById("reader-chapter-drawer").classList.add("show");
+        getDoc().getElementById("reader-chapter-drawer").classList.add("show");
     },
     
     hideChapterDrawer() {
-        document.getElementById("reader-chapter-drawer").classList.remove("show");
+        getDoc().getElementById("reader-chapter-drawer").classList.remove("show");
     },
     
     restoreState() {
@@ -2700,7 +2707,7 @@ function exportChapterGraphs() {
     const jsonString = JSON.stringify(exportData, null, 2);
     const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = getDoc().createElement('a');
     a.href = url;
     a.download = `${novelName}_章节图谱.json`;
     a.click();
@@ -3257,7 +3264,7 @@ function exportNovelFromBookshelf(novelId) {
     const dataStr = JSON.stringify(novel, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = getDoc().createElement('a');
     a.href = url;
     a.download = `${novel.name.replace(/[/\\?%*:|"<>]/g, '_')}.json`;
     a.click();
@@ -3905,7 +3912,7 @@ function batchExportNovels() {
         const dataStr = JSON.stringify(exportData, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = getDoc().createElement('a');
         a.href = url;
         a.download = `multiple_novels_${Date.now()}.json`;
         a.click();
@@ -3979,19 +3986,19 @@ async function copyToClipboard(text) {
             await navigator.clipboard.writeText(text);
             return true;
         }
-        const textArea = document.createElement('textarea');
+        const textArea = getDoc().createElement('textarea');
         textArea.value = text;
         textArea.style.position = 'fixed';
         textArea.style.left = '-99999px';
         textArea.style.top = '-99999px';
         textArea.style.opacity = '0';
         textArea.readOnly = true;
-        document.body.appendChild(textArea);
+        getDoc().body.appendChild(textArea);
         textArea.focus();
         textArea.select();
         textArea.setSelectionRange(0, textArea.value.length);
-        const result = document.execCommand('copy');
-        document.body.removeChild(textArea);
+        const result = getDoc().execCommand('copy');
+        getDoc().body.removeChild(textArea);
         return result;
     } catch (error) {
         console.error('复制失败:', error);
@@ -4000,8 +4007,8 @@ async function copyToClipboard(text) {
 }
 
 function initVisibilityListener() {
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible' && isInitialized) {
+    getDoc().addEventListener('visibilitychange', () => {
+        if (getDoc().visibilityState === 'visible' && isInitialized) {
             if (isGeneratingWrite) {
                 $('#write-status').text('生成状态异常，请重新点击生成');
                 isGeneratingWrite = false;
@@ -4490,7 +4497,7 @@ async function sendChaptersBatch(chapters) {
 }
 
 function getSelectedChapters() {
-    const checkedInputs = document.querySelectorAll('.chapter-select:checked');
+    const checkedInputs = getDoc().querySelectorAll('.chapter-select:checked');
     const selectedIndexes = [...checkedInputs].map(input => parseInt(input.dataset.index));
     return selectedIndexes.map(index => currentParsedChapters.find(item => item.id === index)).filter(Boolean);
 }
@@ -5451,7 +5458,7 @@ async function openNovelWriter() {
         
         const blob = new Blob([graphText], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
+        const a = getDoc().createElement('a');
         a.href = url;
         a.download = `${novelName}_合并图谱.json`;
         a.click();
@@ -5628,34 +5635,34 @@ async function openNovelWriter() {
     });
 
     // 书架项事件监听（使用事件委托）
-    $(document).off("click", "#bookshelf-container .load-book-btn").on("click", "#bookshelf-container .load-book-btn", (e) => {
+    $(getDoc()).off("click", "#bookshelf-container .load-book-btn").on("click", "#bookshelf-container .load-book-btn", (e) => {
         const novelId = $(e.currentTarget).data("novel-id");
         loadNovelFromBookshelf(novelId);
     });
 
-    $(document).off("click", "#bookshelf-container .rename-book-btn").on("click", "#bookshelf-container .rename-book-btn", (e) => {
+    $(getDoc()).off("click", "#bookshelf-container .rename-book-btn").on("click", "#bookshelf-container .rename-book-btn", (e) => {
         const novelId = $(e.currentTarget).data("novel-id");
         renameNovelInBookshelf(novelId);
     });
 
-    $(document).off("click", "#bookshelf-container .export-book-btn").on("click", "#bookshelf-container .export-book-btn", (e) => {
+    $(getDoc()).off("click", "#bookshelf-container .export-book-btn").on("click", "#bookshelf-container .export-book-btn", (e) => {
         const novelId = $(e.currentTarget).data("novel-id");
         exportNovelFromBookshelf(novelId);
     });
 
-    $(document).off("click", "#bookshelf-container .delete-book-btn").on("click", "#bookshelf-container .delete-book-btn", (e) => {
+    $(getDoc()).off("click", "#bookshelf-container .delete-book-btn").on("click", "#bookshelf-container .delete-book-btn", (e) => {
         const novelId = $(e.currentTarget).data("novel-id");
         deleteNovelFromBookshelf(novelId);
     });
 
-    $(document).off("click", "#bookshelf-container .copy-book-btn").on("click", "#bookshelf-container .copy-book-btn", (e) => {
+    $(getDoc()).off("click", "#bookshelf-container .copy-book-btn").on("click", "#bookshelf-container .copy-book-btn", (e) => {
         e.stopPropagation();
         const novelId = $(e.currentTarget).data("novel-id");
         copyNovelInBookshelf(novelId);
     });
 
     // 小说详情查看事件
-    $(document).off("click", "#bookshelf-container .book-item, #bookshelf-container .book-grid-item").on("click", "#bookshelf-container .book-item, #bookshelf-container .book-grid-item", (e) => {
+    $(getDoc()).off("click", "#bookshelf-container .book-item, #bookshelf-container .book-grid-item").on("click", "#bookshelf-container .book-item, #bookshelf-container .book-grid-item", (e) => {
         const $target = $(e.target);
         // 排除按钮点击和复选框
         if ($target.closest('.book-actions').length || $target.closest('.book-grid-actions').length || $target.is('.book-checkbox')) {
@@ -5666,7 +5673,7 @@ async function openNovelWriter() {
     });
 
     // 复选框事件
-    $(document).off("change", ".book-checkbox").on("change", ".book-checkbox", (e) => {
+    $(getDoc()).off("change", ".book-checkbox").on("change", ".book-checkbox", (e) => {
         const novelId = $(e.target).data("novel-id");
         if ($(e.target).prop("checked")) {
             selectedNovelIds.add(novelId);
@@ -5754,7 +5761,7 @@ async function openNovelWriter() {
     // ========== 拖拽排序功能 ==========
     let draggedNovelId = null;
 
-    $(document).off('dragstart', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
+    $(getDoc()).off('dragstart', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
         .on('dragstart', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item', function(e) {
             // 如果点击的是复选框，不触发拖拽
             if ($(e.target).is('.book-checkbox')) {
@@ -5765,14 +5772,14 @@ async function openNovelWriter() {
             e.originalEvent.dataTransfer.effectAllowed = 'move';
         });
 
-    $(document).off('dragend', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
+    $(getDoc()).off('dragend', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
         .on('dragend', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item', function() {
             $(this).removeClass('dragging');
             $('#bookshelf-container .book-item, #bookshelf-container .book-grid-item').removeClass('drag-over');
             draggedNovelId = null;
         });
 
-    $(document).off('dragover', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
+    $(getDoc()).off('dragover', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
         .on('dragover', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item', function(e) {
             e.preventDefault();
             e.originalEvent.dataTransfer.dropEffect = 'move';
@@ -5781,12 +5788,12 @@ async function openNovelWriter() {
             }
         });
 
-    $(document).off('dragleave', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
+    $(getDoc()).off('dragleave', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
         .on('dragleave', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item', function(e) {
             $(this).removeClass('drag-over');
         });
 
-    $(document).off('drop', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
+    $(getDoc()).off('drop', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item')
         .on('drop', '#bookshelf-container .book-item, #bookshelf-container .book-grid-item', function(e) {
             e.preventDefault();
             const $target = $(this);
@@ -6074,7 +6081,7 @@ function registerNovelWriterButton() {
 // ---------- 兜底浮动按钮 ----------
 function addNovelWriterFloatingButton() {
     try {
-        const pDoc = (window.parent && window.parent.document) ? window.parent.document : document;
+        const pDoc = (window.parent && window.parent.getDoc()) ? window.parent.getDoc() : document;
         if (!pDoc || !pDoc.body) {
             console.warn('[小说续写插件] 父页面body尚未就绪，稍后重试');
             setTimeout(addNovelWriterFloatingButton, 500);
@@ -6148,7 +6155,7 @@ function cleanupNovelWriter() {
             }
         } catch (_) {}
         // 移除注入的 UI 根容器与样式
-        const pDoc = (window.parent && window.parent.document) ? window.parent.document : __parentDocument;
+        const pDoc = (window.parent && window.parent.getDoc()) ? window.parent.getDoc() : __parentDocument;
         try {
             $('#novel-writer-extension-root').remove();
             $('style[data-novel-writer="true"]').remove();
@@ -6233,4 +6240,22 @@ setTimeout(function() {
  * 卸载：pagehide → cleanupNovelWriter() → 移除 iframe + 还原上下文
  * ============================================================ */
 
+// —— IIFE try/catch 收尾：任何未捕获异常都不会冒泡到酒馆助手——
+} catch (__fatalErr) {
+    try {
+        var __msg = '[小说续写插件] 💥 致命异常:\n' +
+                    (__fatalErr && __fatalErr.stack ? __fatalErr.stack : String(__fatalErr));
+        console.error(__msg);
+        // 用户层面：弹窗显示报错（代替 Tavern Helper 笼统的"加载失败"）
+        try {
+            alert('【小说续写插件加载失败】\n\n错误信息:\n' +
+                  (__fatalErr && __fatalErr.message ? __fatalErr.message : String(__fatalErr)) +
+                  '\n\n（请截图或复制发给开发者排查）');
+        } catch (_) {}
+    } catch (__finalErr) {
+        // 最后兜底：用最原始的方式输出
+        console.error('novel-writer fatal:', __fatalErr, 'inner-error:', __finalErr);
+    }
+    // ⚠️ 绝对不 re-throw！否则酒馆助手会吞掉我们的详细报错，只显示笼统的"插件错误"
+}
 })();
