@@ -18,6 +18,9 @@
  */
 (function() {
 'use strict';
+// ★ 最早诊断点：脚本一被 import 就立即打印，证明脚本确实被加载执行
+// 如果 F12 控制台看不到这条日志，说明脚本根本没被加载（import 失败 / CDN 缓存 / 网络问题）
+try { console.log('%c[小说续写插件] 🚀 脚本 IIFE 已开始执行', 'color:#f97316;font-weight:bold;font-size:13px;'); } catch(_) {}
 
 
 /* ============================================================
@@ -5970,18 +5973,53 @@ async function openNovelWriter() {
  * ============================================================ */
 
 // ---------- 注册脚本按钮 ----------
+// 同时尝试多个按钮名 + 自动添加按钮，不依赖用户在脚本库中配置
 function registerNovelWriterButton() {
+    let registered = 0;
     try {
-        const evtOn     = typeof eventOn === 'function' ? eventOn : (window.eventOn);
-        const getBtnEvt = typeof getButtonEvent === 'function' ? getButtonEvent : (window.getButtonEvent);
+        const evtOn     = typeof eventOn === 'function' ? eventOn : (typeof window.eventOn === 'function' ? window.eventOn : null);
+        const getBtnEvt = typeof getButtonEvent === 'function' ? getButtonEvent : (typeof window.getButtonEvent === 'function' ? window.getButtonEvent : null);
+
+        // 1) 自动添加按钮（如果 API 可用），不依赖用户在脚本库手动配置
+        //    appendInexistentScriptButtons 只添加不存在的按钮，不会覆盖用户配置
+        try {
+            if (typeof appendInexistentScriptButtons === 'function') {
+                appendInexistentScriptButtons([
+                    { name: '小说续写器', visible: true },
+                    { name: '打开小说续写器', visible: true }
+                ]);
+                console.log('[小说续写插件] 已调用 appendInexistentScriptButtons 自动添加按钮');
+            } else if (typeof window.appendInexistentScriptButtons === 'function') {
+                window.appendInexistentScriptButtons([
+                    { name: '小说续写器', visible: true },
+                    { name: '打开小说续写器', visible: true }
+                ]);
+                console.log('[小说续写插件] 已调用 window.appendInexistentScriptButtons 自动添加按钮');
+            }
+        } catch (e) {
+            console.warn('[小说续写插件] appendInexistentScriptButtons 调用失败:', e);
+        }
+
+        // 2) 同时为多个可能的按钮名注册事件，提高命中率
+        //    （用户可能把按钮名配成"小说续写器"或"打开小说续写器"或别的）
         if (evtOn && getBtnEvt) {
-            evtOn(getBtnEvt('打开小说续写器'), () => openNovelWriter());
-            return true;
+            const buttonNames = ['小说续写器', '打开小说续写器'];
+            for (const name of buttonNames) {
+                try {
+                    evtOn(getBtnEvt(name), () => openNovelWriter());
+                    registered++;
+                    console.log('[小说续写插件] 已注册按钮事件: "' + name + '"');
+                } catch (e) {
+                    console.warn('[小说续写插件] 注册按钮事件失败: "' + name + '"', e);
+                }
+            }
+        } else {
+            console.warn('[小说续写插件] eventOn/getButtonEvent 不可用，跳过脚本按钮注册');
         }
     } catch (e) {
-        console.warn('[小说续写插件] 注册脚本按钮失败:', e);
+        console.warn('[小说续写插件] 注册脚本按钮整体失败:', e);
     }
-    return false;
+    return registered > 0;
 }
 
 // ---------- 兜底浮动按钮 ----------
@@ -6082,14 +6120,14 @@ function cleanupNovelWriter() {
     }
 }
 
-// ---------- 脚本入口：立即执行，不依赖任何异步回调 ----------
+// ---------- 脚本入口：立即执行 + jQuery ready 双保险 ----------
 // 用户场景：通过 `import 'URL'` 的方式导入到酒馆助手。
-// 这种模式下：
-//   · eventOn / getButtonEvent 可能完全不存在（没有"脚本按钮配置"）
-//   · jQuery ready 回调（$()）可能不触发（import 的脚本没有对应 jQuery ready 钩子）
-//   · 浮动按钮是唯一可靠的入口
-// 因此：跳过所有等待与重试，脚本一加载就 → 注册 pagehide 清理 + 立即添加浮动按钮 + 暴露全局手动入口
+// 立即执行 + jQuery ready + 1秒兜底重试，三重保险确保按钮一定能显示
+let _entryExecuted = false;
 function novelWriterEntryPoint() {
+    if (_entryExecuted) return;
+    _entryExecuted = true;
+    console.log('[小说续写插件] ▶️ novelWriterEntryPoint 开始执行');
     try { window.addEventListener('pagehide', cleanupNovelWriter); } catch (e) { console.warn('[小说续写插件] pagehide监听失败:', e); }
     try {
         addNovelWriterFloatingButton();
@@ -6100,7 +6138,6 @@ function novelWriterEntryPoint() {
     try {
         // 尝试注册脚本按钮（不影响浮动按钮，失败也无所谓）
         registerNovelWriterButton();
-        console.log('[小说续写插件] 脚本按钮注册已尝试（如你的酒馆助手有"脚本按钮配置"功能，请配置按钮名="打开小说续写器"）');
     } catch (_) {}
     // 暴露全局手动入口：用户在控制台敲 window.openNovelWriter() 也能打开
     try {
@@ -6110,16 +6147,33 @@ function novelWriterEntryPoint() {
     } catch (_) {}
 }
 
-// ===== 立即执行（不依赖 $ / jQuery ready / setTimeout 等任何异步机制）=====
+// ===== 三重保险：立即执行 + jQuery ready + 1秒兜底 =====
+// 1) 立即执行（最早）
 try {
     novelWriterEntryPoint();
 } catch (e) {
-    console.error('[小说续写插件] ❌ 入口执行失败:', e);
-    // 最后兜底：延迟 1 秒后再尝试一次
-    setTimeout(function() {
-        try { novelWriterEntryPoint(); } catch (e2) { console.error('[小说续写插件] 重试入口依然失败:', e2); }
-    }, 1000);
+    console.error('[小说续写插件] ❌ 立即执行入口失败:', e);
 }
+
+// 2) jQuery ready（酒馆助手推荐的入口时机）
+try {
+    if (typeof $ === 'function') {
+        $(novelWriterEntryPoint);
+    } else if (typeof window.parent === 'object' && window.parent && typeof window.parent.$ === 'function') {
+        window.parent.$(novelWriterEntryPoint);
+    }
+} catch (e) {
+    console.warn('[小说续写插件] jQuery ready 注册失败:', e);
+}
+
+// 3) 1秒兜底重试（确保即使上面都失败，也能再试一次）
+setTimeout(function() {
+    try {
+        // 重置标志允许重试
+        _entryExecuted = false;
+        novelWriterEntryPoint();
+    } catch (e2) { console.error('[小说续写插件] 1秒兜底重试失败:', e2); }
+}, 1000);
 
 
 /* ============================================================
