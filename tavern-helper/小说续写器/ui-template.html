@@ -1,0 +1,1141 @@
+<div class="novel-writer-extension-root" aria-label="小说智能续写系统">
+    <!-- SVG 图标库 -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <!-- 书本图标 -->
+        <symbol id="icon-book" viewBox="0 0 24 24">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+        </symbol>
+        <!-- 关闭图标 -->
+        <symbol id="icon-close" viewBox="0 0 24 24">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+        </symbol>
+        <!-- 清单图标 -->
+        <symbol id="icon-list" viewBox="0 0 24 24">
+            <line x1="8" y1="6" x2="21" y2="6"/>
+            <line x1="8" y1="12" x2="21" y2="12"/>
+            <line x1="8" y1="18" x2="21" y2="18"/>
+            <line x1="3" y1="6" x2="3.01" y2="6"/>
+            <line x1="3" y1="12" x2="3.01" y2="12"/>
+            <line x1="3" y1="18" x2="3.01" y2="18"/>
+        </symbol>
+        <!-- 大脑图标 -->
+        <symbol id="icon-brain" viewBox="0 0 24 24">
+            <path d="M12 2a7 7 0 0 0-7 7c0 4 4 13 7 13s7-9 7-13a7 7 0 0 0-7-7z"/>
+            <circle cx="9" cy="9" r="1"/>
+            <circle cx="15" cy="9" r="1"/>
+        </symbol>
+        <!-- 笔图标 -->
+        <symbol id="icon-pen" viewBox="0 0 24 24">
+            <path d="M12 20h9"/>
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+        </symbol>
+        <!-- 书架图标 -->
+        <symbol id="icon-library" viewBox="0 0 24 24">
+            <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
+            <path d="M5 7h4v10H5zm6 0h4v10h-4z"/>
+        </symbol>
+        <!-- 文件夹图标 -->
+        <symbol id="icon-folder" viewBox="0 0 24 24">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+        </symbol>
+        <!-- 魔法图标 -->
+        <symbol id="icon-magic" viewBox="0 0 24 24">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </symbol>
+        <!-- 下载图标 -->
+        <symbol id="icon-download" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+        </symbol>
+        <!-- 上传图标 -->
+        <symbol id="icon-upload" viewBox="0 0 24 24">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+        </symbol>
+        <!-- 复选框图标 -->
+        <symbol id="icon-check" viewBox="0 0 24 24">
+            <polyline points="20 6 9 17 4 12"/>
+        </symbol>
+        <!-- 标签图标 -->
+        <symbol id="icon-tag" viewBox="0 0 24 24">
+            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+            <line x1="7" y1="7" x2="7.01" y2="7"/>
+        </symbol>
+        <!-- 向下箭头 -->
+        <symbol id="icon-arrow-down" viewBox="0 0 24 24">
+            <polyline points="6 9 12 15 18 9"/>
+        </symbol>
+        <!-- 保存图标 -->
+        <symbol id="icon-save" viewBox="0 0 24 24">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+        </symbol>
+        <!-- 垃圾桶图标 -->
+        <symbol id="icon-trash" viewBox="0 0 24 24">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+        </symbol>
+        <!-- 设置图标 -->
+        <symbol id="icon-settings" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </symbol>
+        <!-- 地图图标 -->
+        <symbol id="icon-map" viewBox="0 0 24 24">
+            <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/>
+            <line x1="9" y1="3" x2="9" y2="18"/>
+            <line x1="15" y1="6" x2="15" y2="21"/>
+        </symbol>
+        <!-- 火箭图标 -->
+        <symbol id="icon-rocket" viewBox="0 0 24 24">
+            <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
+            <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
+            <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
+            <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
+        </symbol>
+        <!-- 包裹图标 -->
+        <symbol id="icon-package" viewBox="0 0 24 24">
+            <line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/>
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+        </symbol>
+        <!-- 图表图标 -->
+        <symbol id="icon-chart" viewBox="0 0 24 24">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="14"/>
+        </symbol>
+        <!-- 刷新图标 -->
+        <symbol id="icon-refresh" viewBox="0 0 24 24">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+        </symbol>
+        <!-- 代码图标 -->
+        <symbol id="icon-code" viewBox="0 0 24 24">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+        </symbol>
+        <!-- 盾牌图标 -->
+        <symbol id="icon-shield" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </symbol>
+        <!-- 书签图标 -->
+        <symbol id="icon-bookmark" viewBox="0 0 24 24">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        </symbol>
+        <!-- 文档图标 -->
+        <symbol id="icon-document" viewBox="0 0 24 24">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+        </symbol>
+        <!-- 目标图标 -->
+        <symbol id="icon-target" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="6"/>
+            <circle cx="12" cy="12" r="2"/>
+        </symbol>
+        <!-- 闪电图标 -->
+        <symbol id="icon-zap" viewBox="0 0 24 24">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </symbol>
+        <!-- 尺子图标 -->
+        <symbol id="icon-ruler" viewBox="0 0 24 24">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="6" y1="12" x2="8" y2="12"/>
+            <line x1="6" y1="16" x2="8" y2="16"/>
+            <line x1="10" y1="14" x2="10" y2="14"/>
+            <line x1="10" y1="18" x2="10" y2="18"/>
+        </symbol>
+        <!-- 停止图标 -->
+        <symbol id="icon-stop" viewBox="0 0 24 24">
+            <rect x="5" y="5" width="14" height="14"/>
+        </symbol>
+        <!-- 复制图标 -->
+        <symbol id="icon-copy" viewBox="0 0 24 24">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+        </symbol>
+        <!-- 链接图标 -->
+        <symbol id="icon-link" viewBox="0 0 24 24">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </symbol>
+        <!-- 左箭头 -->
+        <symbol id="icon-arrow-left" viewBox="0 0 24 24">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+        </symbol>
+        <!-- 右箭头 -->
+        <symbol id="icon-arrow-right" viewBox="0 0 24 24">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+        </symbol>
+        <!-- 搜索图标 -->
+        <symbol id="icon-search" viewBox="0 0 24 24">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </symbol>
+        <!-- 复选框空 -->
+        <symbol id="icon-check-empty" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+        </symbol>
+    </svg>
+
+    <!-- 可移动悬浮球 -->
+    <div id="novel-writer-float-ball" 
+         class="float-ball" 
+         role="button" 
+         tabindex="0"
+         aria-label="打开小说续写系统面板"
+         style="visibility: hidden; opacity: 0;">
+        <div class="ball-inner" role="presentation" aria-hidden="true">
+            <div class="ball-icon">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                </svg>
+            </div>
+            <div class="ball-glow" role="presentation" aria-hidden="true"></div>
+        </div>
+        <div class="ball-pulse" role="presentation" aria-hidden="true"></div>
+    </div>
+
+    <!-- 主功能面板 -->
+    <div id="novel-writer-panel" 
+         class="writer-panel" 
+         role="dialog" 
+         aria-modal="true" 
+         aria-labelledby="panel-title"
+         aria-describedby="panel-description">
+        <!-- 面板头部 -->
+        <div class="panel-header">
+            <div class="panel-title">
+                <div class="title-icon">
+                    <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                    </svg>
+                    <div class="title-icon-glow"></div>
+                </div>
+                <div class="title-text">
+                    <h2 id="panel-title">小说智能续写系统</h2>
+                    <p id="panel-description" class="title-subtitle">Novel AI Writer System - 提供章节管理、知识图谱构建和智能续写功能</p>
+                </div>
+            </div>
+            <button id="panel-close-btn" 
+                    class="panel-close-btn"
+                    aria-label="关闭面板"
+                    title="按 Escape 键也可关闭">
+                <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                <div class="btn-hover-effect"></div>
+            </button>
+        </div>
+
+        <!-- 小说详情模态框 -->
+        <div id="novel-detail-modal" class="modal-overlay" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-novel-title">小说详情</h3>
+                    <button class="modal-close-btn" id="close-novel-detail-modal"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                </div>
+                <div class="modal-body" id="modal-novel-body">
+                    <!-- 动态填充 -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" id="modal-load-novel-btn">加载此小说</button>
+                    <button class="btn btn-secondary" id="modal-close-novel-btn">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 选项卡导航 -->
+        <div class="panel-tab-nav" 
+             role="tablist" 
+             aria-label="功能模块选项卡">
+            <div class="tab-nav-container">
+                <div class="tab-nav-indicator" role="presentation" aria-hidden="true"></div>
+                <div class="panel-tab-item active" 
+                     data-tab="tab-bookshelf"
+                     role="tab"
+                     id="tab-bookshelf-btn"
+                     aria-selected="true"
+                     aria-controls="tab-bookshelf"
+                     tabindex="0">
+                    <div class="tab-icon">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14z"/>
+                            <path d="M5 7h4v10H5zm6 0h4v10h-4z"/>
+                        </svg>
+                    </div>
+                    <div class="tab-text">我的书架</div>
+                    <div class="tab-indicator"></div>
+                </div>
+                <div class="panel-tab-item" 
+                     data-tab="tab-chapter"
+                     role="tab"
+                     id="tab-chapter-btn"
+                     aria-selected="false"
+                     aria-controls="tab-chapter"
+                     tabindex="-1">
+                    <div class="tab-icon">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                    </div>
+                    <div class="tab-text">章节管理</div>
+                    <div class="tab-indicator"></div>
+                </div>
+                <div class="panel-tab-item" 
+                     data-tab="tab-graph"
+                     role="tab"
+                     id="tab-graph-btn"
+                     aria-selected="false"
+                     aria-controls="tab-graph"
+                     tabindex="-1">
+                    <div class="tab-icon">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a7 7 0 0 0-7 7c0 4 4 13 7 13s7-9 7-13a7 7 0 0 0-7-7z"/>
+                            <circle cx="9" cy="9" r="1"/>
+                            <circle cx="15" cy="9" r="1"/>
+                        </svg>
+                    </div>
+                    <div class="tab-text">知识图谱</div>
+                    <div class="tab-indicator"></div>
+                </div>
+                <div class="panel-tab-item" 
+                     data-tab="tab-write"
+                     role="tab"
+                     id="tab-write-btn"
+                     aria-selected="false"
+                     aria-controls="tab-write"
+                     tabindex="-1">
+                    <div class="tab-icon">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                        </svg>
+                    </div>
+                    <div class="tab-text">内容续写</div>
+                    <div class="tab-indicator"></div>
+                </div>
+                <div class="panel-tab-item" 
+                     data-tab="tab-reader"
+                     role="tab"
+                     id="tab-reader-btn"
+                     aria-selected="false"
+                     aria-controls="tab-reader"
+                     tabindex="-1">
+                    <div class="tab-icon">
+                        <svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        </svg>
+                    </div>
+                    <div class="tab-text">小说阅读</div>
+                    <div class="tab-indicator"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 选项卡内容容器 -->
+        <div class="panel-tab-content">
+            <!-- 选项卡1：我的书架 -->
+            <div class="panel-tab-panel active" 
+                 id="tab-bookshelf"
+                 role="tabpanel"
+                 aria-labelledby="tab-bookshelf-btn">
+                <!-- 上传和导入区域 -->
+                <div class="bookshelf-toolbar">
+                    <!-- 上传小说卡片 -->
+                    <div class="content-card card-compact">
+                        <div class="card-body">
+                            <div class="upload-zone-compact">
+                                <input id="bookshelf-novel-file-upload" type="file" accept=".txt" style="display: none;">
+                                <div class="upload-zone-content-compact" 
+                                     id="bookshelf-select-file-btn"
+                                     role="button"
+                                     tabindex="0"
+                                     aria-label="点击选择小说文件上传"
+                                     aria-haspopup="true">
+                                    <div class="upload-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>
+                                    <div class="upload-text">
+                                        <span class="upload-main">上传新小说</span>
+                                        <span class="upload-sub" id="bookshelf-file-name-text" aria-live="polite">未选择文件</span>
+                                    </div>
+                                </div>
+                                <div class="upload-zone-right">
+                                    <div class="form-group form-group-compact">
+                                        <input id="bookshelf-chapter-regex-input" 
+                                               type="text" 
+                                               class="form-input form-input-compact" 
+                                               placeholder="章节正则"
+                                               value="^\s*第\s*[0-9零一二三四五六七八九十百千]+\s*章.*$"
+                                               aria-label="章节拆分正则">
+                                    </div>
+                                    <button class="btn btn-primary btn-compact" id="bookshelf-parse-and-save-btn">
+                                        <span class="btn-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                                        <span class="btn-text">解析添加</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 书架列表卡片 -->
+                <div class="content-card card-list">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9 2-2-2zm0 16H3V5h18v14z"/><path d="M5 7h4v10H5zm6 0h4v10h-4z"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>我的书架</h4>
+                                <p class="card-subtitle" 
+                                   id="bookshelf-count-display"
+                                   aria-live="polite"
+                                   aria-atomic="true">共 0 本小说</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="bookshelf-container" class="bookshelf-list" aria-label="书架列表">
+                        <div class="empty-state">
+                            <div class="empty-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9 2-2-2zm0 16H3V5h18v14z"/><path d="M5 7h4v10H5zm6 0h4v10h-4z"/></svg></div>
+                            <div class="empty-text">书架为空，请上传小说</div>
+                        </div>
+                    </div>
+                    <!-- 批量操作栏 -->
+                    <div id="bookshelf-batch-actions" class="bookshelf-batch-bar" style="display: none;">
+                        <div class="batch-info">
+                            <span id="selected-count">已选择 0 本小说</span>
+                        </div>
+                        <div class="batch-buttons">
+                            <button class="btn btn-sm btn-secondary" id="batch-export-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>批量导出
+                            </button>
+                            <button class="btn btn-sm btn-danger" id="batch-delete-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span>批量删除
+                            </button>
+                            <button class="btn btn-sm btn-outline" id="cancel-selection-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>取消选择
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 标签筛选器 -->
+                    <div id="bookshelf-tag-filter" class="bookshelf-tag-filter" style="display: none;">
+                        <div class="tag-filter-header">
+                            <span class="tag-filter-label"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> 标签筛选：</span>
+                            <button class="btn btn-sm btn-icon" id="clear-tag-filter-btn" title="清除筛选"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                        </div>
+                        <div id="bookshelf-tag-list" class="bookshelf-tag-list">
+                            <!-- 动态生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选项卡2：章节管理 -->
+            <div class="panel-tab-panel" 
+                 id="tab-chapter"
+                 role="tabpanel"
+                 aria-labelledby="tab-chapter-btn"
+                 aria-hidden="true"
+                 hidden>
+                <!-- 对话补全预设配置卡片 -->
+                <div class="content-card card-compact">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>对话补全预设配置</h4>
+                                <p class="card-subtitle">Generation Preset Config</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="toggle-setting">
+                            <div class="toggle-info">
+                                <span class="toggle-label">自动使用父级对话预设</span>
+                                <span class="toggle-hint">开启后，续写将使用当前对话的生成预设参数</span>
+                            </div>
+                            <div class="toggle-switch" 
+                                 role="switch" 
+                                 aria-checked="true"
+                                 aria-label="自动使用父级对话预设"
+                                 tabindex="0"
+                                 id="auto-parent-preset-switch">
+                                <input type="checkbox" checked class="sr-only" />
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </div>
+                        <div id="parent-preset-name-display" class="preset-name-display" style="display: none;"></div>
+                    </div>
+                </div>
+
+                <!-- 章节列表卡片 -->
+                <div class="content-card card-list">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>章节列表</h4>
+                                <p class="card-subtitle" 
+                                   id="chapter-count-display"
+                                   aria-live="polite"
+                                   aria-atomic="true">共 0 个章节</p>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-icon-only" 
+                                    id="select-all-btn" 
+                                    aria-label="全选"
+                                    title="全选">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></span>
+                            </button>
+                            <button class="btn btn-icon-only" 
+                                    id="unselect-all-btn" 
+                                    aria-label="取消全选"
+                                    title="取消全选">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg></span>
+                            </button>
+                            <button class="btn btn-sm btn-danger" 
+                                    id="stop-send-btn" 
+                                    disabled
+                                    aria-disabled="true">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14"/></svg></span>停止
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress-wrapper">
+                        <div class="progress-info">
+                            <span id="novel-import-status" 
+                                  class="progress-text"
+                                  aria-live="polite"
+                                  role="status"></span>
+                            <span class="progress-percent" 
+                                  id="novel-import-percent"
+                                  aria-live="polite"></span>
+                        </div>
+                        <div class="progress-bar" 
+                             role="progressbar"
+                             id="novel-import-progress-bar"
+                             aria-valuenow="0"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             aria-label="小说导入进度">
+                            <div id="novel-import-progress" class="progress-fill"></div>
+                        </div>
+                    </div>
+                    <div id="novel-chapter-list" class="chapter-list" aria-label="章节列表">
+                        <div class="empty-state">
+                            <div class="empty-icon" aria-hidden="true">📁</div>
+                            <div class="empty-text">请上传小说文件并点击「解析章节」</div>
+                        </div>
+                    </div>
+                    <div class="card-footer">
+                        <button class="btn btn-outline" id="validate-chapter-graph-btn">
+                            <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>检验图谱状态
+                        </button>
+                        <button class="btn btn-primary" id="import-selected-btn">
+                            <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>导入选中章节
+                        </button>
+                        <button class="btn btn-secondary" id="import-all-btn">
+                            <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>导入全部
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选项卡2：知识图谱构建与合并 -->
+            <div class="panel-tab-panel" 
+                 id="tab-graph"
+                 role="tabpanel"
+                 aria-labelledby="tab-graph-btn"
+                 aria-hidden="true"
+                 hidden>
+                <!-- 图谱生成卡片 -->
+                <div class="content-card card-highlight">
+                    <div class="card-accent-line"></div>
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21 3 6"/><line x1="9" y1="3" x2="9" y2="18"/><line x1="15" y1="6" x2="15" y2="21"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>图谱生成</h4>
+                                <p class="card-subtitle">Knowledge Graph Generator</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" id="graph-single-btn">
+                                <span class="btn-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                                <span class="btn-text">生成选中章节图谱</span>
+                            </button>
+                            <button class="btn btn-secondary" id="graph-batch-btn">
+                                <span class="btn-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg></span>
+                                <span class="btn-text">批量生成全章节图谱</span>
+                            </button>
+                        </div>
+
+                        <div class="progress-wrapper">
+                            <div class="progress-info">
+                                <span id="graph-generate-status" 
+                                      class="progress-text"
+                                      aria-live="polite"
+                                      role="status"></span>
+                                <span class="progress-percent" 
+                                      id="graph-generate-percent"
+                                      aria-live="polite"></span>
+                            </div>
+                            <div class="progress-bar progress-animated" 
+                                 role="progressbar"
+                                 id="graph-progress-bar"
+                                 aria-valuenow="0"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
+                                 aria-label="图谱生成进度">
+                                <div id="graph-progress" class="progress-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="action-hints">
+                            <div class="hint-card">
+                                <span class="hint-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>
+                                <span>导入单章节图谱</span>
+                                <input id="chapter-graph-file-upload" type="file" accept=".json" style="display: none;">
+                            </div>
+                            <button class="btn btn-sm btn-outline" id="chapter-graph-import-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>导入
+                            </button>
+                            <button class="btn btn-sm btn-secondary" id="chapter-graph-export-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>导出
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图谱合并卡片 -->
+                <div class="content-card card-merge">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>全量图谱合并</h4>
+                                <p class="card-subtitle">Batch Merge & Consolidate</p>
+                            </div>
+                        </div>
+                        <div class="card-badge">高级功能</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="merge-config">
+                            <div class="form-group">
+                                <label class="form-label" id="batch-merge-label">
+                                    <span class="label-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                                    每批合并章节数
+                                </label>
+                                <div class="input-suffix-wrapper">
+                                    <input id="batch-merge-count" 
+                                           type="number" 
+                                           min="10" 
+                                           max="100" 
+                                           step="10" 
+                                           class="form-input" 
+                                           value="50"
+                                           aria-labelledby="batch-merge-label">
+                                    <span class="input-suffix">章节/批</span>
+                                </div>
+                            </div>
+                            <div class="merge-stats" id="merge-stats">
+                                <div class="stat-item">
+                                    <span class="stat-value" id="total-graphs-count">0</span>
+                                    <span class="stat-label">总图谱数</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-value" id="batch-count-display">0</span>
+                                    <span class="stat-label">批次数量</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="progress-wrapper">
+                            <div class="progress-info">
+                                <span id="batch-merge-status" 
+                                      class="progress-text"
+                                      aria-live="polite"
+                                      role="status"></span>
+                                <span class="progress-percent" 
+                                      id="batch-merge-percent"
+                                      aria-live="polite"></span>
+                            </div>
+                            <div class="progress-bar progress-animated" 
+                                 role="progressbar"
+                                 id="batch-merge-progress-bar"
+                                 aria-valuenow="0"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100"
+                                 aria-label="批量合并进度">
+                                <div id="batch-merge-progress" class="progress-fill"></div>
+                            </div>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" id="graph-batch-merge-btn">
+                                <span class="btn-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>
+                                <span class="btn-text">分批合并章节图谱</span>
+                            </button>
+                            <button class="btn btn-outline" id="graph-merge-btn">
+                                <span class="btn-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+                                <span class="btn-text">整体合并全量图谱</span>
+                            </button>
+                            <button class="btn btn-danger" id="graph-batch-clear-btn">
+                                <span class="btn-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span>
+                                <span class="btn-text">清空批次</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 图谱预览卡片 -->
+                <div class="content-card card-preview">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>合并后完整知识图谱</h4>
+                                <p class="card-subtitle">Consolidated Knowledge Graph</p>
+                            </div>
+                        </div>
+                        <div class="card-meta">
+                            <span id="graph-size-display">0 KB</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="code-preview">
+                            <textarea id="merged-graph-preview" 
+                                      rows="10" 
+                                      class="form-textarea code-editor" 
+                                      readonly 
+                                      placeholder="合并后的图谱JSON将显示在这里..." 
+                                      wrap="soft"
+                                      aria-label="合并后图谱预览"
+                                      aria-readonly="true"></textarea>
+                            <div class="code-line-numbers" id="code-line-numbers" aria-hidden="true"></div>
+                        </div>
+                        <div class="action-hints">
+                            <input id="graph-file-upload" type="file" accept=".json" style="display: none;">
+                            <button class="btn btn-sm btn-outline" id="graph-validate-btn">
+                                <span aria-hidden="true">✓</span>校验
+                            </button>
+                            <button class="btn btn-sm btn-outline" id="graph-import-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></span>导入JSON
+                            </button>
+                            <button class="btn btn-sm btn-secondary" id="graph-copy-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>复制
+                            </button>
+                            <button class="btn btn-sm btn-secondary" id="graph-export-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></span>导出
+                            </button>
+                            <button class="btn btn-sm btn-danger" id="graph-clear-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span>清空
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 校验结果卡片 -->
+                <div class="content-card card-validate" id="graph-validate-result" style="display: none;">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>图谱合规性校验结果</h4>
+                                <p class="card-subtitle">Compliance Validation Result</p>
+                            </div>
+                        </div>
+                        <div class="validation-badge" id="validation-badge">
+                            <span class="badge-icon">✓</span>
+                            <span class="badge-text">通过</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <textarea id="graph-validate-content" 
+                                  rows="4" 
+                                  class="form-textarea" 
+                                  readonly 
+                                  placeholder="校验结果将显示在这里..." 
+                                  wrap="soft"
+                                  aria-label="校验结果"
+                                  aria-readonly="true"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选项卡3：小说续写生成 -->
+            <div class="panel-tab-panel" 
+                 id="tab-write"
+                 role="tabpanel"
+                 aria-labelledby="tab-write-btn"
+                 aria-hidden="true"
+                 hidden>
+                <!-- 基准章节选择卡片 -->
+                <div class="content-card card-highlight">
+                    <div class="card-accent-line"></div>
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>续写基准设置</h4>
+                                <p class="card-subtitle">Continue Writing Base</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label class="form-label" id="write-chapter-label">
+                                <span class="label-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg></span>
+                                选择续写基准章节
+                            </label>
+                            <select id="write-chapter-select" 
+                                    class="form-select"
+                                    aria-labelledby="write-chapter-label">
+                                <option value="">请先解析章节</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <div class="form-label-row">
+                                <label class="form-label" id="write-content-label">
+                                    <span class="label-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></span>
+                                    基准章节内容
+                                </label>
+                                <span class="label-hint">可直接编辑修改</span>
+                            </div>
+                            <textarea id="write-chapter-content" 
+                                      rows="8" 
+                                      class="form-textarea" 
+                                      placeholder="请先选择上方的基准章节..." 
+                                      readonly 
+                                      wrap="soft"
+                                      aria-labelledby="write-content-label"
+                                      aria-readonly="true"></textarea>
+                        </div>
+                        <button class="btn btn-sm btn-outline btn-block" id="graph-update-modified-btn">
+                            <span class="btn-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></span>
+                            <span class="btn-text">更新魔改章节图谱</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 前置校验抽屉 -->
+                <div class="inline-drawer" id="drawer-precheck">
+                    <div class="inline-drawer-toggle inline-drawer-header">
+                        <div class="drawer-title">
+                            <span class="drawer-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+                            <span class="drawer-text">续写前置校验与合规边界</span>
+                        </div>
+                        <div class="drawer-indicator">
+                            <span id="precheck-status" 
+                                  class="status-badge status-default"
+                                  aria-live="polite">未执行</span>
+                            <div class="inline-drawer-icon down" aria-hidden="true">▼</div>
+                        </div>
+                    </div>
+                    <div class="inline-drawer-content">
+                        <div class="precheck-header">
+                            <button class="btn btn-primary" id="precheck-run-btn">
+                                <span class="btn-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></span>
+                                <span class="btn-text">执行前置校验</span>
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" id="precheck-report-label">
+                                <span class="label-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                                合规边界与校验报告
+                            </label>
+                            <textarea id="precheck-report" 
+                                      rows="6" 
+                                      class="form-textarea" 
+                                      readonly 
+                                      placeholder="执行前置校验后，将显示人设红线、设定禁区、可呼应伏笔、矛盾预警等内容..." 
+                                      wrap="soft"
+                                      aria-labelledby="precheck-report-label"
+                                      aria-readonly="true"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 续写配置卡片 -->
+                <div class="content-card card-config">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>续写配置</h4>
+                                <p class="card-subtitle">Writing Configuration</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="config-grid">
+                            <div class="form-group">
+                                <label class="form-label" id="write-word-label">
+                                    <span class="label-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="6" y1="12" x2="8" y2="12"/><line x1="6" y1="16" x2="8" y2="16"/><line x1="10" y1="14" x2="10" y2="14"/><line x1="10" y1="18" x2="10" y2="18"/></svg></span>
+                                    续写字数
+                                </label>
+                                <div class="input-suffix-wrapper">
+                                    <input id="write-word-count" 
+                                           type="number" 
+                                           min="500" 
+                                           max="10000" 
+                                           step="100" 
+                                           class="form-input" 
+                                           value="2000"
+                                           aria-labelledby="write-word-label">
+                                    <span class="input-suffix">字</span>
+                                </div>
+                            </div>
+                            <div class="toggle-setting">
+                                <div class="toggle-info">
+                                    <span class="toggle-label">开启质量自动校验</span>
+                                    <span class="toggle-hint">不合格自动重写</span>
+                                </div>
+                                <div class="toggle-switch" 
+                                     role="switch" 
+                                     aria-checked="true"
+                                     aria-label="开启质量自动校验"
+                                     tabindex="0"
+                                     id="quality-check-switch">
+                                    <input type="checkbox" checked class="sr-only" />
+                                    <span class="toggle-slider"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 生成控制卡片 -->
+                <div class="content-card card-generate">
+                    <div class="generate-actions">
+                        <button class="btn btn-primary btn-xl" id="write-generate-btn">
+                            <span class="btn-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+                            <span class="btn-text">生成续写章节</span>
+                            <div class="btn-shine"></div>
+                        </button>
+                        <button class="btn btn-danger btn-xl" 
+                                id="write-stop-btn" 
+                                disabled
+                                aria-disabled="true">
+                            <span class="btn-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14"/></svg></span>
+                            <span class="btn-text">停止生成</span>
+                        </button>
+                    </div>
+                    <div class="progress-wrapper">
+                        <div class="progress-info">
+                            <span id="write-status" 
+                                  class="progress-text"
+                                  aria-live="polite"
+                                  role="status"></span>
+                        </div>
+                    </div>
+                    <div id="quality-result-block" class="quality-result" style="display: none;">
+                        <div class="quality-score-display">
+                            <div class="score-circle">
+                                <svg viewBox="0 0 100 100" aria-hidden="true">
+                                    <circle class="score-bg" cx="50" cy="50" r="45"></circle>
+                                    <circle class="score-fill" cx="50" cy="50" r="45" id="quality-score-circle"></circle>
+                                </svg>
+                                <span class="score-value" id="quality-score" aria-live="polite">0</span>
+                            </div>
+                            <span class="score-label">质量评估得分</span>
+                        </div>
+                        <textarea id="quality-report" 
+                                  rows="3" 
+                                  class="form-textarea" 
+                                  readonly 
+                                  placeholder="质量评估详细报告将显示在这里..." 
+                                  wrap="soft"
+                                  aria-label="质量评估报告"
+                                  aria-readonly="true"></textarea>
+                    </div>
+                </div>
+
+                <!-- 续写结果卡片 -->
+                <div class="content-card card-result">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>续写生成结果</h4>
+                                <p class="card-subtitle">Generated Content</p>
+                            </div>
+                        </div>
+                        <div class="result-stats">
+                            <span id="result-word-count" aria-live="polite">0 字</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="result-preview">
+                            <textarea id="write-content-preview" 
+                                      rows="12" 
+                                      class="form-textarea" 
+                                      placeholder="生成的续写章节内容将显示在这里..." 
+                                      wrap="soft"
+                                      aria-label="续写生成结果预览"></textarea>
+                        </div>
+                        <div class="action-hints">
+                            <button class="btn btn-sm btn-secondary" id="write-copy-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>复制
+                            </button>
+                            <button class="btn btn-sm btn-primary" id="write-send-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></span>发送到对话框
+                            </button>
+                            <button class="btn btn-sm btn-danger" id="write-clear-btn">
+                                <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span>清空
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 续写链条卡片 -->
+                <div class="content-card card-chain">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></div>
+                            <div class="card-title-text">
+                                <h4>续写章节链条</h4>
+                                <p class="card-subtitle">可无限叠加续写</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-sm btn-danger" id="clear-chain-btn">
+                            <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg></span>清空所有
+                        </button>
+                    </div>
+                    <div id="continue-write-chain" class="chain-container" aria-live="polite">
+                        <div class="empty-state">
+                            <div class="empty-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>
+                            <div class="empty-text">暂无续写章节，生成续写内容后自动添加到此处</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 选项卡4 小说阅读器 -->
+            <div class="panel-tab-panel" 
+                 id="tab-reader"
+                 role="tabpanel"
+                 aria-labelledby="tab-reader-btn"
+                 aria-hidden="true"
+                 hidden>
+                <!-- 阅读器顶部控制栏 -->
+                <div class="reader-header">
+                    <div class="reader-title">
+                        <div class="reader-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+                        <div class="reader-title-text">
+                            <span id="reader-current-chapter-title" aria-live="polite">未选择章节</span>
+                            <span id="reader-chapter-count" class="reader-chapter-info" aria-live="polite">0/0</span>
+                        </div>
+                    </div>
+                    <div class="reader-controls">
+                        <div class="font-size-control">
+                            <button class="btn btn-sm btn-icon reader-font-btn" 
+                                    id="reader-font-minus" 
+                                    aria-label="缩小字体"
+                                    title="缩小字体">
+                                <span aria-hidden="true">A</span><span aria-hidden="true">-</span>
+                            </button>
+                            <span class="font-size-display" id="font-size-display" aria-live="polite">16</span>
+                            <button class="btn btn-sm btn-icon reader-font-btn" 
+                                    id="reader-font-plus" 
+                                    aria-label="放大字体"
+                                    title="放大字体">
+                                <span aria-hidden="true">A</span><span aria-hidden="true">+</span>
+                            </button>
+                        </div>
+                        <button class="btn btn-sm btn-primary" id="reader-chapter-select-btn">
+                            <span aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>章节列表
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 阅读器核心内容区域 -->
+                <div class="reader-content-wrap">
+                    <div class="reader-content" id="reader-content" role="main">
+                        <div class="reader-empty-state">
+                            <div class="reader-empty-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9 2-2-2zm0 16H3V5h18v14z"/><path d="M5 7h4v10H5zm6 0h4v10h-4z"/></svg></div>
+                            <div class="reader-empty-text">请先在「章节管理」中解析小说文件，然后选择章节开始阅读</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 阅读器底部进度条 + 翻章按钮 -->
+                <div class="reader-footer">
+                    <button class="btn btn-sm btn-outline reader-nav-btn" 
+                            id="reader-prev-chapter" 
+                            aria-label="上一章"
+                            title="上一章">
+                        <span class="nav-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg></span>
+                        <span class="nav-text">上一章</span>
+                    </button>
+                    <div class="reader-progress-wrapper">
+                        <span id="reader-progress-text" 
+                              class="reader-progress-text"
+                              aria-live="polite">0%</span>
+                        <div class="reader-progress-bar" 
+                             role="progressbar"
+                             aria-valuenow="0"
+                             aria-valuemin="0"
+                             aria-valuemax="100"
+                             aria-label="阅读进度">
+                            <div class="reader-progress-fill" id="reader-progress-fill"></div>
+                        </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline reader-nav-btn" 
+                            id="reader-next-chapter" 
+                            aria-label="下一章"
+                            title="下一章">
+                        <span class="nav-text">下一章</span>
+                        <span class="nav-icon" aria-hidden="true"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                    </button>
+                </div>
+
+                <!-- 章节选择侧边抽屉 -->
+                <div class="reader-chapter-drawer" id="reader-chapter-drawer">
+                    <div class="reader-drawer-header">
+                        <div class="drawer-title">
+                            <span class="drawer-icon"><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+                            <span class="drawer-text">章节列表</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline" id="reader-drawer-close">
+                            <span><svg class="svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></span>关闭
+                        </button>
+                    </div>
+                    <div class="reader-chapter-list" id="reader-chapter-list">
+                        <div class="empty-state">
+                            <div class="empty-icon">📁</div>
+                            <div class="empty-text">暂无解析的章节</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
