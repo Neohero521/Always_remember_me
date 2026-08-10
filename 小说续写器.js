@@ -70,6 +70,24 @@ function getScriptId() {
     return __getScriptId.apply(null, arguments);
 }
 
+/* ============================================================
+ * ▌SECTION 0.6  DOM 上下文：将 document 指向父酒馆页面
+ * ------------------------------------------------------------
+ * 原代码大量使用 document.getElementById / createElement 等原生 API，
+ * 但脚本 UI_HTML 是通过 $("body").append(...) 注入到"父酒馆页面"的
+ *（$ 由酒馆助手注入，默认上下文是父页面）。
+ * 如果直接使用 iframe 自身的 document（只有空壳的 <html><body>），
+ * 则所有 getElementById 都会返回 null，导致"打开没反应"。
+ * 因此在 IIFE 作用域内用 const document = parentDocument 覆盖，
+ * 使 43 处 document.* 调用统一指向父页面文档。
+ *
+ * 注意：由于我们是在 const __parent = window.parent 之后才声明的，
+ * 所以 SECTION 0.5 中访问 window.document 的代码不受此处 const 遮蔽影响
+ *（window.document 是属性访问，不是标识符解析，不受局部 const 影响）。
+ * ============================================================ */
+const __parentDocument = window.parent.document;
+const document = __parentDocument;
+
 
 /* ============================================================
  * ▌SECTION 0  脚本元信息 & 内联资源
