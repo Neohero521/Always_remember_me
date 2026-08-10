@@ -39,9 +39,9 @@ const __toastr  = (typeof toastr  !== 'undefined') ? toastr  : __parent.toastr |
     info:    console.info.bind(console,  '[toastr][info]'),
 };
 // 挂载为 IIFE 作用域内的局部变量，遮蔽全局（或全局不存在时兜底）
-// 注意：$ 用 let 而非 const —— 打开 iframe UI 时会重绑到 iframe 上下文
+// $ 和 document 都指向父页面，所有 DOM 操作都在父页面执行
 const jQuery = __jQuery;
-let   $      = __Dollar;
+const $      = __Dollar;
 const toastr = __toastr;
 
 // getVariables / replaceVariables：挂在 SillyTavern 对象上，
@@ -72,21 +72,15 @@ function getScriptId() {
 }
 
 /* ============================================================
- * ▌SECTION 0.6  DOM 上下文：document 默认指向父酒馆页面
+ * ▌SECTION 0.6  DOM 上下文：document 指向父酒馆页面
  * ------------------------------------------------------------
- * 脚本启动时 document = 父页面文档（用于注册按钮、添加浮动按钮等）。
- * 当 openNovelWriter() 创建 iframe UI 后，document 会被重绑到
- * iframe 的 contentDocument，使所有 document.getElementById 调用
- * 都落在 iframe 内部，与父页面完全隔离。
- *
- * 参考时之写卡器的 iframe 隔离模式：
- *   - UI HTML 注入到 iframe.contentDocument.body
- *   - CSS 注入到 iframe.contentDocument.head
- *   - 事件监听挂在 iframe 内的元素上
- *   - 卸载只需从父页面移除 iframe 元素
+ * 脚本运行在 Tavern Helper 的无沙盒 iframe 中，自身 document 是空壳。
+ * 所有 UI_HTML 通过 $("body").append 注入到父页面（$ 是父页面 jQuery）。
+ * 因此 document 必须指向父页面文档，使 document.getElementById 等
+ * 原生 API 也能正确找到注入的元素。
  * ============================================================ */
 const __parentDocument = window.parent.document;
-let   document = __parentDocument;
+const document = __parentDocument;
 
 
 /* ============================================================
@@ -5034,126 +5028,21 @@ async function generateNovelWrite() {
 }
 
 // ============================================================
-// ▌主入口包装：按需打开 iframe UI（参考时之写卡器架构）
+// ▌主入口包装：按需打开（脚本启动不注入 UI，点击按钮才注入）
 // ------------------------------------------------------------
 // 酒馆助手脚本规范：
-//   1) 脚本启动 → 仅注册脚本按钮（不注入任何 UI DOM）
-//   2) 用户点击脚本按钮 → 创建独立 iframe，UI 完全在 iframe 内渲染
-//   3) pagehide 时移除 iframe 元素，父页面零残留
+//   1) 脚本启动 → 仅注册脚本按钮 / 兜底浮动按钮（不注入 UI DOM）
+//   2) 用户点击按钮 → openNovelWriter() 注入 UI_HTML + UI_CSS 到父页面
+//   3) pagehide 时清理所有注入的 DOM
 //
-// 关键架构（对齐时之写卡器测试版）：
-//   - createNovelWriterIframe() 在父页面 body 创建全屏 iframe
-//   - UI_HTML 写入 iframe.contentDocument.body.innerHTML
-//   - UI_CSS 通过 <style> 注入 iframe.contentDocument.head
-//   - IIFE 作用域内的 document/$ 重绑到 iframe 上下文，
-//     使后续所有 document.getElementById / $(selector) 调用
-//     都落在 iframe 内，与父页面完全隔离，杜绝样式/事件冲突
+// UI 通过 .novel-writer-extension-root CSS 前缀实现样式隔离，
+// 不需要独立 iframe（与参考脚本不同，参考脚本用 iframe 是因为
+// 它需要完全隔离的全新 UI 环境）。
 // ============================================================
 let _novelWriterOpened = false;
-let _novelWriterIframe = null; // 父页面中的 iframe 元素引用
-
-// 创建承载 UI 的 iframe，返回 iframe 的 contentDocument
-// 模式参考：https://cdn.jsdelivr.net/gh/Neohero521/Messy@.../时之写卡器测试版.js
-function createNovelWriterIframe() {
-    return new Promise((resolve, reject) => {
-        try {
-            const parentDoc = (window.parent && window.parent.document) ? window.parent.document : __parentDocument;
-            // 已存在则先移除
-            const old = parentDoc.getElementById(SCRIPT_ID + '-iframe');
-            if (old) old.remove();
-            const iframe = parentDoc.createElement('iframe');
-            iframe.id = SCRIPT_ID + '-iframe';
-            iframe.setAttribute('script_id', SCRIPT_ID);
-            iframe.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;height:100dvh;border:none;z-index:99999;background:#1a1a1a;';
-            iframe.addEventListener('load', () => {
-                try {
-                    const d = iframe.contentDocument || iframe.contentWindow.document;
-                    // 注入 CSS 到 iframe head
-                    const styleEl = d.createElement('style');
-                    styleEl.setAttribute('data-novel-writer', 'true');
-                    styleEl.textContent = UI_CSS;
-                    d.head.appendChild(styleEl);
-                    // viewport meta（移动端适配）
-                    try {
-                        const vp = d.createElement('meta');
-                        vp.name = 'viewport';
-                        vp.content = 'width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover';
-                        d.head.appendChild(vp);
-                        const charset = d.createElement('meta');
-                        charset.setAttribute('charset', 'UTF-8');
-                        d.head.appendChild(charset);
-                    } catch (_) {}
-                    _novelWriterIframe = iframe;
-                    resolve(d);
-                } catch (e) { reject(e); }
-            });
-            parentDoc.body.appendChild(iframe);
-            // 超时保护
-            setTimeout(() => {
-                try {
-                    if (!iframe.contentDocument || !iframe.contentDocument.body) {
-                        reject(new Error('iframe load timeout'));
-                    }
-                } catch (e) { reject(e); }
-            }, 4000);
-        } catch (e) { reject(e); }
-    });
-}
-
-// 关闭并移除 iframe（卸载时调用）
-function closeNovelWriterIframe() {
-    try {
-        if (_novelWriterIframe && _novelWriterIframe.parentNode) {
-            _novelWriterIframe.parentNode.removeChild(_novelWriterIframe);
-        }
-        _novelWriterIframe = null;
-    } catch (_) {}
-    try {
-        const pDoc = (window.parent && window.parent.document) ? window.parent.document : __parentDocument;
-        const md = pDoc.getElementById(SCRIPT_ID + '-iframe');
-        if (md) md.remove();
-    } catch (_) {}
-}
-
-// 构造一个作用于 iframe 上下文的 scoped $
-// 行为：
-//   - $(function)         → 父页面 jQuery ready 回调
-//   - $(window/element)   → 直接包裹（不强制 context）
-//   - $(selector)         → 在 iframe 文档内查找
-//   - $(selector, ctx)    → 用显式 ctx
-function makeScopedjQuery(iframeDoc, parentDollar) {
-    if (typeof parentDollar !== 'function') return parentDollar;
-    const scoped = function (selector, context) {
-        // 1) ready 回调：$(() => {...}) 或 $(document).ready(...)
-        if (typeof selector === 'function') {
-            return parentDollar(selector);
-        }
-        // 2) window / document / DOM 节点 / jQuery 对象：直接包裹，不强制 context
-        if (selector && typeof selector === 'object' &&
-            (selector.nodeType || selector === window || selector === window.parent ||
-             selector.setTimeout || selector.jquery)) {
-            return parentDollar(selector);
-        }
-        // 3) 字符串选择器：默认 context = iframeDoc
-        return parentDollar(selector, context || iframeDoc);
-    };
-    // 拷贝静态方法（$.extend / $.ajax / $.fn 等）
-    try {
-        const keys = Object.getOwnPropertyNames(parentDollar);
-        for (let i = 0; i < keys.length; i++) {
-            const k = keys[i];
-            if (k === 'length' || k === 'name' || k === 'prototype') continue;
-            try {
-                const desc = Object.getOwnPropertyDescriptor(parentDollar, k);
-                if (desc) Object.defineProperty(scoped, k, desc);
-            } catch (_) {}
-        }
-    } catch (_) {}
-    scoped.fn = parentDollar.fn;
-    return scoped;
-}
 
 async function openNovelWriter() {
+    console.log('[小说续写插件] openNovelWriter 被调用, _novelWriterOpened=', _novelWriterOpened);
     if (_novelWriterOpened) {
         // 已打开：尝试聚焦面板（如已隐藏）
         try {
@@ -5169,21 +5058,19 @@ async function openNovelWriter() {
 
     _loadSettingsCache();
     try {
-        // 创建 iframe 并获取其 document
-        const iframeDoc = await createNovelWriterIframe();
-        // 重绑 IIFE 作用域的 document / $ 到 iframe 上下文
-        document = iframeDoc;
-        $ = makeScopedjQuery(iframeDoc, __Dollar);
+        // 若 UI 已存在则不重复注入
+        if ($('#novel-writer-extension-root').length === 0) {
+            console.log('[小说续写插件] 正在注入 UI_HTML 到父页面 body...');
+            $("body").append(UI_HTML);
+            $("head").append(`<style data-novel-writer="true">${UI_CSS}</style>`);
+            console.log('[小说续写插件] UI_HTML 已注入, root 长度:', $('#novel-writer-extension-root').length);
+        }
 
-        // 注入 UI HTML 到 iframe body
-        iframeDoc.body.innerHTML = UI_HTML;
-        console.log("[小说续写插件] iframe UI 已注入");
-    
     initDrawerToggle();
     initContinueChainEvents();
     initVisibilityListener();
     await loadSettings();
-    
+
     $("#my_button").off("click").on("click", onButtonClick);
     $("#example_setting").off("input").on("input", onExampleInput);
     
@@ -6119,13 +6006,12 @@ function addNovelWriterFloatingButton() {
 // ---------- 重试注册 ----------
 let _btnRetryCount = 0;
 function tryInitNovelWriter() {
-    if (registerNovelWriterButton()) { return; }
-    if (_btnRetryCount < 10) {
-        _btnRetryCount++;
-        setTimeout(tryInitNovelWriter, 500);
-    } else {
-        addNovelWriterFloatingButton();
-    }
+    // 立即添加浮动按钮，确保用户总能看到入口
+    // （即使脚本按钮注册"假成功"——getButtonEvent 返回了事件名但用户没配置按钮）
+    addNovelWriterFloatingButton();
+    // 同时尝试注册脚本按钮（不影响浮动按钮）
+    registerNovelWriterButton();
+    console.log('[小说续写插件] 入口已就绪：浮动按钮已显示，脚本按钮注册已尝试');
 }
 
 // ---------- 卸载清理 ----------
@@ -6137,15 +6023,13 @@ function cleanupNovelWriter() {
                 FloatBall.destroy();
             }
         } catch (_) {}
-        // 关闭并移除 iframe（含 UI HTML / CSS / 事件）—— 父页面零残留
-        closeNovelWriterIframe();
-        // 兜底：清理父页面可能残留的浮动按钮与样式
+        // 移除注入的 UI 根容器与样式
         const pDoc = (window.parent && window.parent.document) ? window.parent.document : __parentDocument;
         try {
+            $('#novel-writer-extension-root').remove();
+            $('style[data-novel-writer="true"]').remove();
             const btn = pDoc.getElementById(SCRIPT_ID + '-btn');
             if (btn) btn.remove();
-            const styles = pDoc.querySelectorAll('style[data-novel-writer="true"]');
-            styles.forEach(s => s.remove());
         } catch (_) {}
         // 落盘未保存的设置
         try {
@@ -6154,9 +6038,6 @@ function cleanupNovelWriter() {
                 _persistSettings();
             }
         } catch (_) {}
-        // 还原 IIFE 作用域上下文（防止后续误用 iframe doc）
-        document = __parentDocument;
-        $ = __Dollar;
         _novelWriterOpened = false;
         console.log('[小说续写插件] 已卸载并完成清理');
     } catch (e) {
